@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Aplikasi Perjadin</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50">
+    <div class="flex h-screen bg-gray-200">
+        <!-- 
+            KERANGKA HALAMAN UTAMA
+            Elemen-elemen ini adalah fondasi yang dibutuhkan oleh JavaScript.
+        -->
+
+        <!-- 1. Sidebar (akan diisi oleh dashboard.js) -->
+        <!-- Kontainer untuk sidebar. Kontennya akan dimuat secara dinamis oleh main.js -->
+        <aside id="sidebar"
+            class="fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-slate-100 shadow-lg transform -translate-x-full transition-all duration-300 ease-in-out">
+            <!-- Konten sidebar (judul, nav, dll.) akan dimuat di sini -->
+        </aside>
+
+        <!-- 2. Backdrop (KRUSIAL untuk toggle di mobile) -->
+        <!-- Ini adalah lapisan gelap yang muncul di belakang sidebar pada tampilan mobile. -->
+        <div id="sidebar-backdrop" class="fixed inset-0 z-40 bg-gray-600 bg-opacity-50 hidden md:hidden"></div>
+
+        <!-- 3. Content wrapper -->
+        <!-- Wrapper ini berisi header dan konten utama halaman. -->
+        <div id="main-content-wrapper"
+            class="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+            <!-- Header -->
+            <header id="header-container" class="bg-white shadow-md">
+                <!-- Konten header (tombol menu, profil pengguna) akan dimuat di sini -->
+            </header>
+
+            <!-- 4. Konten Utama -->
+            <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Dashboard Utama</h2>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Card 1 -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800">Total Perjalanan Dinas</h3>
+                        <p id="total-perjalanan" class="text-3xl font-bold text-indigo-600 mt-2">...</p>
+                        <p class="text-sm text-gray-500 mt-1">Tahun Anggaran 2024</p>
+                    </div>
+                    <!-- Card 2 (Sebelumnya Card 3) -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800">Perjalanan Bulan Ini</h3>
+                        <p id="perjalanan-bulan-ini" class="text-3xl font-bold text-amber-600 mt-2">...</p>
+                        <p class="text-sm text-gray-500 mt-1">Agenda aktif</p>
+                    </div>
+                </div>
+
+                <!-- Tabel Agenda -->
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Agenda Perjalanan Terbaru</h3>
+                    <p class="text-gray-500">Fitur ini sedang dalam pengembangan.</p>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="/js/main.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script src="/js/dashboard.js"></script>
+
+</body>
+
+</html>

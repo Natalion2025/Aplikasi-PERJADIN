@@ -1,0 +1,15 @@
+{
+    "watch": [
+        "server.js",
+        "views/",
+        "public/"
+    ],
+    "ext": "js,json,html,css",
+    "ignore": [
+        "node_modules/",
+        "database/sessions.db*",
+        "database/perjadin.db*"
+    ],
+    "verbose": true,
+    "exec": "node server.js"
+}
