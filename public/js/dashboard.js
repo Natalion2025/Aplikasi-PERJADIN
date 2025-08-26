@@ -16,64 +16,78 @@ function showNotification(element, message, isError = false) {
     }, 5000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Fungsi untuk memuat data spesifik dashboard
-    const loadDashboardData = async () => {
+// Fungsi untuk memuat data spesifik dashboard
+const loadDashboardData = async () => {
+    try {
         // Pilih elemen setelah komponen dijamin telah dimuat
         const userNameEl = document.getElementById('user-name');
         const totalPerjalananEl = document.getElementById('total-perjalanan');
         const perjalananBulanIniEl = document.getElementById('perjalanan-bulan-ini');
 
-        try {
-            // Jalankan kedua fetch secara paralel untuk efisiensi
-            const [userResponse, statsResponse] = await Promise.all([
-                fetch('/api/user/me'),
-                fetch('/api/dashboard/stats')
-            ]);
+        // Jalankan kedua fetch secara paralel untuk efisiensi
+        const [userResponse, statsResponse] = await Promise.all([
+            fetch('/api/user/me'),
+            fetch('/api/dashboard/stats')
+        ]);
 
-            // Handle otentikasi pengguna
-            if (!userResponse.ok) {
-                await fetch('/api/auth/logout', { method: 'POST' });
-                window.location.href = '/login';
-                return;
-            }
-            const user = await userResponse.json();
-            if (userNameEl) {
-                userNameEl.textContent = user.name;
-            }
-
-            // Handle statistik
-            if (!statsResponse.ok) {
-                throw new Error('Gagal memuat statistik dashboard.');
-            }
-            const stats = await statsResponse.json();
-            if (totalPerjalananEl) totalPerjalananEl.textContent = stats.totalSpt ?? '0';
-            if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = stats.sptBulanIni ?? '0';
-
-        } catch (error) {
-            console.error('Gagal memuat data dashboard:', error);
-            // Tampilkan pesan error di UI jika diperlukan
-            if (totalPerjalananEl) totalPerjalananEl.textContent = 'Error';
-            if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = 'Error';
+        // Handle otentikasi pengguna
+        if (!userResponse.ok) {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+            return;
         }
-    };
 
+        const user = await userResponse.json();
+        if (userNameEl) {
+            userNameEl.textContent = user.name;
+        }
+
+        // Handle statistik
+        if (!statsResponse.ok) {
+            throw new Error('Gagal memuat statistik dashboard.');
+        }
+
+        const stats = await statsResponse.json();
+        if (totalPerjalananEl) totalPerjalananEl.textContent = stats.totalSpt ?? '0';
+        if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = stats.sptBulanIni ?? '0';
+
+    } catch (error) {
+        console.error('Gagal memuat data dashboard:', error);
+        // Tampilkan pesan error di UI jika diperlukan
+        const totalPerjalananEl = document.getElementById('total-perjalanan');
+        const perjalananBulanIniEl = document.getElementById('perjalanan-bulan-ini');
+
+        if (totalPerjalananEl) totalPerjalananEl.textContent = 'Error';
+        if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = 'Error';
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
     // --- Fungsi Inisialisasi Utama ---
     const init = async () => {
-        // 1. Muat dan inisialisasi layout utama (header & sidebar)
-        await window.App.loadLayout();
+        try {
+            // 1. Muat dan inisialisasi layout utama (header & sidebar)
+            await window.App.loadLayout();
 
-        // 2. Jalankan inisialisasi komponen setelah layout dimuat
-        requestAnimationFrame(() => {
-            if (window.App.initializeSidebar) window.App.initializeSidebar();
-            if (window.App.initializeSidebarDropdown) window.App.initializeSidebarDropdown();
+            // 2. Jalankan inisialisasi komponen setelah layout dimuat
+            await Promise.all([
+                window.App.initializeSidebar(),
+                window.App.initializeSidebarDropdown()
+            ]);
 
             // 3. Tandai navigasi aktif untuk halaman ini
-            if (window.App.setActiveNav) window.App.setActiveNav('nav-dashboard');
-        });
+            if (window.App.setActiveNav) {
+                window.App.setActiveNav('nav-dashboard');
+            }
 
-        // 4. Muat data spesifik untuk halaman dashboard (bisa berjalan paralel)
-        await loadDashboardData();
+            // 4. Muat data spesifik untuk halaman dashboard
+            await loadDashboardData();
+
+            console.log("DIAGNOSTIK: Dashboard berhasil diinisialisasi.");
+
+        } catch (error) {
+            console.error('Gagal menginisialisasi dashboard:', error);
+        }
     };
 
     // Jalankan aplikasi

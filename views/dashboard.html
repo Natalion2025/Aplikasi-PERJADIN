@@ -16,10 +16,11 @@
 </head>
 
 <body class="bg-slate-50">
+    <!-- Kontainer utama dengan flexbox dan tinggi layar penuh (h-screen) -->
     <div class="flex h-screen bg-gray-200">
         <!-- 
             KERANGKA HALAMAN UTAMA
-            Elemen-elemen ini adalah fondasi yang dibutuhkan oleh JavaScript.
+            Struktur ini (sidebar, backdrop, content-wrapper sebagai saudara) sangat penting.
         -->
 
         <!-- 1. Sidebar (akan diisi oleh dashboard.js) -->
@@ -29,11 +30,11 @@
             <!-- Konten sidebar (judul, nav, dll.) akan dimuat di sini -->
         </aside>
 
-        <!-- 2. Backdrop (KRUSIAL untuk toggle di mobile) -->
+        <!-- 2. Backdrop (PENTING untuk toggle di mobile) -->
         <!-- Ini adalah lapisan gelap yang muncul di belakang sidebar pada tampilan mobile. -->
         <div id="sidebar-backdrop" class="fixed inset-0 z-40 bg-gray-600 bg-opacity-50 hidden md:hidden"></div>
 
-        <!-- 3. Content wrapper -->
+        <!-- 3. Content Wrapper -->
         <!-- Wrapper ini berisi header dan konten utama halaman. -->
         <div id="main-content-wrapper"
             class="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">

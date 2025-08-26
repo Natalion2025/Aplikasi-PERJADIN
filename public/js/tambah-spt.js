@@ -82,25 +82,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Fungsi Inisialisasi Utama ---
     const init = async () => {
-        // 1. Muat komponen dinamis (header & sidebar) menggunakan fungsi terpusat
-        await window.App.loadLayout();
+        try {
+            // 1. Muat komponen dinamis (header & sidebar) menggunakan fungsi terpusat
+            await window.App.loadLayout();
 
-        // 2. Pasang event listener setelah layout dimuat
-        requestAnimationFrame(() => {
-            if (window.App.initializeSidebar) window.App.initializeSidebar();
-            if (window.App.initializeSidebarDropdown) window.App.initializeSidebarDropdown();
+            // 2. Inisialisasi sidebar dan dropdown
+            await Promise.all([
+                window.App.initializeSidebar(),
+                window.App.initializeSidebarDropdown()
+            ]);
 
+            // 3. Pasang event listener
             const sptForm = document.getElementById('spt-form');
             if (sptForm) {
                 sptForm.addEventListener('submit', handleSptSubmit);
             }
 
-            // 3. Tandai navigasi aktif
-            if (window.App.setActiveNav) window.App.setActiveNav('nav-tambah-spt');
-        });
+            // 4. Tandai navigasi aktif
+            if (window.App.setActiveNav) {
+                window.App.setActiveNav('nav-tambah-spt');
+            }
 
-        // 4. Muat data spesifik untuk halaman ini
-        await loadUserData();
+            // 5. Muat data spesifik untuk halaman ini
+            await loadUserData();
+
+            console.log("DIAGNOSTIK: Halaman tambah SPT berhasil diinisialisasi.");
+
+        } catch (error) {
+            console.error("Gagal menginisialisasi halaman tambah SPT:", error);
+        }
     };
 
     // Jalankan aplikasi
