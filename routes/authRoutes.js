@@ -59,18 +59,21 @@ router.post('/login', async (req, res) => {
             role: user.role
         };
 
-        // Promisify dan await proses penyimpanan sesi untuk memastikan selesai sebelum mengirim respons
-        const sessionSave = util.promisify(req.session.save.bind(req.session));
-        await sessionSave();
+        // Langkah 5: Simpan sesi secara eksplisit sebelum mengirim respons.
+        // Ini adalah kunci untuk mencegah "login loop" (race condition).
+        req.session.save(err => {
+            if (err) {
+                console.error('API ERROR: Gagal menyimpan sesi:', err);
+                return res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan sesi.' });
+            }
 
-        console.log(`API SUKSES: Sesi untuk '${username}' berhasil disimpan.`);
-
-        // Langkah 5: Kirim respons sukses setelah sesi dijamin tersimpan
-        res.status(200).json({ message: 'Login berhasil.' });
+            console.log(`API SUKSES: Sesi untuk '${username}' berhasil disimpan.`);
+            // Langkah 6: Kirim respons sukses setelah sesi dijamin tersimpan
+            res.status(200).json({ message: 'Login berhasil.', redirectTo: '/dashboard' });
+        });
 
     } catch (error) {
-        // Langkah 5: Tangani semua error tak terduga
-        // Diubah menjadi Langkah 6 karena ada penambahan langkah
+        // Langkah 7: Tangani semua error tak terduga dari proses async
         console.error('API ERROR: Terjadi kesalahan internal di proses login:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }

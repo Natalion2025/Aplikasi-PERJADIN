@@ -1,142 +1,98 @@
-<!-- Konten Sidebar -->
-<div class="flex items-center justify-between h-16 bg-white px-4">
-    <h1 class="text-2xl font-bold text-indigo-600">Perjadin Melawi</h1>
-    <!-- Tombol untuk menutup sidebar di tampilan mobile -->
-    <button id="sidebar-close-button"
-        class="md:hidden p-2 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+<!-- File: views/sidebar.html -->
+<!-- Logo atau Judul Aplikasi -->
+<div class="flex items-center justify-between h-[68px] px-4 border-b border-white/10">
+    <h1 class="text-xl font-bold text-white">Aplikasi Perjadin</h1>
+    <img src="/assets/logomelawi.png" class="h-8 w-auto rounded-full" alt="logoMelawi">
+    <button id="sidebar-close"
+        class="p-2 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-white lg:hidden">
+        <i class="fas fa-times text-xl"></i>
     </button>
 </div>
-<div id="sidebar-content" class="flex-1 p-4 overflow-y-auto">
-    <nav class="px-2 py-4 bg-gray-100 rounded-lg">
-        <a href="/dashboard" id="nav-dashboard"
-            class="menu-item group flex items-center px-4 py-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 group-hover:text-white" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            Dashboard
-        </a>
-        <a href="#" id="nav-agenda"
-            class="menu-item group flex items-center px-4 py-2 mt-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 group-hover:text-white" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Agenda
-        </a>
-        <a href="/tambah-spt" id="nav-tambah-spt"
-            class="menu-item group flex items-center px-4 py-2 mt-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 group-hover:text-white" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Tambah SPT
-        </a>
-        <a href="#" id="nav-tambah-spd"
-            class="menu-item group flex items-center px-4 py-2 mt-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 group-hover:text-white" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Tambah SPD
-        </a>
-        <a href="/tambah-pegawai" id="nav-tambah-pegawai"
-            class="menu-item group flex items-center px-4 py-2 mt-2 mb-4 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 group-hover:text-white" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-5-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Tambah Pegawai
-        </a>
-        <a href="#" id="nav-anggaran-perjadin"
-            class="menu-item group flex items-center px-4 py-2 mt-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="w-6 h-6 mr-3 group-hover:text-white">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-            </svg>
-            Anggaran
-        </a>
 
-        <a href="#" id="nav-rekam-bukti"
-            class="menu-item group flex items-center px-4 py-2 mt-2 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="w-6 h-6 mr-3 group-hover:text-white">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6.108V18.75a2.25 2.25 0 0 0 2.25 2.25h.375m1.5-15.495a2.243 2.243 0 0 1 1.976-2.192 48.424 48.424 0 0 1 1.123-.08" />
-            </svg>
-            Bukti & Pelaporan
-        </a>
+<!-- Menu Navigasi -->
+<nav class="mt-4">
+    <!-- Item Menu: Dashboard -->
+    <a href="/dashboard" id="nav-dashboard"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-home w-6 text-center"></i>
+        <span class="ml-4">Dashboard</span>
+    </a>
 
-        <a href="#" id="nav-pembayaran"
-            class="menu-item group flex items-center px-4 py-2 mt-2 mb-4 text-gray-700 hover:bg-indigo-500 hover:text-white rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                stroke="currentColor" class="w-6 h-6 mr-3 group-hover:text-white">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
-            </svg>
-            Pembayaran
-        </a>
+    <!-- Divider -->
+    <div class="px-8 py-2">
+        <hr class="border-t border-white/10">
+    </div>
 
-        <!-- Awal Menu Dropdown Setelan -->
-        <div class="mt-2">
-            <button type="button" id="settings-menu-button"
-                class="menu-item group flex items-center w-full text-left rounded-md py-2 mb-2 leading-6 text-gray-700 hover:bg-indigo-500 hover:text-white dropdown-toggle"
-                aria-controls="settings-submenu" aria-expanded="false">
-                <svg class="h-6 w-6 mr-3 ml-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.242 1.417l-1.07 1.07a.998.998 0 0 0 0 1.414l1.07 1.07c.418.418.418 1.097 0 1.515l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .242-1.417l1.07-1.07a.998.998 0 0 0 0-1.414l-1.07-1.07a1.125 1.125 0 0 1 0-1.515l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.213-1.28Z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-                Setelan
-                <svg id="settings-chevron"
-                    class="h-5 w-6 shrink-0 ml-4 text-gray-400  transition-transform duration-200 dropdown-icon"
-                    viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                        clip-rule="evenodd" />
-                </svg>
-            </button>
-            <div id="settings-submenu" class="hidden space-y-3 ml-4 dropdown-menu">
-                <a href="/setelan" id="nav-setelan-pengguna"
-                    class="menu-item group flex items-center rounded-md ml-4 py-2 px-3 leading-6 text-gray-700 hover:bg-indigo-500 hover:text-white">
-                    <svg class="h-6 w-6 mr-3 shrink-0 group-hover:text-white" fill="none" viewBox="0 0 24 24"
-                        stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
-                    Setelan Pengguna
-                </a>
-                <a href="/setelan/aplikasi" id="nav-setelan-aplikasi"
-                    class="menu-item group flex items-center rounded-md ml-4 py-2 px-3 leading-6 text-gray-700 hover:bg-indigo-500 hover:text-white">
-                    <svg class="h-6 w-6 mr-3 shrink-0 group-hover:text-white" fill="none" viewBox="0 0 24 24"
-                        stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                    </svg>
-                    Setelan Aplikasi
-                </a>
-                <a href="/setelan/biaya" id="nav-setelan-biaya"
-                    class="menu-item group flex items-center rounded-md ml-4 py-2 px-3 leading-6 text-gray-700 hover:bg-indigo-500 hover:text-white">
-                    <svg class="h-6 w-6 mr-3 shrink-0 group-hover:text-white" fill="none" viewBox="0 0 24 24"
-                        stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
-                    </svg>
-                    Standar Biaya
-                </a>
-            </div>
+    <!-- Judul Grup: Master Data -->
+    <h3 class="px-8 py-2 text-xs uppercase text-gray-400 tracking-wider">Master Data</h3>
+
+    <!-- Item Menu: Data Pegawai -->
+    <a href="/pegawai" id="nav-pegawai"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-users w-6 text-center"></i>
+        <span class="ml-4">Data Pegawai</span>
+    </a>
+
+    <!-- Item Menu: Standar Biaya -->
+    <a href="/standar-biaya" id="nav-standar-biaya"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-tags w-6 text-center"></i>
+        <span class="ml-4">Standar Biaya</span>
+    </a>
+
+    <!-- Item Menu: Anggaran -->
+    <a href="/anggaran" id="nav-anggaran"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-wallet w-6 text-center"></i>
+        <span class="ml-4">Anggaran</span>
+    </a>
+
+    <!-- Divider -->
+    <div class="px-8 py-2">
+        <hr class="border-t border-white/10">
+    </div>
+
+    <!-- Judul Grup: Transaksi -->
+    <h3 class="px-8 py-2 text-xs uppercase text-gray-400 tracking-wider">Pelaksanaan & Pengaturan</h3>
+
+    <!-- Item Menu: Daftar SPT -->
+    <a href="/spt" id="nav-spt"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-file-alt w-6 text-center"></i>
+        <span class="ml-4">Daftar SPT</span>
+    </a>
+
+    <!-- Item Menu: Laporan -->
+    <a href="/laporan" id="nav-laporan"
+        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-chart-bar w-6 text-center"></i>
+        <span class="ml-4">Laporan</span>
+    </a>
+
+    <!-- Item Menu Dropdown: Pengaturan -->
+    <div class="px-8 py-3">
+        <button id="settings-button"
+            class="w-full flex justify-between items-center text-white focus:outline-none hover:bg-white/10 rounded-md p-2 -m-2 transition-colors duration-200">
+            <span class="flex items-center">
+                <i class="fas fa-cog w-6 text-center"></i>
+                <span class="ml-4">Pengaturan</span>
+            </span>
+            <i id="settings-arrow" class="fas fa-chevron-down transform transition-transform duration-200"></i>
+        </button>
+        <div id="settings-submenu" class="pl-8 mt-2 hidden ml-8">
+            <a href="/profil" id="nav-profil-saya" class="block py-2 text-gray-300 hover:text-white">Profil Saya</a>
+            <a href="/pengguna" id="nav-pengguna" class="block py-2 text-gray-300 hover:text-white">Pengguna</a>
+            <a href="/pengaturan/aplikasi" id="nav-pengaturan-aplikasi"
+                class="block py-2 text-gray-300 hover:text-white">Aplikasi</a>
         </div>
-        <!-- Akhir Menu Dropdown Setelan -->
+    </div>
 
-    </nav>
-</div>
+    <!-- Tombol Logout (di bagian bawah) -->
+    <div class="absolute w-full p-4">
+        <button id="logout-button"
+            class="w-full flex items-center justify-center px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors duration-200">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="ml-3">Logout</span>
+        </button>
+    </div>
+</nav>

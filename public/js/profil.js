@@ -1,172 +1,154 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Deklarasi Variabel ---
-    let userNameDisplay, editProfileModal, openModalButton, closeModalButton, cancelModalButton,
-        displayName, displayNip, displayJabatan, displayGolongan, displayUsername,
-        profileForm, nameInput, nipInput, jabatanInput, golonganInput, usernameInput,
-        passwordInput, successMessage, errorMessage;
+/**
+ * Menampilkan notifikasi di halaman profil.
+ * @param {string} message - Pesan yang akan ditampilkan.
+ * @param {boolean} [isError=false] - Set true jika ini adalah pesan error.
+ */
+function showProfileNotification(message, isError = false) {
+    const notificationElement = document.getElementById('form-notification');
+    if (!notificationElement) return;
 
-    // --- Fungsi Helper ---
-    function updateProfileDisplays(user) {
-        if (userNameDisplay) userNameDisplay.textContent = user.name || '';
-        if (displayName) displayName.textContent = user.name || '-';
-        if (displayNip) displayNip.textContent = user.nip || '-';
-        if (displayJabatan) displayJabatan.textContent = user.jabatan || '-';
-        if (displayGolongan) displayGolongan.textContent = user.golongan || '-';
-        if (displayUsername) displayUsername.textContent = user.username || '-';
+    notificationElement.textContent = message;
+    notificationElement.classList.remove('hidden', 'bg-red-100', 'bg-green-100', 'text-red-700', 'text-green-700');
+
+    if (isError) {
+        notificationElement.classList.add('bg-red-100', 'text-red-700');
+    } else {
+        notificationElement.classList.add('bg-green-100', 'text-green-700');
     }
 
-    function showNotification(element, message, isError = false) {
-        if (!element) return;
-        element.textContent = message;
-        element.className = isError ? 'text-red-500 text-sm' : 'text-green-600 text-sm';
-        setTimeout(() => {
-            element.textContent = '';
-        }, 4000);
-    }
+    setTimeout(() => {
+        notificationElement.classList.add('hidden');
+    }, 5000);
+}
 
-    // Kontrol Modal
-    function openModal() {
-        if (editProfileModal) {
-            editProfileModal.classList.remove('hidden');
-            editProfileModal.classList.add('flex', 'items-center', 'justify-center');
+/**
+ * Memuat data profil pengguna saat ini dan menampilkannya di form.
+ */
+async function loadProfileData() {
+    try {
+        console.log('[PROFIL] Memuat data profil...');
+        const response = await fetch('/api/user/profile');
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Gagal mengambil data profil.');
         }
-    }
 
-    function closeModal() {
-        if (editProfileModal) {
-            editProfileModal.classList.add('hidden');
-            editProfileModal.classList.remove('flex', 'items-center', 'justify-center');
-        }
-    }
+        const data = await response.json();
+        console.log('[PROFIL] Data profil:', data);
 
-    // Ambil data profil dan isi form
-    const fetchAndDisplayProfile = async () => {
-        try {
-            const response = await fetch('/api/user/me');
-            if (!response.ok) {
-                await fetch('/logout', { method: 'POST' });
-                window.location.href = '/login';
-                return;
-            }
-            const user = await response.json();
+        if (data.user) {
+            const user = data.user;
 
-            updateProfileDisplays(user);
+            // Gunakan ID yang benar dari profil.html
+            const usernameInput = document.getElementById('username');
+            const namaLengkapInput = document.getElementById('nama_lengkap');
+            const nipInput = document.getElementById('nip');
+            const jabatanInput = document.getElementById('jabatan');
+            const roleInput = document.getElementById('role');
+            const avatarPreview = document.getElementById('foto-preview');
 
-            if (nameInput) nameInput.value = user.name || '';
+            // Isi data ke elemen yang sesuai
+            if (usernameInput) usernameInput.value = user.username || '';
+            if (namaLengkapInput) namaLengkapInput.value = user.name || '';
             if (nipInput) nipInput.value = user.nip || '';
             if (jabatanInput) jabatanInput.value = user.jabatan || '';
-            if (golonganInput) golonganInput.value = user.golongan || '';
-            if (usernameInput) usernameInput.value = user.username || '';
-
-        } catch (error) {
-            console.error('Gagal memuat data profil:', error);
-            await fetch('/logout', { method: 'POST' });
-            window.location.href = '/login';
-        }
-    };
-
-    // Handle submit form profil
-    const handleProfileSubmit = async (e) => {
-        e.preventDefault();
-        if (successMessage) successMessage.textContent = '';
-        if (errorMessage) errorMessage.textContent = '';
-
-        const body = {
-            name: nameInput.value,
-            nip: nipInput.value,
-            jabatan: jabatanInput.value,
-            golongan: golonganInput.value,
-        };
-
-        const password = passwordInput.value;
-        if (password) {
-            body.password = password;
-        }
-
-        try {
-            const response = await fetch('/api/user/me', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-
-            const contentType = response.headers.get('content-type');
-            if (!response.ok) {
-                if (contentType && contentType.includes('application/json')) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Terjadi kesalahan saat menyimpan profil.');
-                } else {
-                    throw new Error(`Gagal menyimpan. Sesi Anda mungkin telah berakhir, silakan login kembali.`);
-                }
+            if (roleInput) roleInput.value = user.role || '';
+            if (avatarPreview) {
+                avatarPreview.src = user.foto_profil ? `/${user.foto_profil}` : '/img/default-avatar.png';
             }
 
-            const result = await response.json();
-
-            showNotification(successMessage, result.message || 'Profil berhasil diperbarui!');
-            updateProfileDisplays(body);
-
-            passwordInput.value = '';
-            closeModal();
-
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            showNotification(errorMessage, error.message, true);
+            // Terapkan aturan UI: Hanya superadmin yang tidak bisa mengubah username-nya.
+            if (user.role === 'superadmin') {
+                if (usernameInput) {
+                    usernameInput.readOnly = true;
+                    usernameInput.classList.add('bg-slate-100', 'cursor-not-allowed');
+                }
+            }
         }
-    };
+    } catch (error) {
+        console.error('[PROFIL] Error saat memuat data:', error);
+        showProfileNotification(error.message, true);
+    }
+}
 
-    // --- Fungsi Inisialisasi Utama ---
-    const init = async () => {
-        try {
-            // 1. Muat komponen dinamis (header & sidebar)
-            await window.App.loadLayout();
+/**
+ * Menginisialisasi semua fungsionalitas di halaman profil.
+ */
+function initializeProfilePage() {
+    console.log('[PROFIL] Inisialisasi halaman profil...');
 
-            // 2. Inisialisasi sidebar dan dropdown
-            await Promise.all([
-                window.App.initializeSidebar(),
-                window.App.initializeSidebarDropdown()
-            ]);
+    const profileForm = document.getElementById('profile-form');
+    const fileInput = document.getElementById('foto_profil');
+    const avatarPreview = document.getElementById('foto-preview');
 
-            // 3. Pilih semua elemen DOM setelah komponen dimuat
-            userNameDisplay = document.getElementById('user-name');
-            editProfileModal = document.getElementById('edit-profile-modal');
-            openModalButton = document.getElementById('open-modal-button');
-            closeModalButton = document.getElementById('close-modal-button');
-            cancelModalButton = document.getElementById('cancel-modal-button');
-            displayName = document.getElementById('display-name');
-            displayNip = document.getElementById('display-nip');
-            displayJabatan = document.getElementById('display-jabatan');
-            displayGolongan = document.getElementById('display-golongan');
-            displayUsername = document.getElementById('display-username');
-            profileForm = document.getElementById('profile-form');
-            nameInput = document.getElementById('name');
-            nipInput = document.getElementById('nip');
-            jabatanInput = document.getElementById('jabatan');
-            golonganInput = document.getElementById('golongan');
-            usernameInput = document.getElementById('username');
-            passwordInput = document.getElementById('password');
-            successMessage = document.getElementById('success-message');
-            errorMessage = document.getElementById('error-message');
+    // 1. Muat data pengguna awal
+    loadProfileData();
 
-            // 4. Pasang event listeners
-            if (openModalButton) openModalButton.addEventListener('click', openModal);
-            if (closeModalButton) closeModalButton.addEventListener('click', closeModal);
-            if (cancelModalButton) cancelModalButton.addEventListener('click', closeModal);
-            if (editProfileModal) editProfileModal.addEventListener('click', (e) => e.target === editProfileModal && closeModal());
-            if (profileForm) profileForm.addEventListener('submit', handleProfileSubmit);
+    // 2. Tambahkan listener untuk pratinjau gambar saat file dipilih
+    if (fileInput && avatarPreview) {
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    avatarPreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
-            // 5. Tandai navigasi aktif
-            if (window.App.setActiveNav) window.App.setActiveNav('nav-setelan-pengguna');
+    // 3. Tambahkan listener untuk submit form
+    if (profileForm) {
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-            // 6. Ambil dan tampilkan data profil awal
-            await fetchAndDisplayProfile();
+            const formData = new FormData(profileForm);
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
 
-            console.log("DIAGNOSTIK: Halaman profil berhasil diinisialisasi.");
+            // Validasi password
+            if (newPassword || confirmPassword) {
+                if (newPassword.length < 6) {
+                    showProfileNotification('Password baru minimal harus 6 karakter.', true);
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showProfileNotification('Konfirmasi password tidak cocok.', true);
+                    return;
+                }
+                formData.append('newPassword', newPassword);
+            }
 
-        } catch (error) {
-            console.error("Gagal menginisialisasi halaman profil:", error);
-        }
-    };
+            try {
+                const response = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    body: formData,
+                });
 
-    // Jalankan aplikasi
-    init();
-});
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan perubahan.');
+                }
+
+                showProfileNotification('Profil berhasil diperbarui!', false);
+
+                // Kosongkan field password
+                document.getElementById('new_password').value = '';
+                document.getElementById('confirm_password').value = '';
+
+                // Muat ulang data
+                loadProfileData();
+
+            } catch (error) {
+                console.error('[PROFIL] Error saat menyimpan:', error);
+                showProfileNotification(error.message, true);
+            }
+        });
+    }
+}
+
+// Jalankan inisialisasi setelah DOM dimuat
+document.addEventListener('DOMContentLoaded', initializeProfilePage);

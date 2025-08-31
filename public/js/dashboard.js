@@ -19,28 +19,11 @@ function showNotification(element, message, isError = false) {
 // Fungsi untuk memuat data spesifik dashboard
 const loadDashboardData = async () => {
     try {
-        // Pilih elemen setelah komponen dijamin telah dimuat
-        const userNameEl = document.getElementById('user-name');
         const totalPerjalananEl = document.getElementById('total-perjalanan');
         const perjalananBulanIniEl = document.getElementById('perjalanan-bulan-ini');
 
-        // Jalankan kedua fetch secara paralel untuk efisiensi
-        const [userResponse, statsResponse] = await Promise.all([
-            fetch('/api/user/me'),
-            fetch('/api/dashboard/stats')
-        ]);
-
-        // Handle otentikasi pengguna
-        if (!userResponse.ok) {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            window.location.href = '/login';
-            return;
-        }
-
-        const user = await userResponse.json();
-        if (userNameEl) {
-            userNameEl.textContent = user.name;
-        }
+        // Ambil data statistik dashboard
+        const statsResponse = await fetch('/api/dashboard/stats');
 
         // Handle statistik
         if (!statsResponse.ok) {
@@ -48,8 +31,8 @@ const loadDashboardData = async () => {
         }
 
         const stats = await statsResponse.json();
-        if (totalPerjalananEl) totalPerjalananEl.textContent = stats.totalSpt ?? '0';
-        if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = stats.sptBulanIni ?? '0';
+        if (totalPerjalananEl) totalPerjalananEl.textContent = stats.totalPerjalanan ?? '0';
+        if (perjalananBulanIniEl) perjalananBulanIniEl.textContent = stats.perjalananBulanIni ?? '0';
 
     } catch (error) {
         console.error('Gagal memuat data dashboard:', error);
@@ -62,34 +45,6 @@ const loadDashboardData = async () => {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Fungsi Inisialisasi Utama ---
-    const init = async () => {
-        try {
-            // 1. Muat dan inisialisasi layout utama (header & sidebar)
-            await window.App.loadLayout();
-
-            // 2. Jalankan inisialisasi komponen setelah layout dimuat
-            await Promise.all([
-                window.App.initializeSidebar(),
-                window.App.initializeSidebarDropdown()
-            ]);
-
-            // 3. Tandai navigasi aktif untuk halaman ini
-            if (window.App.setActiveNav) {
-                window.App.setActiveNav('nav-dashboard');
-            }
-
-            // 4. Muat data spesifik untuk halaman dashboard
-            await loadDashboardData();
-
-            console.log("DIAGNOSTIK: Dashboard berhasil diinisialisasi.");
-
-        } catch (error) {
-            console.error('Gagal menginisialisasi dashboard:', error);
-        }
-    };
-
-    // Jalankan aplikasi
-    init();
-});
+// Panggil fungsi utama secara langsung.
+// Skrip ini sekarang dimuat oleh main1.js setelah DOM dan sesi siap.
+loadDashboardData();

@@ -1,62 +1,100 @@
-const db = require('../database.js');
-const bcrypt = require('bcryptjs');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const bcrypt = require('bcryptjs'); // Diperlukan untuk hash password superadmin
 
-const saltRounds = 10;
+const DB_PATH = path.join(__dirname, 'perjadin.db'); // Menggunakan perjadin.db yang sudah ada
 
-// --- Konfigurasi Pengguna Default ---
-// Untuk keamanan di lingkungan produksi, password ini HARUS diatur melalui environment variable.
-const superAdminPassword = process.env.SUPERADMIN_PASSWORD || 'superadmin';
-const superAdminUsername = 'superadmin';
-const superAdminName = 'Super Administrator';
-
-console.log('Menjalankan skrip setup database...');
-
-db.serialize(() => {
-    // Hapus tabel lama jika ada untuk memastikan skema baru diterapkan
-    db.run('DROP TABLE IF EXISTS users', (err) => {
-        if (err) {
-            return console.error("Gagal menghapus tabel users lama:", err.message);
-        }
-        console.log("Tabel users lama (jika ada) berhasil dihapus.");
-
-        // Buat tabel users dengan semua kolom yang diperlukan
-        const createUserTableSql = `
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL,
-            nip TEXT,
-            jabatan TEXT,
-            golongan TEXT
-        );
-        `;
-
-        db.run(createUserTableSql, (err) => {
-            if (err) {
-                return console.error("Gagal membuat tabel users:", err.message);
-            }
-            console.log("Tabel users berhasil dibuat dengan skema baru.");
-
-            // Masukkan pengguna superadmin default
-            bcrypt.hash(superAdminPassword, saltRounds, (err, hash) => {
+const db = new sqlite3.Database(DB_PATH, (err) => {
+    if (err) {
+        console.error('Error connecting to database:', err.message);
+    } else {
+        console.log('Connected to the perjadin database.');
+        db.serialize(() => {
+            // Create users table
+            db.run(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    username TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL,
+                    role TEXT DEFAULT 'user'
+                )
+            `, (err) => {
                 if (err) {
-                    return console.error("Gagal melakukan hash password:", err);
-                }
-                const insertUserSql = `INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)`;
-                db.run(insertUserSql, [superAdminName, superAdminUsername, hash, 'superadmin'], (err) => {
-                    if (err) {
-                        return console.error("Gagal memasukkan superadmin:", err.message);
-                    }
-                    console.log(`Pengguna default 'superadmin' berhasil dibuat dengan password: '${superAdminPassword}'.`);
-                    // TUTUP KONEKSI DI SINI: Setelah operasi terakhir selesai.
-                    db.close((err) => {
-                        if (err) return console.error(err.message);
-                        console.log('Koneksi database ditutup. Setup selesai.');
+                    console.error('Error creating users table:', err.message);
+                } else {
+                    console.log('Users table created or already exists.');
+                    // Add a default superadmin user if not exists
+                    db.get("SELECT COUNT(*) as count FROM users WHERE username = 'superadmin'", (err, row) => {
+                        if (err) {
+                            console.error('Error checking superadmin:', err.message);
+                        } else if (row.count === 0) {
+                            const hashedPassword = bcrypt.hashSync('superadminpass', 10); // Ganti dengan password yang lebih kuat
+                            db.run("INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)",
+                                ['Super Admin', 'superadmin', hashedPassword, 'superadmin'],
+                                (err) => {
+                                    if (err) {
+                                        console.error('Error inserting superadmin:', err.message);
+                                    } else {
+                                        console.log('Default superadmin user created.');
+                                    }
+                                });
+                        }
                     });
-                });
+                }
+            });
+
+            // Create sppd table
+            db.run(`
+                CREATE TABLE IF NOT EXISTS sppd (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nomor_surat TEXT NOT NULL,
+                    nama_pegawai TEXT NOT NULL,
+                    nip TEXT NOT NULL,
+                    pangkat_golongan TEXT,
+                    jabatan TEXT NOT NULL,
+                    maksud_perjalanan TEXT NOT NULL,
+                    tempat_tujuan TEXT NOT NULL,
+                    lama_perjalanan INTEGER NOT NULL,
+                    tanggal_berangkat TEXT NOT NULL,
+                    tanggal_kembali TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating sppd table:', err.message);
+                } else {
+                    console.log('SPPD table created or already exists.');
+                }
+            });
+
+            // Create pegawai table (NEW)
+            db.run(`
+                CREATE TABLE IF NOT EXISTS pegawai (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nama_lengkap TEXT NOT NULL,
+                    nip TEXT NOT NULL UNIQUE,
+                    pangkat TEXT,
+                    golongan TEXT,
+                    jabatan TEXT NOT NULL,
+                    bidang TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            `, (err) => {
+                if (err) {
+                    console.error('Error creating pegawai table:', err.message);
+                } else {
+                    console.log('Pegawai table created or already exists.');
+                }
+            });
+
+            db.close((err) => {
+                if (err) {
+                    console.error('Error closing database:', err.message);
+                } else {
+                    console.log('Database connection closed.');
+                }
             });
         });
-    });
+    }
 });

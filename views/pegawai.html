@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Pegawai - Aplikasi Perjadin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        /* Re-use styles from dashboard.html for consistency */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        /* Style for the modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            /* Sedikit lebih gelap untuk kontras */
+            z-index: 1000;
+            overflow-y: auto;
+            /* Memungkinkan seluruh overlay untuk scroll */
+            padding: 2rem 1rem;
+            /* Memberi ruang di atas dan samping */
+        }
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content will be loaded here -->
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content will be loaded here -->
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pegawai</h2>
+                <button id="add-pegawai-button"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Tambah Pegawai
+                </button>
+            </div>
+
+            <!-- Employee List Container -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div id="pegawai-list-container" class="space-y-4">
+                    <!-- Employee list will be rendered here by JavaScript -->
+                    <p class="text-gray-500">Memuat data pegawai...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Pegawai Modal -->
+    <div id="pegawai-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                <h3 class="text-xl font-semibold text-white">Tambah Data Pegawai</h3>
+                <button id="close-modal-button" class="text-gray-300 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- Modal Body (scrollable content) -->
+            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+                <form id="pegawai-form">
+                    <input type="hidden" id="pegawai-id">
+                    <div>
+                        <label for="nama_lengkap" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                        <input type="text" id="nama_lengkap" name="nama_lengkap" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="nip" class="block text-sm font-medium text-gray-700">NIP</label>
+                        <input type="text" id="nip" name="nip" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="pangkat" class="block text-sm font-medium text-gray-700">Pangkat</label>
+                        <input type="text" id="pangkat" name="pangkat"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="golongan" class="block text-sm font-medium text-gray-700">Golongan</label>
+                        <input type="text" id="golongan" name="golongan"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <input type="text" id="jabatan" name="jabatan" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="bidang" class="block text-sm font-medium text-gray-700">Bidang</label>
+                        <input type="text" id="bidang" name="bidang"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                </form>
+                <!-- Notification area -->
+                <div id="form-notification" class="hidden text-sm p-2 rounded-md"></div>
+            </div>
+            <!-- Modal Footer -->
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                <button id="cancel-button" type="button"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
+                <button type="submit" form="pegawai-form"
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/header-logic.js"></script>
+    <script src="/js/main1.js"></script>
+    <script src="/js/pegawai.js"></script>
+    <script src="/js/sidebar.js"></script>
+</body>
+
+</html>

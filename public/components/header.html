@@ -1,26 +1,32 @@
-<!-- Konten Header -->
-<div class="flex items-center justify-between h-16 px-4 bg-white shadow-md">
-    <!-- Tombol Menu (Hamburger) untuk membuka sidebar -->
-    <button id="header-menu-button"
-        class="p-2 text-gray-500 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+<div class="bg-white shadow-sm p-4 flex justify-between items-center">
+    <!-- Tombol Toggle Sidebar -->
+    <button id="sidebar-toggle" class="text-gray-600 hover:text-gray-800 focus:outline-none min-lg:hidden">
+        <i class="fas fa-bars text-xl"></i>
     </button>
+    <div class="flex-grow"></div>
 
-    <!-- Spacer -->
-    <div class="flex-1"></div>
-
-    <!-- User Profile (Placeholder) -->
-    <div class="flex items-center">
-        <span id="user-name" class="hidden mr-3 text-gray-700 md:block">...</span>
-        <button id="user-menu-button"
-            class="flex items-center p-2 text-gray-500 rounded-full hover:bg-gray-200 focus:outline-none">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <!-- Menu Pengguna -->
+    <div class="relative">
+        <button id="user-menu-button" class="flex items-center space-x-3 focus:outline-none">
+            <img id="user-avatar" src="/img/Gambarprofil.png" alt="User Avatar"
+                class="w-9 h-9 rounded-full object-cover border-2 border-gray-200">
+            <div class="text-left hidden md:block">
+                <div id="user-name" class="font-semibold text-sm text-gray-700">Memuat...</div>
+                <div id="user-role" class="text-xs text-gray-500">...</div>
+            </div>
+            <i class="fas fa-chevron-down text-xs text-gray-400"></i>
         </button>
+
+        <!-- Dropdown Menu -->
+        <div id="user-menu"
+            class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+            <a href="/profil" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-user mr-2"></i>Profil Saya
+            </a>
+            <a href="/api/auth/logout" id="logout-button"
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </a>
+        </div>
     </div>
 </div>

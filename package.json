@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "concurrently \"nodemon server.js\" \"npm run watch:css\"",
     "setup-db": "node database/setup.js",
     "build:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css",
     "watch:css": "tailwindcss -i ./public/css/input.css -o ./public/css/output.css --watch"
@@ -18,10 +18,12 @@
     "connect-sqlite3": "^0.9.16",
     "express": "^4.19.2",
     "express-session": "^1.18.2",
+    "multer": "^2.0.2",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.4",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3"

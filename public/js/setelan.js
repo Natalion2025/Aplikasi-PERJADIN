@@ -1,21 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     const init = async () => {
         try {
-            // 1. Muat dan inisialisasi layout utama (header & sidebar)
-            await window.App.loadLayout();
+            // Tunggu header dan sidebar selesai dimuat
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            // 2. Jalankan inisialisasi komponen setelah layout dimuat
-            await Promise.all([
-                window.App.initializeSidebar(),
-                window.App.initializeSidebarDropdown()
-            ]);
-
-            // 3. Tandai navigasi aktif untuk halaman ini
-            if (window.App.setActiveNav) {
-                window.App.setActiveNav('nav-setelan-pengguna');
+            // Tandai navigasi aktif
+            const navSetelan = document.getElementById('nav-setelan-pengguna');
+            if (navSetelan) {
+                navSetelan.classList.add('bg-blue-700');
             }
 
-            console.log("DIAGNOSTIK: Halaman setelan berhasil diinisialisasi.");
+            console.log("Halaman setelan berhasil diinisialisasi.");
 
         } catch (error) {
             console.error("Gagal menginisialisasi halaman setelan:", error);

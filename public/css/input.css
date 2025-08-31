@@ -1,29 +1,3 @@
-/* public/css/input.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@layer components {
-  /* Untuk animasi dropdown yang mulus */
-  .dropdown-menu {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-in-out;
-  }
-
-  /* Styling untuk link navigasi yang aktif */
-  .menu-item.active {
-    @apply bg-white font-semibold text-indigo-600;
-  }
-
-  /* Memastikan ikon di dalam link aktif juga ikut berubah warna */
-  .menu-item.active svg {
-    @apply text-indigo-600;
-  }
-
-  /* Aturan khusus agar latar belakang tombol dropdown yang aktif tetap transparan,
-     sehingga tidak terlalu mencolok. */
-  .menu-item.active.dropdown-toggle {
-    @apply bg-transparent;
-  }
-}

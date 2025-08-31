@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Aplikasi - Aplikasi Perjadin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        /* Saat sidebar terlihat, geser konten utama di semua ukuran layar */
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        /* Custom styles for the toggle switch */
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #4f46e5;
+            /* indigo-600 */
+        }
+
+        .toggle-checkbox:checked+.toggle-label .toggle-ball {
+            transform: translateX(100%);
+        }
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content akan dimuat di sini -->
+    </aside>
+
+    <!-- Konten utama -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content akan dimuat di sini -->
+        </header>
+
+        <!-- Konten Pengaturan -->
+        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Pengaturan Aplikasi</h2>
+
+            <div id="settings-notification" class="hidden p-4 mb-4 text-sm rounded-lg" role="alert">
+                <!-- Pesan notifikasi akan muncul di sini -->
+            </div>
+
+            <form id="settings-form" class="space-y-8">
+                <!-- Bagian Tampilan -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 border-b pb-4 mb-6">Tampilan</h3>
+                    <div class="space-y-6">
+                        <!-- Mode Aplikasi (Dark/Light) -->
+                        <div class="flex items-center justify-between">
+                            <label for="dark-mode-toggle" class="text-gray-700 font-medium">Mode Gelap (Dark
+                                Mode)</label>
+                            <div
+                                class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="darkMode" id="dark-mode-toggle"
+                                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                                <label for="dark-mode-toggle"
+                                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                <div
+                                    class="toggle-ball absolute left-0 top-0 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-200 ease-in">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ukuran Font -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2">Ukuran Font</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center">
+                                    <input id="font-sm" name="fontSize" type="radio" value="sm"
+                                        class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                    <label for="font-sm" class="ml-2 block text-sm text-gray-900">Kecil</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input id="font-base" name="fontSize" type="radio" value="base"
+                                        class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                    <label for="font-base" class="ml-2 block text-sm text-gray-900">Normal</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input id="font-lg" name="fontSize" type="radio" value="lg"
+                                        class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                    <label for="font-lg" class="ml-2 block text-sm text-gray-900">Besar</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian Bahasa & Regional -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 border-b pb-4 mb-6">Bahasa & Regional</h3>
+                    <div class="max-w-sm">
+                        <label for="language" class="block text-gray-700 font-medium mb-2">Bahasa</label>
+                        <select id="language" name="language"
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="id">Bahasa Indonesia</option>
+                            <option value="en">English</option>
+                            <option value="zh">Mandarin (中文)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi -->
+                <div class="flex justify-end pt-4">
+                    <button type="submit"
+                        class="bg-dark-navy hover:bg-dark-blue text-white font-bold py-2 px-6 rounded-lg transition duration-300 ease-in-out">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="/js/main1.js"></script>
+    <script src="/js/header-logic.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script src="/js/pengaturan-aplikasi.js"></script>
+</body>
+
+</html>
