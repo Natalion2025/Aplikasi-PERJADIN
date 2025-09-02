@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="/css/output.css" rel="stylesheet">
     <style>
-        /* Re-use styles from dashboard.html for consistency */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -44,9 +43,9 @@
             z-index: 30;
         }
 
-        .rotate-180 {
+        /*.rotate-180 {
             transform: rotate(180deg);
-        }
+        }*/
 
         /* Style for the modal */
         .modal-overlay {
@@ -90,6 +89,12 @@
                 </button>
             </div>
 
+            <!-- ================================================== -->
+            <!-- ▼▼▼ PASTIKAN BLOK KODE INI ADA DI HALAMAN ANDA ▼▼▼ -->
+            <div id="page-notification" role="alert" class="hidden p-4 mb-4 text-sm rounded-lg"></div>
+            <!-- ▲▲▲ AKHIR BLOK KODE ▲▲▲ -->
+            <!-- ================================================== -->
+
             <!-- Employee List Container -->
             <div class="bg-white p-6 rounded-lg shadow-md">
                 <div id="pegawai-list-container" class="space-y-4">
@@ -126,13 +131,32 @@
                     </div>
                     <div>
                         <label for="pangkat" class="block text-sm font-medium text-gray-700">Pangkat</label>
-                        <input type="text" id="pangkat" name="pangkat"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        <select id="pangkat" name="pangkat"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            <option value="">Pilih Pangkat</option>
+                            <option value="Juru Muda">Juru Muda</option>
+                            <option value="Juru Muda Tingkat I">Juru Muda Tingkat I</option>
+                            <option value="Juru">Juru</option>
+                            <option value="Juru Tingkat I">Juru Tingkat I</option>
+                            <option value="Pengatur Muda">Pengatur Muda</option>
+                            <option value="Pengatur Muda Tingkat I">Pengatur Muda Tingkat I</option>
+                            <option value="Pengatur">Pengatur</option>
+                            <option value="Pengatur Tingkat I">Pengatur Tingkat I</option>
+                            <option value="Penata Muda">Penata Muda</option>
+                            <option value="Penata Muda Tingkat I">Penata Muda Tingkat I</option>
+                            <option value="Penata">Penata</option>
+                            <option value="Penata Tingkat I">Penata Tingkat I</option>
+                            <option value="Pembina">Pembina</option>
+                            <option value="Pembina Tingkat I">Pembina Tingkat I</option>
+                            <option value="Pembina Utama Muda">Pembina Utama Muda</option>
+                            <option value="Pembina Utama Madya">Pembina Utama Madya</option>
+                            <option value="Pembina Utama">Pembina Utama</option>
+                        </select>
                     </div>
                     <div>
                         <label for="golongan" class="block text-sm font-medium text-gray-700">Golongan</label>
-                        <input type="text" id="golongan" name="golongan"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        <input type="text" id="golongan" name="golongan" readonly
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 bg-slate-100 cursor-not-allowed">
                     </div>
                     <div>
                         <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>

@@ -9,97 +9,87 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 40;
-        }
-
-        .overlay.visible {
-            display: block;
+            margin: 0;
+            padding: 0;
         }
 
         .sidebar {
-            transform: translateX(-100%);
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
             z-index: 50;
-            transition: transform 0.3s ease-in-out;
-        }
-
-        @media (min-width: 993px) {
-            .sidebar {
-                transform: translateX(0);
-            }
-
-            .overlay {
-                display: none !important;
-            }
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
         }
 
         .sidebar.visible {
-            transform: translateX(0);
+            left: 0;
+        }
+
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
         }
 
         .main-content {
             transition: margin-left 0.3s ease-in-out;
         }
 
-        .sidebar-hidden .main-content {
-            margin-left: 0;
-            width: 100%;
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
         }
 
-        .sidebar-visible .main-content {
-            margin-left: 280px;
-            width: calc(100% - 280px);
-        }
-
-        @media (max-width: 992px) {
-            .sidebar-visible .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            /* Sedikit lebih gelap untuk kontras */
+            z-index: 1000;
+            overflow-y: auto;
+            /* Memungkinkan seluruh overlay untuk scroll */
+            padding: 2rem 1rem;
+            /* Memberi ruang di atas dan samping */
         }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 
-<body class="bg-slate-50 sidebar-hidden">
-    <!-- Overlay untuk mobile -->
-    <div class="overlay" id="overlay"></div>
+<body class="bg-slate-50">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content will be loaded here -->
+    </aside>
 
-    <!-- Kontainer utama -->
-    <div class="flex h-screen bg-gray-200">
-        <!-- Sidebar -->
-        <div id="sidebar-container"></div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content will be loaded here -->
+        </header>
 
-        <!-- Konten utama -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Header -->
-            <div id="header-container"></div>
-
-            <!-- Konten -->
-            <div class="flex-1 overflow-hidden main-content">
-                <main id="main-content" class="h-full overflow-y-auto p-8 bg-[#f5f9fc]">
-                    <h2 class="text-2xl font-semibold text-gray-700">Buat Surat Perintah Tugas (SPT) Baru</h2>
-                    <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Formulir SPT</h3>
-                        <p class="text-gray-500">Halaman ini sedang dalam pengembangan.</p>
-                    </div>
-                </main>
-            </div>
-        </div>
+        <!-- Page Content -->
+        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-700">Buat Surat Perintah Tugas (SPT) Baru</h2>
+                <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Formulir SPT</h3>
+                    <p class="text-gray-500">Halaman ini sedang dalam pengembangan.</p>
+                </div>
+        </main>
+    </div>
+    </div>
     </div>
 
     <script src="/js/header-logic.js"></script>
-    <script src="../public/js/main1.js"></script>
-    <script src="../public/js/tambah-spt.js"></script>
+    <script src="/js/main1.js"></script>
+    <script src="/js/tambah-spt.js"></script>
+    <script src="/js/sidebar.js"></script>
 </body>
 
 </html>
