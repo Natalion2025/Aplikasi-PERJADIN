@@ -82,11 +82,17 @@
         <!-- Page Content -->
         <main class="p-8 bg-[#f5f9fc] min-h-screen">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pegawai</h2>
-                <button id="add-pegawai-button"
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Tambah Pegawai
-                </button>
+                <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pejabat & Pegawai</h2>
+                <div class="flex space-x-2">
+                    <button id="add-pejabat-button"
+                        class="bg-sky-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-700 transition-colors">
+                        <i class="fas fa-user-tie mr-2"></i>Tambah Kepala/WK Daerah
+                    </button>
+                    <button id="add-pegawai-button"
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Tambah Pegawai
+                    </button>
+                </div>
             </div>
 
             <!-- ================================================== -->
@@ -95,14 +101,63 @@
             <!-- ▲▲▲ AKHIR BLOK KODE ▲▲▲ -->
             <!-- ================================================== -->
 
+            <!-- Pejabat List Container -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Daftar Kepala / Wakil Kepala Daerah</h3>
+                <div id="pejabat-list-container" class="space-y-4">
+                    <!-- Pejabat list will be rendered here by JavaScript -->
+                    <p class="text-gray-500">Memuat data pejabat...</p>
+                </div>
+            </div>
+
             <!-- Employee List Container -->
             <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Daftar Pegawai</h3>
                 <div id="pegawai-list-container" class="space-y-4">
                     <!-- Employee list will be rendered here by JavaScript -->
                     <p class="text-gray-500">Memuat data pegawai...</p>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add/Edit Pejabat Modal -->
+    <div id="pejabat-modal" class="modal-overlay hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                <h3 id="pejabat-modal-title" class="text-xl font-semibold text-white">Tambah Kepala/WK Daerah</h3>
+                <button id="close-pejabat-modal-button" class="text-gray-300 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- Modal Body (scrollable content) -->
+            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+                <form id="pejabat-form">
+                    <input type="hidden" id="pejabat-id">
+                    <div>
+                        <label for="pejabat_nama_lengkap" class="block text-sm font-medium text-gray-700">Nama
+                            Lengkap</label>
+                        <input type="text" id="pejabat_nama_lengkap" name="nama" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                    <div class="mt-4">
+                        <label for="pejabat_jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <input type="text" id="pejabat_jabatan" name="jabatan" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                </form>
+                <!-- Notification area -->
+                <div id="pejabat-form-notification" class="hidden text-sm p-2 rounded-md"></div>
+            </div>
+            <!-- Modal Footer -->
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                <button id="cancel-pejabat-button" type="button"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                <button type="submit" form="pejabat-form"
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+            </div>
+        </div>
     </div>
 
     <!-- Add/Edit Pegawai Modal -->
@@ -118,10 +173,11 @@
             <!-- Modal Body (scrollable content) -->
             <div class="flex-grow p-6 space-y-4 overflow-y-auto">
                 <form id="pegawai-form">
-                    <input type="hidden" id="pegawai-id">
+                    <input type="hidden" id="pegawai-id" name="id">
                     <div>
-                        <label for="nama_lengkap" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                        <input type="text" id="nama_lengkap" name="nama_lengkap" required
+                        <label for="pegawai_nama_lengkap" class="block text-sm font-medium text-gray-700">Nama
+                            Lengkap</label>
+                        <input type="text" id="pegawai_nama_lengkap" name="nama_lengkap" required
                             class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                     <div>

@@ -49,7 +49,7 @@ router.get('/:id', async (req, res) => {
 
 // POST: Menambah pegawai baru
 router.post('/', async (req, res) => {
-    // Ambil semua data dari body, termasuk pangkat dan golongan
+    // PERBAIKAN: Gunakan nama_lengkap yang konsisten
     const { nama_lengkap, nip, pangkat, golongan, jabatan, bidang } = req.body;
 
     // Validasi dasar
@@ -78,7 +78,7 @@ router.post('/', async (req, res) => {
 // PUT: Memperbarui data pegawai
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    // Ambil semua data dari body
+    // PERBAIKAN: Gunakan nama_lengkap yang konsisten
     const { nama_lengkap, nip, pangkat, golongan, jabatan, bidang } = req.body;
 
     // Validasi dasar

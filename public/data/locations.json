@@ -1,0 +1,74 @@
+[
+    {
+        "group": "Kabupaten/Kota di Kalimantan Barat",
+        "locations": [
+            "Kabupaten Bengkayang",
+            "Kabupaten Kapuas Hulu",
+            "Kabupaten Kayong Utara",
+            "Kabupaten Ketapang",
+            "Kabupaten Kubu Raya",
+            "Kabupaten Landak",
+            "Kabupaten Melawi",
+            "Kabupaten Mempawah",
+            "Kabupaten Sambas",
+            "Kabupaten Sanggau",
+            "Kabupaten Sekadau",
+            "Kabupaten Sintang",
+            "Kota Pontianak",
+            "Kota Singkawang"
+        ]
+    },
+    {
+        "group": "Jabodetabek & Sekitarnya",
+        "locations": [
+            "Kota Jakarta Barat",
+            "Kota Jakarta Pusat",
+            "Kota Jakarta Selatan",
+            "Kota Jakarta Timur",
+            "Kota Jakarta Utara",
+            "Kabupaten Kepulauan Seribu",
+            "Kota Bogor",
+            "Kabupaten Bogor",
+            "Kota Depok",
+            "Kota Tangerang",
+            "Kabupaten Tangerang",
+            "Kota Tangerang Selatan",
+            "Kota Bekasi",
+            "Kabupaten Bekasi"
+        ]
+    },
+    {
+        "group": "Kota Besar di Indonesia",
+        "locations": [
+            "Surabaya",
+            "Bandung",
+            "Medan",
+            "Semarang",
+            "Makassar",
+            "Palembang",
+            "Denpasar",
+            "Yogyakarta",
+            "Banjarmasin",
+            "Balikpapan",
+            "Manado",
+            "Pekanbaru",
+            "Padang"
+        ]
+    },
+    {
+        "group": "Kecamatan di Kabupaten Melawi",
+        "locations": [
+            "Belimbing",
+            "Belimbing Hulu",
+            "Ella Hilir",
+            "Menukung",
+            "Nanga Pinoh",
+            "Pinoh Selatan",
+            "Pinoh Utara",
+            "Sayan",
+            "Sokan",
+            "Tanah Pinoh",
+            "Tanah Pinoh Barat"
+        ]
+    }
+]

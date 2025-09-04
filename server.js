@@ -18,6 +18,18 @@ const PORT = process.env.PORT || 3000;
 // Impor koneksi database terpusat dari file database.js
 const db = require('./database.js');
 
+// Pastikan tabel 'pejabat' ada saat server dimulai
+db.run(`CREATE TABLE IF NOT EXISTS pejabat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama TEXT NOT NULL,
+    jabatan TEXT NOT NULL
+)`, (err) => {
+    if (err) {
+        // Log error jika gagal membuat tabel, tapi jangan hentikan server
+        console.error("Error creating 'pejabat' table:", err.message);
+    }
+});
+
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
 const dbAll = util.promisify(db.all.bind(db));
@@ -209,7 +221,95 @@ app.get('/', (req, res) => {
 
 // Gunakan rute yang sudah diimpor
 app.use('/api/auth', authRoutes);
+
+// Middleware "pembersih" untuk rute pegawai.
+// Ini memastikan bahwa data nama yang masuk ke API selalu konsisten (menggunakan properti 'nama').
+// Ini akan memperbaiki masalah di mana frontend mungkin mengirim 'nama_lengkap' sementara backend mengharapkan 'nama'.
+app.use('/api/pegawai', (req, res, next) => {
+    if (req.body && req.body.nama_lengkap && !req.body.nama) {
+        req.body.nama = req.body.nama_lengkap;
+    }
+    next();
+});
+
 app.use('/api/pegawai', isApiAuthenticated, pegawaiRoutes); // Daftarkan rute pegawai
+
+// --- API routes for Pejabat (Kepala/WK Daerah) ---
+
+// GET all pejabat
+app.get('/api/pejabat', isApiAuthenticated, async (req, res) => {
+    try {
+        const rows = await dbAll("SELECT * FROM pejabat ORDER BY id", []);
+        res.json(rows);
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data pejabat:', err);
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// GET single pejabat by id
+app.get('/api/pejabat/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const row = await dbGet("SELECT * FROM pejabat WHERE id = ?", [req.params.id]);
+        if (!row) {
+            return res.status(404).json({ message: "Data pejabat tidak ditemukan." });
+        }
+        res.json(row);
+    } catch (err) {
+        console.error(`[API ERROR] Gagal mengambil pejabat id ${req.params.id}:`, err);
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// POST a new pejabat
+app.post('/api/pejabat', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { nama, jabatan } = req.body;
+    if (!nama || !jabatan) {
+        return res.status(400).json({ message: 'Nama dan Jabatan wajib diisi.' });
+    }
+    try {
+        const sql = 'INSERT INTO pejabat (nama, jabatan) VALUES (?, ?)';
+        const result = await runQuery(sql, [nama, jabatan]);
+        res.status(201).json({ id: result.lastID, nama, jabatan });
+    } catch (err) {
+        console.error('[API ERROR] Gagal menambah pejabat:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT (update) a pejabat
+app.put('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { nama, jabatan } = req.body;
+    if (!nama || !jabatan) {
+        return res.status(400).json({ message: 'Nama dan Jabatan wajib diisi.' });
+    }
+    try {
+        const sql = 'UPDATE pejabat SET nama = ?, jabatan = ? WHERE id = ?';
+        const result = await runQuery(sql, [nama, jabatan, req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data pejabat tidak ditemukan.' });
+        }
+        res.json({ id: req.params.id, nama, jabatan });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal memperbarui pejabat id ${req.params.id}:`, err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// DELETE a pejabat
+app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    try {
+        const sql = 'DELETE FROM pejabat WHERE id = ?';
+        const result = await runQuery(sql, [req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data pejabat tidak ditemukan.' });
+        }
+        res.json({ message: 'Data pejabat berhasil dihapus' });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal menghapus pejabat id ${req.params.id}:`, err);
+        res.status(500).json({ message: err.message });
+    }
+});
 
 // Rute untuk mendapatkan data sesi pengguna saat ini (PENTING: letakkan di sini)
 // Ganti endpoint /api/user/session di server.js

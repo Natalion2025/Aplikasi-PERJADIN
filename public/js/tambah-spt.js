@@ -1,57 +1,158 @@
-// Fungsi untuk menampilkan notifikasi
-function showNotification(message, isError = false) {
-    // Buat elemen notifikasi sederhana
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${isError ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-        }`;
-    notification.textContent = message;
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('form-spt');
+    if (!form) return;
 
-    document.body.appendChild(notification);
+    const tanggalBerangkatInput = document.getElementById('tanggal_berangkat');
+    const tanggalKembaliInput = document.getElementById('tanggal_kembali');
+    const lamaPerjalananInput = document.getElementById('lama_perjalanan');
+    const tambahPegawaiBtn = document.getElementById('tambah-pegawai');
+    const pegawaiContainer = document.getElementById('pegawai-container');
+    const pejabatSelect = document.getElementById('pejabat_pemberi_tugas');
 
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
+    // --- Fungsi untuk menghitung lama perjalanan ---
+    function calculateDuration() {
+        const startDate = tanggalBerangkatInput.value;
+        const endDate = tanggalKembaliInput.value;
 
-// Fungsi untuk memuat data user
-const loadUserData = async () => {
-    const userNameElement = document.getElementById('user-name');
-    try {
-        const response = await fetch('/api/user/me');
-        if (response && response.ok) {
-            const user = await response.json();
-            if (userNameElement) userNameElement.textContent = user.name || 'Pengguna';
-        } else if (response) {
-            console.error('Sesi tidak valid, mengalihkan ke halaman login.');
-            window.location.href = '/login';
-        }
-    } catch (error) {
-        console.error('Terjadi kesalahan saat memuat data pengguna:', error);
-        if (userNameElement) userNameElement.textContent = 'Error';
-    }
-};
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
 
-document.addEventListener('DOMContentLoaded', () => {
-    const init = async () => {
-        try {
-            // Tunggu header dan sidebar selesai dimuat
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Muat data user
-            await loadUserData();
-
-            // Tandai navigasi aktif
-            const navTambahSpt = document.getElementById('nav-tambah-spt');
-            if (navTambahSpt) {
-                navTambahSpt.classList.add('bg-blue-700');
+            if (end < start) {
+                lamaPerjalananInput.value = '';
+                alert('Tanggal kembali tidak boleh sebelum tanggal berangkat.');
+                tanggalKembaliInput.value = '';
+                return;
             }
 
-            console.log("Halaman tambah SPT berhasil diinisialisasi.");
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Termasuk hari berangkat dan kembali
+            lamaPerjalananInput.value = diffDays;
+        } else {
+            lamaPerjalananInput.value = '';
+        }
+    }
+
+    tanggalBerangkatInput.addEventListener('change', calculateDuration);
+    tanggalKembaliInput.addEventListener('change', calculateDuration);
+
+    // --- Fungsi untuk inisialisasi dropdown lokasi tujuan ---
+    async function initializeLocationSelect() {
+        try {
+            const response = await fetch('/data/locations.json');
+            if (!response.ok) throw new Error('Gagal memuat data lokasi.');
+            const locationGroups = await response.json();
+
+            const options = [];
+            const optgroups = [];
+
+            locationGroups.forEach(group => {
+                optgroups.push({ id: group.group, name: group.group });
+                group.locations.forEach(location => {
+                    options.push({ value: location, text: location, optgroup: group.group });
+                });
+            });
+
+            new TomSelect('#lokasi_tujuan', {
+                create: true, // Izinkan pengguna membuat opsi baru (mengetik lokasi yang tidak ada di daftar)
+                sortField: {
+                    field: "text",
+                    direction: "asc"
+                },
+                options: options,
+                optgroups: optgroups
+            });
+        } catch (error) {
+            console.error("Error initializing location select:", error);
+        }
+    }
+
+    // --- Fungsi untuk memuat data pegawai dan pejabat ---
+    async function loadOptions() {
+        try {
+            // Ambil data pejabat dan pegawai secara bersamaan untuk efisiensi
+            const [pejabatResponse, pegawaiResponse] = await Promise.all([
+                fetch('/api/pejabat'),
+                fetch('/api/pegawai')
+            ]);
+
+            if (!pejabatResponse.ok) throw new Error('Gagal memuat data pejabat.');
+            if (!pegawaiResponse.ok) throw new Error('Gagal memuat data pegawai.');
+
+            const pejabatDaerah = await pejabatResponse.json();
+            const semuaPegawai = await pegawaiResponse.json();
+
+            // 1. Siapkan data untuk dropdown "Pejabat Pemberi Tugas"
+            const sekda = semuaPegawai.find(p => p.jabatan && p.jabatan.toLowerCase() === 'sekretaris daerah');
+            const pemberiTugas = [...pejabatDaerah];
+            if (sekda) {
+                // Tambahkan sekda ke daftar pemberi tugas jika ditemukan
+                // Pastikan nama yang valid (dari 'nama' atau 'nama_lengkap') disalin
+                pemberiTugas.push({
+                    id: sekda.id,
+                    nama: sekda.nama || sekda.nama_lengkap,
+                    jabatan: sekda.jabatan
+                });
+            }
+
+            const pemberiTugasOptions = pemberiTugas
+                // Gunakan 'p.nama || p.nama_lengkap' untuk memastikan nama selalu ada
+                .map(p => `<option value="${p.id}">${p.nama || p.nama_lengkap} - ${p.jabatan}</option>`)
+                .join('');
+            pejabatSelect.innerHTML += pemberiTugasOptions;
+
+            // 2. Siapkan data untuk dropdown "Pegawai yang Diberi Tugas" (kecualikan sekda)
+            const pegawaiPelaksana = semuaPegawai.filter(p => !(p.jabatan && p.jabatan.toLowerCase() === 'sekretaris daerah'));
+
+            // Buat logika yang sama untuk pegawai pelaksana
+            const pegawaiOptions = pegawaiPelaksana.map(p => `<option value="${p.id}">${p.nama || p.nama_lengkap} (NIP: ${p.nip})</option>`).join('');
+
+            // Simpan template untuk baris pegawai baru
+            pegawaiContainer.dataset.pegawaiOptions = pegawaiOptions;
+
+            // Isi select pegawai yang pertama kali muncul di halaman
+            const firstPegawaiSelect = pegawaiContainer.querySelector('select');
+            if (firstPegawaiSelect) {
+                firstPegawaiSelect.innerHTML += pegawaiOptions;
+            }
 
         } catch (error) {
-            console.error("Gagal menginisialisasi halaman tambah SPT:", error);
+            console.error('Error memuat data untuk formulir:', error);
+            alert('Gagal memuat data pilihan. Pastikan Anda terhubung ke server dan coba muat ulang halaman.');
         }
-    };
+    }
 
-    init();
+    // --- Fungsi untuk menambah baris pegawai ---
+    tambahPegawaiBtn.addEventListener('click', () => {
+        const newPegawaiRow = document.createElement('div');
+        newPegawaiRow.className = 'flex items-center gap-x-4';
+        newPegawaiRow.innerHTML = `
+            <select name="pegawai[]" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                <option value="">-- Pilih Pegawai --</option>
+                ${pegawaiContainer.dataset.pegawaiOptions || ''}
+            </select>
+            <button type="button" class="text-red-600 hover:text-red-800" onclick="this.parentElement.remove()">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        pegawaiContainer.appendChild(newPegawaiRow);
+    });
+
+    // --- Logika submit form ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // Logika untuk mengirim data ke server akan ditambahkan di sini
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.pegawai = formData.getAll('pegawai[]'); // Mengambil semua pegawai yang dipilih
+
+        console.log('Data yang akan dikirim:', data);
+        alert('Fungsi simpan belum diimplementasikan. Cek console log untuk melihat data.');
+        // Nanti di sini akan ada fetch() untuk POST ke API server
+    });
+
+    // Muat data saat halaman dimuat
+    loadOptions();
+    // Inisialisasi dropdown lokasi
+    initializeLocationSelect();
 });

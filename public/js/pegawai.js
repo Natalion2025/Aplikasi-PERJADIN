@@ -1,291 +1,309 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Seleksi Elemen DOM ---
+    // --- Elemen Global ---
+    const pageNotification = document.getElementById('page-notification');
+
+    // --- Elemen & Logika untuk Pejabat Daerah ---
+    const addPejabatButton = document.getElementById('add-pejabat-button');
+    const pejabatModal = document.getElementById('pejabat-modal');
+    const closePejabatModalButton = document.getElementById('close-pejabat-modal-button');
+    const cancelPejabatButton = document.getElementById('cancel-pejabat-button');
+    const pejabatForm = document.getElementById('pejabat-form');
+    const pejabatModalTitle = document.getElementById('pejabat-modal-title');
+    const pejabatIdInput = document.getElementById('pejabat-id');
+    const pejabatListContainer = document.getElementById('pejabat-list-container');
+    const pejabatFormNotification = document.getElementById('pejabat-form-notification');
+
+    // --- Elemen & Logika untuk Pegawai ---
     const addPegawaiButton = document.getElementById('add-pegawai-button');
     const pegawaiModal = document.getElementById('pegawai-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const cancelButton = document.getElementById('cancel-button');
     const pegawaiForm = document.getElementById('pegawai-form');
-    const pegawaiListContainer = document.getElementById('pegawai-list-container');
-    const modalTitle = pegawaiModal.querySelector('h3');
-    const pageNotification = document.getElementById('page-notification');
     const pegawaiIdInput = document.getElementById('pegawai-id');
+    const pegawaiListContainer = document.getElementById('pegawai-list-container');
+    const formNotification = document.getElementById('form-notification');
     const pangkatSelect = document.getElementById('pangkat');
     const golonganInput = document.getElementById('golongan');
 
-    // --- Konstanta dan State ---
-    const API_BASE_URL = '/api/pegawai';
-    const pangkatGolonganMap = {
-        '': '', // Untuk pilihan kosong
-        'Juru Muda': 'I/a',
-        'Juru Muda Tingkat I': 'I/b',
-        'Juru': 'I/c',
-        'Juru Tingkat I': 'I/d',
-        'Pengatur Muda': 'II/a',
-        'Pengatur Muda Tingkat I': 'II/b',
-        'Pengatur': 'II/c',
-        'Pengatur Tingkat I': 'II/d',
-        'Penata Muda': 'III/a',
-        'Penata Muda Tingkat I': 'III/b',
-        'Penata': 'III/c',
-        'Penata Tingkat I': 'III/d',
-        'Pembina': 'IV/a',
-        'Pembina Tingkat I': 'IV/b',
-        'Pembina Utama Muda': 'IV/c',
-        'Pembina Utama Madya': 'IV/d',
-        'Pembina Utama': 'IV/e'
+    // --- Fungsi Notifikasi ---
+    const showNotification = (element, message, isError = false) => {
+        element.textContent = message;
+        element.className = `p-2 rounded-md text-sm ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+        element.classList.remove('hidden');
     };
 
-    // --- Fungsi Bantuan & Utilitas ---
-    /**
-     * Menampilkan notifikasi sementara pada elemen yang diberikan.
-     * @param {string} message - Pesan yang akan ditampilkan.
-     * @param {boolean} [isError=false] - Set true jika ini adalah pesan error untuk styling.
-     */
-    function showNotification(message, isError = false) {
-        if (!pageNotification) return;
-        pageNotification.textContent = message;
-        pageNotification.classList.remove('hidden');
-        pageNotification.classList.toggle('bg-red-100', isError);
-        pageNotification.classList.toggle('text-red-700', isError);
-        pageNotification.classList.toggle('bg-green-100', !isError);
-        pageNotification.classList.toggle('text-green-700', !isError);
-        setTimeout(() => {
-            pageNotification.textContent = '';
-            pageNotification.classList.add('hidden');
-        }, 5000);
-    }
+    const hideNotification = (element) => {
+        element.classList.add('hidden');
+        element.textContent = '';
+    };
 
-    /**
-     * Memperbarui input 'Golongan' berdasarkan 'Pangkat' yang dipilih.
-     */
-    const updateGolongan = () => {
-        if (pangkatSelect && golonganInput) {
-            const selectedPangkat = pangkatSelect.value;
-            golonganInput.value = pangkatGolonganMap[selectedPangkat] || '';
+    // ==================================================
+    // LOGIKA UNTUK KEPALA / WK DAERAH (PEJABAT)
+    // ==================================================
+
+    const openPejabatModal = (pejabat = null) => {
+        hideNotification(pejabatFormNotification);
+        pejabatForm.reset();
+        if (pejabat) {
+            pejabatModalTitle.textContent = 'Edit Data Pejabat';
+            pejabatIdInput.value = pejabat.id;
+            document.getElementById('pejabat_nama_lengkap').value = pejabat.nama;
+            document.getElementById('pejabat_jabatan').value = pejabat.jabatan;
+        } else {
+            pejabatModalTitle.textContent = 'Tambah Kepala/WK Daerah';
+            pejabatIdInput.value = '';
         }
+        pejabatModal.classList.remove('hidden');
     };
 
-    /**
-     * Mereset formulir dan memastikan golongan juga direset.
-     */
-    const resetForm = () => {
-        if (pegawaiForm) pegawaiForm.reset();
-        if (pegawaiIdInput) pegawaiIdInput.value = ''; // Reset input hidden ID
-        if (pangkatSelect) pangkatSelect.value = ''; // Reset dropdown pangkat
-        if (golonganInput) golonganInput.value = ''; // Reset input golongan
+    const closePejabatModal = () => pejabatModal.classList.add('hidden');
+
+    const renderPejabatList = (pejabatList) => {
+        pejabatListContainer.innerHTML = '';
+        if (pejabatList.length === 0) {
+            pejabatListContainer.innerHTML = '<p class="text-gray-500">Belum ada data pejabat.</p>';
+            return;
+        }
+        pejabatList.forEach(p => {
+            const pejabatCard = document.createElement('div');
+            pejabatCard.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
+            pejabatCard.innerHTML = `
+                <div>
+                    <p class="font-semibold text-gray-800">${p.nama}</p>
+                    <p class="text-sm text-gray-600">${p.jabatan}</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="edit-pejabat-btn text-blue-500 hover:text-blue-700" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                    <button class="delete-pejabat-btn text-red-500 hover:text-red-700" data-id="${p.id}"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            `;
+            pejabatListContainer.appendChild(pejabatCard);
+        });
     };
 
-    const openModal = () => pegawaiModal.classList.remove('hidden');
-    const closeModal = () => {
-        pegawaiModal.classList.add('hidden');
-        resetForm();
-    };
-
-    // --- Panggilan API ---
-    const fetchPegawai = async () => {
+    const loadPejabat = async () => {
         try {
-            const response = await fetch(API_BASE_URL);
-            if (!response.ok) throw new Error('Gagal memuat data pegawai.');
-            return await response.json();
+            const response = await fetch('/api/pejabat');
+            if (!response.ok) throw new Error('Gagal memuat data');
+            const data = await response.json();
+            renderPejabatList(data);
         } catch (error) {
-            console.error(error);
-            pegawaiListContainer.innerHTML = `<p class="text-red-500">${error.message}</p>`;
-            return [];
+            pejabatListContainer.innerHTML = `<p class="text-red-500">${error.message}</p>`;
         }
     };
 
-    const savePegawai = async (pegawaiData) => {
-        const id = pegawaiIdInput.value;
+    pejabatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = pejabatIdInput.value;
+        const formData = new FormData(pejabatForm);
+        const data = {
+            nama: formData.get('nama'),
+            jabatan: formData.get('jabatan')
+        };
+
+        const url = id ? `/api/pejabat/${id}` : '/api/pejabat';
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${API_BASE_URL}/${id}` : API_BASE_URL;
 
         try {
             const response = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(pegawaiData),
+                body: JSON.stringify(data)
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Gagal ${id ? 'memperbarui' : 'menyimpan'} data.`);
-            }
-            return await response.json();
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data');
+
+            showNotification(pageNotification, `Data pejabat berhasil ${id ? 'diperbarui' : 'disimpan'}.`);
+            setTimeout(() => hideNotification(pageNotification), 3000);
+            closePejabatModal();
+            loadPejabat();
         } catch (error) {
-            showNotification(error.message, true);
-            throw error; // Lempar kembali error untuk mencegah penutupan modal
+            showNotification(pejabatFormNotification, error.message, true);
         }
+    });
+
+    pejabatListContainer.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-pejabat-btn');
+        const deleteBtn = e.target.closest('.delete-pejabat-btn');
+
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            const response = await fetch(`/api/pejabat/${id}`);
+            const pejabat = await response.json();
+            openPejabatModal(pejabat);
+        }
+
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (confirm('Apakah Anda yakin ingin menghapus data pejabat ini?')) {
+                try {
+                    const response = await fetch(`/api/pejabat/${id}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Gagal menghapus data');
+                    showNotification(pageNotification, 'Data pejabat berhasil dihapus.');
+                    setTimeout(() => hideNotification(pageNotification), 3000);
+                    loadPejabat();
+                } catch (error) {
+                    showNotification(pageNotification, error.message, true);
+                    setTimeout(() => hideNotification(pageNotification), 3000);
+                }
+            }
+        }
+    });
+
+    // ==================================================
+    // LOGIKA UNTUK PEGAWAI
+    // ==================================================
+
+    const pangkatGolonganMap = {
+        "Juru Muda": "I/a", "Juru Muda Tingkat I": "I/b", "Juru": "I/c", "Juru Tingkat I": "I/d",
+        "Pengatur Muda": "II/a", "Pengatur Muda Tingkat I": "II/b", "Pengatur": "II/c", "Pengatur Tingkat I": "II/d",
+        "Penata Muda": "III/a", "Penata Muda Tingkat I": "III/b", "Penata": "III/c", "Penata Tingkat I": "III/d",
+        "Pembina": "IV/a", "Pembina Tingkat I": "IV/b", "Pembina Utama Muda": "IV/c", "Pembina Utama Madya": "IV/d", "Pembina Utama": "IV/e"
     };
 
-    const deletePegawai = async (id) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data pegawai ini?')) return;
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Gagal menghapus data.');
-            }
-            alert('Data pegawai berhasil dihapus.');
-            loadAndRenderPegawai();
-        } catch (error) {
-            console.error(error);
-            alert(error.message); // Gunakan alert untuk error penghapusan
-        }
+    const updateGolongan = () => {
+        const selectedPangkat = pangkatSelect.value;
+        golonganInput.value = pangkatGolonganMap[selectedPangkat] || '';
     };
 
-    // --- Render Tampilan ---
-    const renderPegawaiList = (pegawai) => {
-        pegawaiListContainer.innerHTML = ''; // Bersihkan daftar yang ada
-        if (!pegawai || pegawai.length === 0) {
+    const openPegawaiModal = (pegawai = null) => {
+        hideNotification(formNotification);
+        pegawaiForm.reset();
+        if (pegawai) {
+            pegawaiIdInput.value = pegawai.id;
+            document.getElementById('pegawai_nama_lengkap').value = pegawai.nama_lengkap || pegawai.nama;
+            document.getElementById('nip').value = pegawai.nip || '';
+            document.getElementById('pangkat').value = pegawai.pangkat || '';
+            document.getElementById('jabatan').value = pegawai.jabatan || '';
+            document.getElementById('bidang').value = pegawai.bidang || '';
+        } else {
+            pegawaiIdInput.value = '';
+        }
+        updateGolongan();
+        pegawaiModal.classList.remove('hidden');
+    };
+
+    const closePegawaiModal = () => pegawaiModal.classList.add('hidden');
+
+    const renderPegawaiList = (pegawaiList) => {
+        pegawaiListContainer.innerHTML = '';
+        if (pegawaiList.length === 0) {
             pegawaiListContainer.innerHTML = '<p class="text-gray-500">Belum ada data pegawai.</p>';
             return;
         }
-
-        pegawai.forEach(p => {
+        pegawaiList.forEach(p => {
             const pegawaiCard = document.createElement('div');
-            pegawaiCard.className = 'p-4 border rounded-lg flex justify-between items-center hover:bg-gray-50 transition-colors';
+            pegawaiCard.className = 'flex justify-between items-start p-3 bg-gray-50 rounded-lg border';
             pegawaiCard.innerHTML = `
-                <div>
-                    <p class="font-semibold text-gray-800">${p.nama_lengkap}</p>
-                    <p class="text-sm text-gray-600">${p.jabatan || 'N/A'} - NIP: ${p.nip}</p>
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">${p.nama_lengkap || p.nama || 'Nama tidak tersedia'}</p>
+                    <p class="text-sm text-gray-600">NIP: ${p.nip || '-'}</p>
+                    <p class="text-sm text-gray-500">${p.jabatan || '-'} - ${p.pangkat || '-'} (${p.golongan || '-'})</p>
                 </div>
-                <div class="space-x-2">
-                    <button data-id="${p.id}" class="edit-btn text-blue-600 hover:text-blue-800" title="Edit">
-                        <i class="fas fa-pencil-alt"></i>
-                    </button>
-                    <button data-id="${p.id}" class="delete-btn text-red-600 hover:text-red-800" title="Hapus">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                <div class="flex space-x-2 ml-4">
+                    <button class="edit-pegawai-btn text-blue-500 hover:text-blue-700" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                    <button class="delete-pegawai-btn text-red-500 hover:text-red-700" data-id="${p.id}"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
             pegawaiListContainer.appendChild(pegawaiCard);
         });
     };
 
-    /**
-     * Mengambil data pegawai dari server dan me-render ulang daftar.
-     */
-    const loadAndRenderPegawai = async () => {
-        const pegawai = await fetchPegawai();
-        renderPegawaiList(pegawai);
-    };
-
-    // --- Event Handlers ---
-    const handleAddClick = () => {
-        resetForm();
-        modalTitle.textContent = 'Tambah Data Pegawai';
-        openModal();
-    };
-
-    const handleEditClick = async (id) => {
+    const loadPegawai = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/${id}`);
-            if (!response.ok) {
-                let serverResponseText = '';
-                try {
-                    // Coba baca respons sebagai JSON dulu
-                    const errorData = await response.json();
-                    serverResponseText = errorData.message || JSON.stringify(errorData);
-                } catch (jsonError) {
-                    // Jika gagal, mungkin respons bukan JSON, coba baca sebagai teks biasa
-                    try {
-                        serverResponseText = await response.text();
-                    } catch (textError) {
-                        serverResponseText = 'Tidak dapat membaca respons dari server.';
-                    }
-                }
-
-                // Log detail error untuk debugging di console developer
-                console.error('API Error saat mengambil data pegawai:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url,
-                    responseBody: serverResponseText,
-                });
-
-                // Lemparkan error yang akan ditampilkan ke pengguna
-                throw new Error(`Gagal mengambil data pegawai. Server merespons dengan kode error ${response.status}.`);
-            }
-            const pegawai = await response.json();
-
-            // DIAGNOSTIK: Tampilkan data yang diterima dari server di console browser
-            console.log('Data pegawai yang diterima untuk diedit:', pegawai);
-
-            resetForm(); // Bersihkan form sebelum diisi
-
-            // --- Mengisi formulir dengan data pegawai ---
-            // 1. Set ID pegawai untuk mode edit
-            pegawaiIdInput.value = pegawai.id;
-
-            // 2. Set nilai untuk input teks standar
-            document.getElementById('nama_lengkap').value = pegawai.nama_lengkap ?? '';
-            document.getElementById('nip').value = pegawai.nip ?? '';
-            document.getElementById('jabatan').value = pegawai.jabatan ?? '';
-            document.getElementById('bidang').value = pegawai.bidang ?? '';
-
-            // 3. Set nilai untuk dropdown 'Pangkat'.
-            // Ini adalah langkah kunci untuk memastikan pangkat yang tersimpan ditampilkan.
-            if (pangkatSelect) {
-                pangkatSelect.value = pegawai.pangkat ?? '';
-            }
-
-            // 4. Perbarui 'Golongan' secara otomatis berdasarkan 'Pangkat' yang baru di-set.
-            updateGolongan();
-
-            modalTitle.textContent = 'Edit Data Pegawai';
-            openModal();
+            const response = await fetch('/api/pegawai');
+            if (!response.ok) throw new Error('Gagal memuat data pegawai');
+            const data = await response.json();
+            renderPegawaiList(data);
         } catch (error) {
-            console.error(error);
-            alert(error.message);
+            pegawaiListContainer.innerHTML = `<p class="text-red-500">${error.message}</p>`;
         }
     };
 
-    const handleFormSubmit = async (event) => {
-        event.preventDefault();
+    pegawaiForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = pegawaiIdInput.value;
         const formData = new FormData(pegawaiForm);
-        const pegawaiData = Object.fromEntries(formData.entries());
-        const isEditing = !!pegawaiIdInput.value;
+
+        // PERBAIKAN: Gunakan nama_lengkap yang sesuai dengan database
+        const data = {
+            nama_lengkap: formData.get('nama'), // Mengambil dari input dengan name="nama"
+            nip: formData.get('nip'),
+            pangkat: formData.get('pangkat'),
+            golongan: formData.get('golongan'),
+            jabatan: formData.get('jabatan'),
+            bidang: formData.get('bidang')
+        };
+
+        const url = id ? `/api/pegawai/${id}` : '/api/pegawai';
+        const method = id ? 'PUT' : 'POST';
 
         try {
-            await savePegawai(pegawaiData);
-            const successMessage = isEditing ? 'Perubahan data pegawai berhasil disimpan' : 'Pegawai baru berhasil ditambahkan.';
-            showNotification(successMessage, false);
-            closeModal();
-            loadAndRenderPegawai();
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data');
+
+            showNotification(pageNotification, `Data pegawai berhasil ${id ? 'diperbarui' : 'disimpan'}.`);
+            setTimeout(() => hideNotification(pageNotification), 3000);
+            closePegawaiModal();
+            loadPegawai();
         } catch (error) {
-            // Error sudah ditampilkan oleh fungsi savePegawai
-            console.error('Gagal menyimpan:', error);
+            showNotification(formNotification, error.message, true);
         }
-    };
+    });
 
-    const handleListContainerClick = (event) => {
-        const editButton = event.target.closest('.edit-btn');
-        const deleteButton = event.target.closest('.delete-btn');
+    pegawaiListContainer.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-pegawai-btn');
+        const deleteBtn = e.target.closest('.delete-pegawai-btn');
 
-        if (editButton) handleEditClick(editButton.dataset.id);
-        if (deleteButton) deletePegawai(deleteButton.dataset.id);
-    };
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            const response = await fetch(`/api/pegawai/${id}`);
+            const pegawai = await response.json();
+            openPegawaiModal(pegawai);
+        }
+
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id;
+            if (confirm('Apakah Anda yakin ingin menghapus data pegawai ini?')) {
+                try {
+                    const response = await fetch(`/api/pegawai/${id}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Gagal menghapus data');
+                    showNotification(pageNotification, 'Data pegawai berhasil dihapus.');
+                    setTimeout(() => hideNotification(pageNotification), 3000);
+                    loadPegawai();
+                } catch (error) {
+                    showNotification(pageNotification, error.message, true);
+                    setTimeout(() => hideNotification(pageNotification), 3000);
+                }
+            }
+        }
+    });
+
+    // --- Event Listeners untuk membuka modal ---
+    addPejabatButton.addEventListener('click', () => openPejabatModal());
+    addPegawaiButton.addEventListener('click', () => openPegawaiModal());
+
+    // --- Event Listeners untuk menutup modal ---
+    closePejabatModalButton.addEventListener('click', closePejabatModal);
+    cancelPejabatButton.addEventListener('click', closePejabatModal);
+    closeModalButton.addEventListener('click', closePegawaiModal);
+    cancelButton.addEventListener('click', closePegawaiModal);
+    pejabatModal.addEventListener('click', (e) => {
+        if (e.target === pejabatModal) closePejabatModal();
+    });
+    pegawaiModal.addEventListener('click', (e) => {
+        if (e.target === pegawaiModal) closePegawaiModal();
+    });
+
+    // --- Event Listener untuk Pangkat -> Golongan ---
+    pangkatSelect.addEventListener('change', updateGolongan);
 
     // --- Inisialisasi ---
-    const init = async () => {
-        // DIAGNOSTIK: Periksa apakah elemen notifikasi ada di halaman.
-        if (!pageNotification) {
-            console.warn('Peringatan: Elemen notifikasi dengan ID "page-notification" tidak ditemukan di HTML. Notifikasi tidak akan muncul.');
-        }
-
-        // Pasang event listeners
-        if (pangkatSelect) {
-            pangkatSelect.addEventListener('change', updateGolongan);
-        }
-        addPegawaiButton.addEventListener('click', handleAddClick);
-        closeModalButton.addEventListener('click', closeModal);
-        cancelButton.addEventListener('click', closeModal);
-        pegawaiForm.addEventListener('submit', handleFormSubmit);
-        pegawaiListContainer.addEventListener('click', handleListContainerClick);
-
-        // Muat data awal
-        await loadAndRenderPegawai();
-    };
-
-    init();
+    loadPejabat();
+    loadPegawai();
 });
