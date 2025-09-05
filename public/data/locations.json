@@ -40,35 +40,258 @@
     {
         "group": "Kota Besar di Indonesia",
         "locations": [
-            "Surabaya",
-            "Bandung",
-            "Medan",
-            "Semarang",
-            "Makassar",
-            "Palembang",
-            "Denpasar",
-            "Yogyakarta",
-            "Banjarmasin",
-            "Balikpapan",
-            "Manado",
-            "Pekanbaru",
-            "Padang"
+            "Kota Surabaya",
+            "Kota Bandung",
+            "Kota Medan",
+            "Kota Semarang",
+            "Kota Makassar",
+            "Kota Palembang",
+            "Kota Denpasar",
+            "Kota Yogyakarta",
+            "Kota Banjarmasin",
+            "Kota Balikpapan",
+            "Kota Manado",
+            "Kota Pekanbaru",
+            "Kota Padang"
         ]
     },
     {
         "group": "Kecamatan di Kabupaten Melawi",
         "locations": [
-            "Belimbing",
-            "Belimbing Hulu",
-            "Ella Hilir",
-            "Menukung",
-            "Nanga Pinoh",
-            "Pinoh Selatan",
-            "Pinoh Utara",
-            "Sayan",
-            "Sokan",
-            "Tanah Pinoh",
-            "Tanah Pinoh Barat"
+            "Kecamatan Belimbing",
+            "Kecamatan Belimbing Hulu",
+            "Kecamatan Ella Hilir",
+            "Kecamatan Menukung",
+            "Kecamatan Nanga Pinoh",
+            "Kecamatan Pinoh Selatan",
+            "Kecamatan Pinoh Utara",
+            "Kecamatan Sayan",
+            "Kecamatan Sokan",
+            "Kecamatan Tanah Pinoh",
+            "Kecamatan Tanah Pinoh Barat"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Belimbing, Kabupaten Melawi",
+        "locations": [
+            "Desa Balai Lagas",
+            "Desa Batu Ampar",
+            "Desa Batu Buil",
+            "Desa Batu Nanta",
+            "Desa Belonsat",
+            "Desa Guhung",
+            "Desa Labang",
+            "Desa Laman Bukit",
+            "Desa Langan",
+            "Desa Nanga Entebah",
+            "Desa Nanga Menunuk",
+            "Desa Nanga Pau",
+            "Desa Nusa Kenyikap",
+            "Desa Pemuar",
+            "Desa Sepan Tonak",
+            "Desa Tekaban",
+            "Desa Upit"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Belimbing Hulu",
+        "locations": [
+            "Desa Beloyang",
+            "Desa Junjung Permai",
+            "Desa Kayu Bunga",
+            "Desa Nanga Keberak",
+            "Desa Nanga Raya",
+            "Desa Nangan Tikan",
+            "Desa Piawas",
+            "Desa Tiong Keranji"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Ella Hilir",
+        "locations": [
+            "Desa Bemban Permai",
+            "Desa Domet Permai",
+            "Desa Jabai",
+            "Desa Kahai",
+            "Desa Kerangan Koya",
+            "Desa Lengkong Nyadom",
+            "Desa Nanga Ella Hilir",
+            "Desa Nanga Kalan",
+            "Desa Nanga Kempangai",
+            "Desa Nanga Nuak",
+            "Desa Nanga Nyuruh",
+            "Desa Natai Compa",
+            "Desa Nyanggau",
+            "Desa Pelempai Jaya",
+            "Desa Penyuguk",
+            "Desa Perembang Nyuruh",
+            "Desa Popai",
+            "Desa Sungai Labuk",
+            "Desa Sungai Mentoba"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Menukung",
+        "locations": [
+            "Desa Batas Nangka",
+            "Desa Batu Badak",
+            "Desa Batu Onap",
+            "Desa Belaban Ella",
+            "Desa Laman Mumbung",
+            "Desa Langau Leban Satu",
+            "Desa Lihai",
+            "Desa Menukung Kota",
+            "Desa Nanga Ella Hulu",
+            "Desa Nanga Keruap",
+            "Desa Nanga Mawang Mentatai",
+            "Desa Nanga Melona Satu",
+            "Desa Nanga Siyai",
+            "Desa Nusa Poring",
+            "Desa Oyah",
+            "Desa Pelaik Keruap",
+            "Desa Sampak",
+            "Desa Sungai Sampuk",
+            "Desa Tanjung Beringin"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Nanga Pinoh",
+        "locations": [
+            "Desa Baru",
+            "Desa Kelakik",
+            "Desa Kenual",
+            "Desa Labai Mandiri",
+            "Desa Nanga Kayan",
+            "Desa Nanga Kebebu",
+            "Desa Nusa Pandau",
+            "Desa Paal",
+            "Desa Poring",
+            "Desa Semadin Lengkong",
+            "Desa Sidomulyo",
+            "Desa Tanjung Lay",
+            "Desa Tanjung Niaga",
+            "Desa Tanjung Sari",
+            "Desa Tanjung Tengang",
+            "Desa Tebing Karangan",
+            "Desa Tembawang Panjang"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Pinoh Selatan",
+        "locations": [
+            "Desa Bayur Raya",
+            "Desa Bina Jaya",
+            "Desa Landau Garong",
+            "Desa Landau Tabun",
+            "Desa Mandau Baru",
+            "Desa Manggala",
+            "Desa Nanga Kelawai",
+            "Desa Nanga Pintas",
+            "Desa Nyanggai",
+            "Desa Pelinggang",
+            "Desa Sungai Bakah",
+            "Desa Senempak"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Pinoh Utara",
+        "locations": [
+            "Desa Engkurai",
+            "Desa Kayan Semapau",
+            "Desa Kompas Raya",
+            "Desa Manding",
+            "Desa Melamut Bersatu",
+            "Desa Melawi Kiri Hilir",
+            "Desa Merah Arai",
+            "Desa Merpak",
+            "Desa Nanga Belimbing",
+            "Desa Nanga Man",
+            "Desa Natai Panjang",
+            "Desa Sungai Pinang",
+            "Desa Sungai Raya",
+            "Desa Senibung",
+            "Desa Suka Damai",
+            "Desa Tanjung Arak",
+            "Desa Tanjung Paoh",
+            "Desa Tekelak",
+            "Desa Tengkajau"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Sayan",
+        "locations": [
+            "Desa Berobai Permai",
+            "Desa Bora",
+            "Desa Karangan Purun",
+            "Desa Landau Sandak",
+            "Desa Lingkar Indah",
+            "Desa Madya Raya",
+            "Desa Mekar Pelita",
+            "Desa Meta Bersatu",
+            "Desa Nanga Kasai",
+            "Desa Nanga Kompi",
+            "Desa Nanga Mancur",
+            "Desa Nanga Pak",
+            "Desa Nanga Raku",
+            "Desa Nanga Sayan",
+            "Desa Pekawai",
+            "Desa Sayan Jaya",
+            "Desa Siling Permai",
+            "Desa Tumbak Raya"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Sokan",
+        "locations": [
+            "Desa Gelata",
+            "Desa Keluing Taja",
+            "Desa Landau Kabu",
+            "Desa Melana",
+            "Desa Muara Tanjung",
+            "Desa Nanga Betangai",
+            "Desa Nanga Libas",
+            "Desa Nanga Ora",
+            "Desa Nanga Potai",
+            "Desa Nanga Sokan",
+            "Desa Nanga Tangkit",
+            "Desa Penyengkuang",
+            "Desa Sepakat",
+            "Desa Sijau",
+            "Desa Tanjung Mahung",
+            "Desa Tanjung Sokan",
+            "Desa Telaga Raya",
+            "Desa Teluk Pongkal"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Tanah Pinoh",
+        "locations": [
+            "Desa Batu Luar",
+            "Desa Batu Begigi",
+            "Desa Bina Jaya",
+            "Desa Bina Karya",
+            "Desa Keranjik",
+            "Desa Loka Jaya",
+            "Desa Madong Jaya",
+            "Desa Maris Permai",
+            "Desa Pelita Kenaya",
+            "Desa Suka Maju",
+            "Desa Tanjung Gunung"
+        ]
+    },
+    {
+        "group": "Desa di Kecamatan Tanah Pinoh Barat",
+        "locations": [
+            "Desa Bukit Raya",
+            "Desa Durian Jaya",
+            "Desa Ganjang",
+            "Desa Harapan Jaya",
+            "Desa Keluas Hulu",
+            "Desa Laja",
+            "Desa Lintah Taum",
+            "Desa Pelita Jaya",
+            "Desa Togan Baru",
+            "Desa Ulak Muid"
         ]
     }
 ]

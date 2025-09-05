@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-p8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Surat Perintah Tugas</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #fff;
+            color: #000;
+        }
+
+        .page-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 2cm;
+            margin: 1cm auto;
+            border: 1px #D3D3D3 solid;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .kop-surat {
+            text-align: center;
+            border-bottom: 4px double #000;
+            padding-bottom: 10px;
+        }
+
+        .kop-surat h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .kop-surat h2 {
+            font-size: 22pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .kop-surat p {
+            font-size: 12pt;
+            margin: 0;
+        }
+
+        .judul-spt {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .judul-spt h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+        }
+
+        .judul-spt p {
+            font-size: 12pt;
+            margin-top: 2px;
+        }
+
+        table.content-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12pt;
+        }
+
+        table.content-table td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+
+        .tanda-tangan {
+            margin-top: 50px;
+            width: 40%;
+            margin-left: 55%;
+            text-align: center;
+        }
+
+        @media print {
+
+            body,
+            .page-container {
+                margin: 0;
+                box-shadow: none;
+                border: none;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="text-center my-4 no-print">
+        <button onclick="window.print()" class="bg-indigo-600 text-white px-6 py-2 rounded shadow hover:bg-indigo-700">
+            Cetak Dokumen
+        </button>
+    </div>
+
+    <div id="print-area" class="page-container">
+        <!-- Konten surat akan dimuat di sini oleh JavaScript -->
+        <p class="text-center">Memuat data surat...</p>
+    </div>
+
+    <script src="/js/cetak-spt.js"></script>
+</body>
+
+</html>

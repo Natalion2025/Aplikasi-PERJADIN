@@ -63,17 +63,54 @@
         /* Custom styles to make Tom-Select blend with Tailwind forms */
         :root {
             --ts-border-radius: 0.375rem;
-            /* rounded-md */
-            --ts-border-color: #d1d5db;
-            /* gray-300 */
-            --ts-control-min-height: calc(2.25rem + 2px);
-            /* h-9 equivalent */
+            /* Measured height of a standard Tailwind input with py-1.5 and sm:text-sm */
+            --tailwind-input-height: 38px;
+            /* Kembalikan ke tinggi standar (sekitar h-9/h-10) */
+        }
+
+        .ts-control {
+            /* Ensure consistent box model */
+            box-sizing: border-box;
+
+            /* Remove Tom Select's default border */
+            border: none !important;
+
+            /* Apply Tailwind's ring-1 ring-gray-300 and shadow-sm */
+            /* The order of shadows matters for blending */
+            box-shadow: 0 0 0 1px #d1d5db,
+                /* ring-1 ring-gray-300 */
+                0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            /* shadow-sm */
+
+            /* Match Tailwind's padding and height */
+            /* py-1.5 (0.375rem top/bottom), ps-2 (0.5rem left), px-3 (0.75rem right for icon space) */
+            padding: 0.375rem 0.75rem 0.375rem 0.5rem !important;
+            min-height: var(--tailwind-input-height) !important;
+            /* Gunakan min-height untuk fleksibilitas */
+
+            /* Ensure border-radius is applied */
+            border-radius: var(--ts-border-radius) !important;
+
+            /* Transition for smooth focus effect */
+            transition: box-shadow 0.15s ease-in-out;
+        }
+
+        /* Atur tinggi spesifik HANYA untuk dropdown anggaran agar bisa menampilkan teks panjang */
+        #kode_anggaran+.ts-wrapper .ts-control {
+            height: 62px !important;
         }
 
         .ts-wrapper.focus .ts-control {
-            border-color: #4f46e5;
-            /* indigo-600 */
-            box-shadow: 0 0 0 1px #4f46e5;
+            /* Apply Tailwind's focus:ring-2 focus:ring-indigo-600 and shadow-sm */
+            box-shadow: 0 0 0 2px #4f46e5,
+                /* focus:ring-2 focus:ring-indigo-600 */
+                0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            /* shadow-sm */
+        }
+
+        /* Menghapus shadow bawaan TomSelect saat dropdown terbuka */
+        .ts-wrapper.dropdown-active .ts-control {
+            box-shadow: 0 0 0 2px #4f46e5 !important;
         }
 
         /* End Tom-Select custom styles */
@@ -200,6 +237,7 @@
                                     Perjalanan</label>
                                 <div class="mt-2">
                                     <textarea id="maksud_perjalanan" name="maksud_perjalanan" rows="3"
+                                        placeholder="contoh: Menghadiri Rapat Koordinasi di Kota X & sebutkan spesifik lokasi jika perlu"
                                         class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
                                 </div>
                             </div>
@@ -279,9 +317,11 @@
                                 <label for="kode_anggaran"
                                     class="block text-sm font-medium leading-6 text-gray-900">Kode Mata Anggaran</label>
                                 <div class="mt-2">
-                                    <input type="text" id="kode_anggaran" name="kode_anggaran"
-                                        placeholder="Contoh: 5.1.02.01.01.0026"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <select id="kode_anggaran" name="kode_anggaran"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        <option value="">-- Memuat Anggaran... --</option>
+                                        <!-- Opsi akan diisi oleh JavaScript -->
+                                    </select>
                                 </div>
                             </div>
                         </div>

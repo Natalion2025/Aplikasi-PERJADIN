@@ -30,6 +30,53 @@ db.run(`CREATE TABLE IF NOT EXISTS pejabat (
     }
 });
 
+// Pastikan tabel 'anggaran' ada saat server dimulai
+db.run(`CREATE TABLE IF NOT EXISTS anggaran (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bidang_urusan TEXT,
+    program TEXT,
+    kegiatan TEXT,
+    sub_kegiatan TEXT,
+    mata_anggaran_kode TEXT NOT NULL,
+    mata_anggaran_nama TEXT NOT NULL,
+    nilai_anggaran INTEGER NOT NULL
+)`, (err) => {
+    if (err) {
+        console.error("Error creating 'anggaran' table:", err.message);
+    }
+});
+
+// Pastikan tabel 'spt' (Surat Perintah Tugas) ada
+db.run(`CREATE TABLE IF NOT EXISTS spt (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nomor_surat TEXT NOT NULL UNIQUE,
+    tanggal_surat DATE NOT NULL,
+    dasar_surat TEXT,
+    pejabat_pemberi_tugas_id INTEGER NOT NULL,
+    maksud_perjalanan TEXT NOT NULL,
+    lokasi_tujuan TEXT NOT NULL,
+    tanggal_berangkat DATE NOT NULL,
+    tanggal_kembali DATE NOT NULL,
+    lama_perjalanan INTEGER NOT NULL,
+    sumber_dana TEXT,
+    anggaran_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    -- FOREIGN KEY akan ditambahkan jika tabel pejabat dan anggaran sudah pasti ada
+)`, (err) => {
+    if (err) console.error("Error creating 'spt' table:", err.message);
+});
+
+// Pastikan tabel 'spt_pegawai' (linking table) ada
+db.run(`CREATE TABLE IF NOT EXISTS spt_pegawai (
+    spt_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    PRIMARY KEY (spt_id, pegawai_id),
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'spt_pegawai' table:", err.message);
+});
+
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
 const dbAll = util.promisify(db.all.bind(db));
@@ -162,6 +209,26 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
 // Halaman Tambah SPT (terproteksi)
 app.get('/tambah-spt', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tambah-spt.html'));
+});
+
+// Halaman Register SPT (BARU)
+app.get('/spt', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'spt-register.html'));
+});
+
+// Halaman Edit SPT (BARU) - Menggunakan template yang sama dengan tambah
+app.get('/edit-spt/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'tambah-spt.html'));
+});
+
+// Halaman Cetak SPT (BARU)
+app.get('/cetak/spt/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-spt.html'));
+});
+
+// Halaman Anggaran (BARU)
+app.get('/anggaran', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'anggaran.html'));
 });
 
 //Halaman Tambah Pegawai
@@ -309,6 +376,220 @@ app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
         console.error(`[API ERROR] Gagal menghapus pejabat id ${req.params.id}:`, err);
         res.status(500).json({ message: err.message });
     }
+});
+
+// --- Rute API Anggaran (terproteksi) ---
+
+// GET all anggaran
+app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
+    try {
+        const rows = await dbAll("SELECT * FROM anggaran ORDER BY id DESC", []);
+        res.json(rows);
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data anggaran:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET single anggaran by id
+app.get('/api/anggaran/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const row = await dbGet("SELECT * FROM anggaran WHERE id = ?", [req.params.id]);
+        if (!row) {
+            return res.status(404).json({ message: "Data anggaran tidak ditemukan." });
+        }
+        res.json(row);
+    } catch (err) {
+        console.error(`[API ERROR] Gagal mengambil anggaran id ${req.params.id}:`, err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST a new anggaran
+app.post('/api/anggaran', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran } = req.body;
+    if (!mata_anggaran || !nilai_anggaran) {
+        return res.status(400).json({ message: 'Mata Anggaran dan Nilai Anggaran wajib diisi.' });
+    }
+
+    // Ekstrak kode dan nama dari dropdown
+    const [mata_anggaran_kode, mata_anggaran_nama] = mata_anggaran.split(' - ');
+
+    try {
+        const sql = 'INSERT INTO anggaran (bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode, mata_anggaran_nama, nilai_anggaran) VALUES (?, ?, ?, ?, ?, ?, ?)';
+        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran]);
+        res.status(201).json({ id: result.lastID, ...req.body });
+    } catch (err) {
+        console.error('[API ERROR] Gagal menambah anggaran:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PUT (update) an anggaran
+app.put('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran } = req.body;
+    if (!mata_anggaran || !nilai_anggaran) {
+        return res.status(400).json({ message: 'Mata Anggaran dan Nilai Anggaran wajib diisi.' });
+    }
+
+    const [mata_anggaran_kode, mata_anggaran_nama] = mata_anggaran.split(' - ');
+
+    try {
+        const sql = 'UPDATE anggaran SET bidang_urusan = ?, program = ?, kegiatan = ?, sub_kegiatan = ?, mata_anggaran_kode = ?, mata_anggaran_nama = ?, nilai_anggaran = ? WHERE id = ?';
+        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran, req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data anggaran tidak ditemukan.' });
+        }
+        res.json({ id: req.params.id, ...req.body });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal memperbarui anggaran id ${req.params.id}:`, err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// DELETE an anggaran
+app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    try {
+        const sql = 'DELETE FROM anggaran WHERE id = ?';
+        const result = await runQuery(sql, [req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data anggaran tidak ditemukan.' });
+        }
+        res.json({ message: 'Data anggaran berhasil dihapus' });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal menghapus anggaran id ${req.params.id}:`, err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// --- Rute API SPT (Surat Perintah Tugas) ---
+
+// GET: Mengambil semua data SPT untuk ditampilkan di register
+app.get('/api/spt', isApiAuthenticated, async (req, res) => {
+    try {
+        // Query utama untuk mengambil data SPT dan informasi pejabat pemberi tugas
+        const sql = `
+            SELECT 
+                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.tanggal_berangkat,
+                p.nama as pejabat_nama, p.jabatan as pejabat_jabatan
+            FROM spt s
+            LEFT JOIN pejabat p ON s.pejabat_pemberi_tugas_id = p.id
+            ORDER BY s.tanggal_surat DESC, s.id DESC
+        `;
+        const spts = await dbAll(sql);
+
+        // Untuk setiap SPT, ambil daftar pegawai yang ditugaskan
+        for (const spt of spts) {
+            const pegawaiSql = `
+                SELECT pg.nama_lengkap FROM spt_pegawai sp
+                JOIN pegawai pg ON sp.pegawai_id = pg.id
+                WHERE sp.spt_id = ?
+            `;
+            const pegawaiRows = await dbAll(pegawaiSql, [spt.id]);
+            spt.pegawai_ditugaskan = pegawaiRows.map(p => p.nama_lengkap);
+        }
+
+        res.json(spts);
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil daftar SPT:', err);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// GET: Mengambil data satu SPT untuk keperluan edit dan cetak
+app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const sptSql = "SELECT * FROM spt WHERE id = ?";
+        const spt = await dbGet(sptSql, [req.params.id]);
+
+        if (!spt) {
+            return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
+        }
+
+        const pegawaiSql = "SELECT pegawai_id FROM spt_pegawai WHERE spt_id = ?";
+        const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
+        spt.pegawai = pegawaiRows.map(p => p.pegawai_id); // Kirim array of IDs
+
+        res.json(spt);
+    } catch (err) {
+        console.error(`[API ERROR] Gagal mengambil SPT id ${req.params.id}:`, err);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// POST: Membuat SPT baru
+app.post('/api/spt', isApiAuthenticated, async (req, res) => {
+    const { nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, pegawai, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran } = req.body;
+
+    // Validasi dasar
+    if (!nomor_surat || !tanggal_surat || !pejabat_pemberi_tugas || !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali || !pegawai || pegawai.length === 0) {
+        return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
+    }
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        // 1. Insert ke tabel 'spt'
+        const sptSql = 'INSERT INTO spt (nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, anggaran_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        const sptResult = await runQuery(sptSql, [nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran]);
+        const newSptId = sptResult.lastID;
+
+        // 2. Insert ke tabel 'spt_pegawai' untuk setiap pegawai
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id) VALUES (?, ?)';
+        for (const pegawaiId of pegawai) {
+            await runQuery(sptPegawaiSql, [newSptId, pegawaiId]);
+        }
+
+        await runQuery('COMMIT');
+        res.status(201).json({ message: 'Surat Perintah Tugas berhasil disimpan!', sptId: newSptId });
+    } catch (err) {
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error('[API ERROR] Gagal menyimpan SPT:', err);
+        res.status(500).json({ message: 'Gagal menyimpan SPT. Nomor surat mungkin sudah ada atau terjadi kesalahan lain.', error: err.message });
+    }
+});
+
+// PUT: Memperbarui SPT yang sudah ada
+app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, pegawai, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran } = req.body;
+
+    if (!nomor_surat || !tanggal_surat || !pejabat_pemberi_tugas || !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali || !pegawai || pegawai.length === 0) {
+        return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
+    }
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        // 1. Update tabel 'spt'
+        const sptSql = 'UPDATE spt SET nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?, maksud_perjalanan = ?, lokasi_tujuan = ?, tanggal_berangkat = ?, tanggal_kembali = ?, lama_perjalanan = ?, sumber_dana = ?, anggaran_id = ? WHERE id = ?';
+        await runQuery(sptSql, [nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran, id]);
+
+        // 2. Hapus pegawai lama dari 'spt_pegawai'
+        await runQuery('DELETE FROM spt_pegawai WHERE spt_id = ?', [id]);
+
+        // 3. Insert pegawai baru ke 'spt_pegawai'
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id) VALUES (?, ?)';
+        for (const pegawaiId of pegawai) {
+            await runQuery(sptPegawaiSql, [id, pegawaiId]);
+        }
+
+        await runQuery('COMMIT');
+        res.json({ message: 'Surat Perintah Tugas berhasil diperbarui!', sptId: id });
+    } catch (err) {
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error(`[API ERROR] Gagal memperbarui SPT id ${id}:`, err);
+        res.status(500).json({ message: 'Gagal memperbarui SPT. Nomor surat mungkin sudah ada atau terjadi kesalahan lain.', error: err.message });
+    }
+});
+
+// DELETE: Menghapus SPT
+app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const result = await runQuery('DELETE FROM spt WHERE id = ?', [req.params.id]);
+    if (result.changes === 0) {
+        return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
+    }
+    res.json({ message: 'Data SPT berhasil dihapus.' });
 });
 
 // Rute untuk mendapatkan data sesi pengguna saat ini (PENTING: letakkan di sini)
