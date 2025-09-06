@@ -26,12 +26,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const allPejabat = await pejabatRes.json();
 
             // Cari detail pegawai yang ditugaskan
-            const pegawaiDitugaskan = spt.pegawai.map(id => {
-                return allPegawai.find(p => p.id === id);
+            const pegawaiDitugaskan = spt.pegawai.map(pegawaiData => {
+                return allPegawai.find(p => p.id === pegawaiData.pegawai_id);
             }).filter(Boolean); // Filter out any undefined results
 
-            // Cari detail pejabat pemberi tugas
-            const pejabatPemberiTugas = allPejabat.find(p => p.id === spt.pejabat_pemberi_tugas_id);
+            // Gabungkan daftar pejabat dan pegawai untuk mencari pemberi tugas
+            // Ini penting karena pemberi tugas bisa dari tabel 'pejabat' atau 'pegawai' (misal: Sekda)
+            const semuaPemberiTugas = [
+                ...allPejabat,
+                ...allPegawai.map(p => ({ ...p, nama: p.nama_lengkap })) // Normalisasi properti 'nama'
+            ];
+            const pejabatPemberiTugas = semuaPemberiTugas.find(p => p.id === spt.pejabat_pemberi_tugas_id);
+            if (!pejabatPemberiTugas) {
+                throw new Error(`Data Pejabat Pemberi Tugas dengan ID ${spt.pejabat_pemberi_tugas_id} tidak ditemukan.`);
+            }
 
             return { spt, pegawaiDitugaskan, pejabatPemberiTugas };
 
@@ -74,11 +82,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
 
         printArea.innerHTML = `
-            <div class="kop-surat">
+            <div class="kop-surat flex flex-row items-center gap-x-4 space-around mb-4">
+            <img src="/assets/logomelawi.png" alt="Logo Melawi" class="w-40 h-40 object-contain">
+            <section>    
                 <h1>PEMERINTAH KABUPATEN MELAWI</h1>
                 <h2>SEKRETARIAT DAERAH</h2>
                 <p>Jalan Protokol No. 1 Telp. (0568) 21005 Fax. (0568) 21490</p>
                 <p>NANGA PINOH</p>
+            </section>
             </div>
 
             <div class="judul-spt">
@@ -114,9 +125,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="tanda-tangan">
                 <p class="text-left">Ditetapkan di Nanga Pinoh</p>
                 <p class="text-left">Pada tanggal ${formatDate(spt.tanggal_surat)}</p>
-                <p class="text-left text-transform: uppercase font-bold pb-2">${pejabatPemberiTugas.jabatan},</p>
+                <p class="text-left font-bold pb-2">${pejabatPemberiTugas.jabatan},</p>
                 <br><br><br><br>
-                <p class="text-left text-nowrap font-bold text-transform: uppercase underline">${pejabatPemberiTugas.nama}</p>
+                <p class="text-left text-nowrap font-bold underline">${pejabatPemberiTugas.nama}</p>
             </div>
         `;
     };

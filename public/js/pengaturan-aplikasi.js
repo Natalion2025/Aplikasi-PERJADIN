@@ -68,10 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const showNotification = (message, isError = false) => {
         notificationEl.textContent = message;
         notificationEl.classList.remove('hidden');
-        notificationEl.classList.toggle('bg-green-100', !isError);
-        notificationEl.classList.toggle('text-green-700', !isError);
-        notificationEl.classList.toggle('bg-red-100', isError);
-        notificationEl.classList.toggle('text-red-700', isError);
+        // Hapus kelas lama sebelum menambahkan yang baru
+        notificationEl.className = 'p-4 mb-4 text-sm rounded-lg'; // Reset kelas dasar
+
+        if (isError) {
+            notificationEl.classList.add('bg-red-100', 'dark:bg-red-900', 'text-red-700', 'dark:text-red-300');
+        } else {
+            notificationEl.classList.add('bg-green-100', 'dark:bg-green-900', 'text-green-700', 'dark:text-green-300');
+        }
 
         setTimeout(() => {
             notificationEl.classList.add('hidden');

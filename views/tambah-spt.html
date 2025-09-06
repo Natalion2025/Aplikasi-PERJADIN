@@ -72,16 +72,6 @@
             /* Ensure consistent box model */
             box-sizing: border-box;
 
-            /* Remove Tom Select's default border */
-            border: none !important;
-
-            /* Apply Tailwind's ring-1 ring-gray-300 and shadow-sm */
-            /* The order of shadows matters for blending */
-            box-shadow: 0 0 0 1px #d1d5db,
-                /* ring-1 ring-gray-300 */
-                0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            /* shadow-sm */
-
             /* Match Tailwind's padding and height */
             /* py-1.5 (0.375rem top/bottom), ps-2 (0.5rem left), px-3 (0.75rem right for icon space) */
             padding: 0.375rem 0.75rem 0.375rem 0.5rem !important;
@@ -102,15 +92,15 @@
 
         .ts-wrapper.focus .ts-control {
             /* Apply Tailwind's focus:ring-2 focus:ring-indigo-600 and shadow-sm */
-            box-shadow: 0 0 0 2px #4f46e5,
+            box-shadow: 0 0 0 2px #676769,
                 /* focus:ring-2 focus:ring-indigo-600 */
-                0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            /* shadow-sm */
+
+                /* shadow-sm */
         }
 
         /* Menghapus shadow bawaan TomSelect saat dropdown terbuka */
         .ts-wrapper.dropdown-active .ts-control {
-            box-shadow: 0 0 0 2px #4f46e5 !important;
+            box-shadow: 0 0 0 2px #676769 !important;
         }
 
         /* End Tom-Select custom styles */
@@ -153,7 +143,7 @@
                                 <div class="mt-2">
                                     <input type="text" id="nomor_surat" name="nomor_surat"
                                         placeholder="Contoh: 800/123/SPT/2024"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-3">
@@ -161,7 +151,7 @@
                                     class="block text-sm font-medium leading-6 text-gray-900">Tanggal Surat</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_surat" name="tanggal_surat"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="col-span-full">
@@ -170,7 +160,7 @@
                                 <div class="mt-2">
                                     <textarea id="dasar_surat" name="dasar_surat" rows="3"
                                         placeholder="Contoh: Surat Undangan Rapat Koordinasi..."
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
                                 </div>
                                 <p class="mt-2 text-xs text-gray-500">Dasar hukum atau surat lain yang menjadi acuan
                                     penugasan.</p>
@@ -192,8 +182,8 @@
                                     class="block text-sm font-medium leading-6 text-gray-900">Pejabat Pemberi
                                     Tugas</label>
                                 <div class="mt-2">
-                                    <select id="pejabat_pemberi_tugas" name="pejabat_pemberi_tugas"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <select id="pejabat_pemberi_tugas" name="pejabat_pemberi_tugas_id"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                         <option value="">-- Pilih Pejabat --</option>
                                         <!-- Options will be populated dynamically via JS -->
                                     </select>
@@ -205,11 +195,28 @@
                                 <div id="pegawai-container" class="mt-2 space-y-4">
                                     <!-- Pegawai fields will be added here dynamically -->
                                     <div class="flex items-center gap-x-4">
-                                        <select name="pegawai[]"
-                                            class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        <select name="pegawai[0][id]"
+                                            class="block flex-grow rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                             <option value="">-- Pilih Pegawai --</option>
                                             <!-- Options will be populated dynamically via JS -->
                                         </select>
+                                        <div class="flex items-center space-x-4 flex-shrink-0">
+                                            <div class="flex items-center">
+                                                <input id="pengikut_0_bukan" name="pegawai[0][pengikut]" type="radio"
+                                                    value="0"
+                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                                <label for="pengikut_0_bukan"
+                                                    class="ml-2 block text-sm font-medium text-gray-900">Bukan
+                                                    Pengikut</label>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <input id="pengikut_0_ya" name="pegawai[0][pengikut]" type="radio"
+                                                    value="1" checked
+                                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                                <label for="pengikut_0_ya"
+                                                    class="ml-2 block text-sm font-medium text-gray-900">Pengikut</label>
+                                            </div>
+                                        </div>
                                         <button type="button" class="text-red-600 hover:text-red-800"
                                             onclick="this.parentElement.remove()">
                                             <i class="fas fa-trash-alt"></i>
@@ -238,7 +245,7 @@
                                 <div class="mt-2">
                                     <textarea id="maksud_perjalanan" name="maksud_perjalanan" rows="3"
                                         placeholder="contoh: Menghadiri Rapat Koordinasi di Kota X & sebutkan spesifik lokasi jika perlu"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"></textarea>
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
                                 </div>
                             </div>
                             <div class="col-span-full">
@@ -258,7 +265,7 @@
                                     class="block text-sm font-medium leading-6 text-gray-900">Tanggal Berangkat</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_berangkat" name="tanggal_berangkat"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-2">
@@ -266,7 +273,7 @@
                                     class="block text-sm font-medium leading-6 text-gray-900">Tanggal Kembali</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_kembali" name="tanggal_kembali"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-2">
@@ -277,6 +284,21 @@
                                     <input type="number" id="lama_perjalanan" name="lama_perjalanan" readonly
                                         class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 focus:ring-0 sm:text-sm sm:leading-6"
                                         placeholder="Otomatis">
+                                </div>
+                            </div>
+                            <div class="sm:col-span-full">
+                                <label for="kendaraan"
+                                    class="flex items-center gap-x-2 text-sm font-medium leading-6 text-gray-900">
+                                    <i class="fas fa-car-side text-gray-400"></i>
+                                    <span>Kendaraan yang Digunakan</span>
+                                </label>
+                                <div class="mt-2">
+                                    <select id="kendaraan" name="kendaraan"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        <option value="Transportasi Umum">Transportasi Umum</option>
+                                        <option value="Kendaraan Pribadi">Kendaraan Pribadi</option>
+                                        <option value="Kendaraan Dinas">Kendaraan Dinas</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -317,8 +339,8 @@
                                 <label for="kode_anggaran"
                                     class="block text-sm font-medium leading-6 text-gray-900">Kode Mata Anggaran</label>
                                 <div class="mt-2">
-                                    <select id="kode_anggaran" name="kode_anggaran"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                    <select id="kode_anggaran" name="anggaran_id"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6">
                                         <option value="">-- Memuat Anggaran... --</option>
                                         <!-- Opsi akan diisi oleh JavaScript -->
                                     </select>
@@ -329,7 +351,7 @@
 
                     <!-- Action Buttons -->
                     <div class="mt-6 flex items-center justify-end gap-x-6">
-                        <button type="button"
+                        <button type="button" id="cancel-button"
                             class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Batal</button>
                         <button type="submit"
                             class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Simpan

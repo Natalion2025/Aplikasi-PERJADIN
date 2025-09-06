@@ -51,15 +51,18 @@ db.run(`CREATE TABLE IF NOT EXISTS spt (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nomor_surat TEXT NOT NULL UNIQUE,
     tanggal_surat DATE NOT NULL,
-    dasar_surat TEXT,
+    dasar_surat TEXT NOT NULL,
     pejabat_pemberi_tugas_id INTEGER NOT NULL,
+    pegawai_ditugaskan INTEGER,
+    peran TEXT,
     maksud_perjalanan TEXT NOT NULL,
     lokasi_tujuan TEXT NOT NULL,
     tanggal_berangkat DATE NOT NULL,
     tanggal_kembali DATE NOT NULL,
     lama_perjalanan INTEGER NOT NULL,
     sumber_dana TEXT,
-    anggaran_id INTEGER,
+    kendaraan TEXT,
+    anggaran_id INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     -- FOREIGN KEY akan ditambahkan jika tabel pejabat dan anggaran sudah pasti ada
 )`, (err) => {
@@ -268,6 +271,11 @@ app.get('/pengguna', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
 // Rute untuk halaman edit pengguna (BARU)
 app.get('/edit-pengguna/:id', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'edit-pengguna.html'));
+});
+
+// Rute untuk halaman tambah pengguna (BARU)
+app.get('/tambah-pengguna', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'tambah-pengguna.html'));
 });
 
 // Rute untuk halaman pengaturan aplikasi (BARU)
@@ -506,9 +514,10 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
             return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
         }
 
-        const pegawaiSql = "SELECT pegawai_id FROM spt_pegawai WHERE spt_id = ?";
+        // Ambil ID pegawai DAN status is_pengikut
+        const pegawaiSql = "SELECT pegawai_id, is_pengikut FROM spt_pegawai WHERE spt_id = ?";
         const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
-        spt.pegawai = pegawaiRows.map(p => p.pegawai_id); // Kirim array of IDs
+        spt.pegawai = pegawaiRows; // Kirim array objek { pegawai_id, is_pengikut }
 
         res.json(spt);
     } catch (err) {
@@ -519,10 +528,17 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
 
 // POST: Membuat SPT baru
 app.post('/api/spt', isApiAuthenticated, async (req, res) => {
-    const { nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, pegawai, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran } = req.body;
+    const {
+        nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
+        maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
+        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai
+    } = req.body;
 
     // Validasi dasar
-    if (!nomor_surat || !tanggal_surat || !pejabat_pemberi_tugas || !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali || !pegawai || pegawai.length === 0) {
+    if (!nomor_surat || !tanggal_surat || !dasar_surat || !pejabat_pemberi_tugas_id ||
+        !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali ||
+        !lama_perjalanan || !sumber_dana || !kendaraan || !anggaran_id || !pegawai ||
+        pegawai.length === 0) {
         return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
     }
 
@@ -530,31 +546,55 @@ app.post('/api/spt', isApiAuthenticated, async (req, res) => {
         await runQuery('BEGIN TRANSACTION');
 
         // 1. Insert ke tabel 'spt'
-        const sptSql = 'INSERT INTO spt (nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, anggaran_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const sptResult = await runQuery(sptSql, [nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran]);
+        const sptSql = `INSERT INTO spt (
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, 
+            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, 
+            lama_perjalanan, sumber_dana, kendaraan, anggaran_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const sptResult = await runQuery(sptSql, [
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
+            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
+            lama_perjalanan, sumber_dana, kendaraan, anggaran_id
+        ]);
+
         const newSptId = sptResult.lastID;
 
         // 2. Insert ke tabel 'spt_pegawai' untuk setiap pegawai
-        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id) VALUES (?, ?)';
-        for (const pegawaiId of pegawai) {
-            await runQuery(sptPegawaiSql, [newSptId, pegawaiId]);
+        // PERBAIKAN: Tambahkan kolom is_pengikut
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
+        for (const pegawaiItem of pegawai) {
+            await runQuery(sptPegawaiSql, [newSptId, pegawaiItem.id, pegawaiItem.pengikut]); // Gunakan nilai 'pengikut' dari frontend
         }
 
         await runQuery('COMMIT');
         res.status(201).json({ message: 'Surat Perintah Tugas berhasil disimpan!', sptId: newSptId });
     } catch (err) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+
+        if (err.message.includes('UNIQUE constraint failed')) {
+            return res.status(409).json({ message: 'Nomor surat sudah digunakan. Gunakan nomor surat yang berbeda.' });
+        }
+
         console.error('[API ERROR] Gagal menyimpan SPT:', err);
-        res.status(500).json({ message: 'Gagal menyimpan SPT. Nomor surat mungkin sudah ada atau terjadi kesalahan lain.', error: err.message });
+        res.status(500).json({ message: 'Gagal menyimpan SPT.', error: err.message });
     }
 });
 
 // PUT: Memperbarui SPT yang sudah ada
 app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const { id } = req.params;
-    const { nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, pegawai, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran } = req.body;
+    const {
+        nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
+        maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
+        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai
+    } = req.body;
 
-    if (!nomor_surat || !tanggal_surat || !pejabat_pemberi_tugas || !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali || !pegawai || pegawai.length === 0) {
+    // Validasi
+    if (!nomor_surat || !tanggal_surat || !dasar_surat || !pejabat_pemberi_tugas_id ||
+        !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali ||
+        !lama_perjalanan || !sumber_dana || !kendaraan || !anggaran_id || !pegawai ||
+        pegawai.length === 0) {
         return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
     }
 
@@ -562,24 +602,39 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
         await runQuery('BEGIN TRANSACTION');
 
         // 1. Update tabel 'spt'
-        const sptSql = 'UPDATE spt SET nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?, maksud_perjalanan = ?, lokasi_tujuan = ?, tanggal_berangkat = ?, tanggal_kembali = ?, lama_perjalanan = ?, sumber_dana = ?, anggaran_id = ? WHERE id = ?';
-        await runQuery(sptSql, [nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas, maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kode_anggaran, id]);
+        const sptSql = `UPDATE spt SET 
+            nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?,
+            maksud_perjalanan = ?, lokasi_tujuan = ?, tanggal_berangkat = ?, tanggal_kembali = ?,
+            lama_perjalanan = ?, sumber_dana = ?, kendaraan = ?, anggaran_id = ?
+            WHERE id = ?`;
+
+        await runQuery(sptSql, [
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
+            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
+            lama_perjalanan, sumber_dana, kendaraan, anggaran_id, id
+        ]);
 
         // 2. Hapus pegawai lama dari 'spt_pegawai'
         await runQuery('DELETE FROM spt_pegawai WHERE spt_id = ?', [id]);
 
         // 3. Insert pegawai baru ke 'spt_pegawai'
-        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id) VALUES (?, ?)';
-        for (const pegawaiId of pegawai) {
-            await runQuery(sptPegawaiSql, [id, pegawaiId]);
+        // PERBAIKAN: Tambahkan kolom is_pengikut
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
+        for (const pegawaiItem of pegawai) {
+            await runQuery(sptPegawaiSql, [id, pegawaiItem.id, pegawaiItem.pengikut]); // Gunakan nilai 'pengikut' dari frontend
         }
 
         await runQuery('COMMIT');
         res.json({ message: 'Surat Perintah Tugas berhasil diperbarui!', sptId: id });
     } catch (err) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+
+        if (err.message.includes('UNIQUE constraint failed')) {
+            return res.status(409).json({ message: 'Nomor surat sudah digunakan. Gunakan nomor surat yang berbeda.' });
+        }
+
         console.error(`[API ERROR] Gagal memperbarui SPT id ${id}:`, err);
-        res.status(500).json({ message: 'Gagal memperbarui SPT. Nomor surat mungkin sudah ada atau terjadi kesalahan lain.', error: err.message });
+        res.status(500).json({ message: 'Gagal memperbarui SPT.', error: err.message });
     }
 });
 
@@ -590,33 +645,6 @@ app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (re
         return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
     }
     res.json({ message: 'Data SPT berhasil dihapus.' });
-});
-
-// Rute untuk mendapatkan data sesi pengguna saat ini (PENTING: letakkan di sini)
-// Ganti endpoint /api/user/session di server.js
-app.get('/api/user/session', async (req, res) => {
-    console.log('[DIAGNOSTIK] Cookies di /api/user/session:', req.headers.cookie);
-
-    if (req.session.user) {
-        try {
-            // Ambil data lengkap user dari database
-            const sql = 'SELECT id, name, username, role, nip, jabatan, foto_profil FROM users WHERE id = ?';
-            const user = await dbGet(sql, [req.session.user.id]);
-
-            if (user) {
-                // Update session dengan data terbaru
-                req.session.user = user;
-                res.json({ user: user });
-            } else {
-                res.status(404).json({ message: 'Pengguna tidak ditemukan.' });
-            }
-        } catch (err) {
-            console.error('[API ERROR] Gagal mengambil data user:', err);
-            res.status(500).json({ message: 'Terjadi kesalahan server.' });
-        }
-    } else {
-        res.status(401).json({ message: 'Tidak ada sesi aktif.' });
-    }
 });
 
 // --- Rute API Profil Pengguna (terproteksi) ---
@@ -903,6 +931,34 @@ app.get('/api/roles', isApiAuthenticated, isApiAdminOrSuperAdmin, (req, res) => 
         { value: 'superadmin', text: 'Super Admin' },
     ];
     res.json(roles);
+});
+
+// --- Rute API Sesi Pengguna ---
+
+// API untuk mendapatkan data sesi pengguna yang sedang login (data lengkap dan terbaru)
+app.get('/api/user/session', async (req, res) => {
+    console.log('[DIAGNOSTIK] Cookies di /api/user/session:', req.headers.cookie);
+
+    if (req.session && req.session.user && req.session.user.id) {
+        try {
+            // Ambil data lengkap user dari database untuk memastikan data selalu fresh
+            const sql = 'SELECT id, name, username, role, nip, jabatan, foto_profil FROM users WHERE id = ?';
+            const user = await dbGet(sql, [req.session.user.id]);
+
+            if (user) {
+                // Perbarui sesi dengan data terbaru dan kirim ke frontend
+                req.session.user = user;
+                res.json({ user: user });
+            } else {
+                res.status(404).json({ message: 'Pengguna tidak ditemukan di database.' });
+            }
+        } catch (err) {
+            console.error('[API ERROR] Gagal mengambil data user untuk sesi:', err);
+            res.status(500).json({ message: 'Terjadi kesalahan server saat verifikasi sesi.' });
+        }
+    } else {
+        res.status(401).json({ message: 'Tidak ada sesi aktif.' });
+    }
 });
 
 // --- Rute API Pengguna (terproteksi) ---
