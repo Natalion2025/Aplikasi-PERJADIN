@@ -68,14 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900">${anggaran.program || '-'}</div>
-                    <div class="text-sm text-gray-500">${anggaran.kegiatan || '-'}</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${anggaran.program || '-'}</div>
+                    <div class="text-sm text-gray-500 dark:text-white">${anggaran.kegiatan || '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${anggaran.mata_anggaran_kode}</div>
-                    <div class="text-sm text-gray-500">${anggaran.mata_anggaran_nama}</div>
+                    <div class="text-sm text-gray-900 dark:text-white">${anggaran.mata_anggaran_kode}</div>
+                    <div class="text-sm text-gray-500 dark:text-white">${anggaran.mata_anggaran_nama}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(anggaran.nilai_anggaran)}
                 </td>
                 ${actionButtons}

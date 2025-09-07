@@ -225,12 +225,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="flex items-center">
                     <input id="pengikut_${newIndex}_bukan" name="pegawai[${newIndex}][pengikut]" type="radio" value="0"
                         class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
-                    <label for="pengikut_${newIndex}_bukan" class="ml-2 block text-sm font-medium text-gray-900">Bukan Pengikut</label>
+                    <label for="pengikut_${newIndex}_bukan" class="ml-2 block text-sm font-medium text-gray-900 dark:text-gray-300">Bukan Pengikut</label>
                 </div>
                 <div class="flex items-center">
                     <input id="pengikut_${newIndex}_ya" name="pegawai[${newIndex}][pengikut]" type="radio" value="1" checked
                         class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
-                    <label for="pengikut_${newIndex}_ya" class="ml-2 block text-sm font-medium text-gray-900">Pengikut</label>
+                    <label for="pengikut_${newIndex}_ya" class="ml-2 block text-sm font-medium text-gray-900 dark:text-gray-300">Pengikut</label>
                 </div>
             </div>
             <button type="button" class="text-red-600 hover:text-red-800" onclick="this.parentElement.remove()">

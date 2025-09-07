@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
 
             const pegawaiListHtml = spt.pegawai_ditugaskan.length > 0
-                ? `<ul>${spt.pegawai_ditugaskan.map(nama => `<li class="list-disc ml-4">${nama}</li>`).join('')}</ul>`
+                ? `<ul>${spt.pegawai_ditugaskan.map(nama => `<li class="list-disc ml-4 dark:text-gray-400">${nama}</li>`).join('')}</ul>`
                 : '<span class="text-gray-400">Tidak ada</span>';
 
             const actionButtons = (role === 'admin' || role === 'superadmin')
@@ -30,17 +30,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900">${spt.nomor_surat}</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${spt.nomor_surat}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_surat)}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 break-words max-w-xs">${spt.maksud_perjalanan}</div>
+                    <div class="text-sm text-gray-900 break-words max-w-xs dark:text-gray-400">${spt.maksud_perjalanan}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                     ${pegawaiListHtml}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${spt.lokasi_tujuan}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-400">${spt.lokasi_tujuan}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_berangkat)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

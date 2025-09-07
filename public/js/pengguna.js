@@ -83,13 +83,13 @@ const setupPage = async () => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${targetUser.name}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">${targetUser.name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-500">${targetUser.username}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${targetUser.username}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${targetUser.role === 'superadmin' ? 'bg-red-100 text-red-800' : (targetUser.role === 'admin' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800')}">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${targetUser.role === 'superadmin' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' : (targetUser.role === 'admin' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300')}">
                         ${targetUser.role}
                     </span>
                 </td>

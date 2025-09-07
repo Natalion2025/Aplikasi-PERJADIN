@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 
-<body class="bg-slate-50">
+<body class="bg-slate-50 dark:bg-gray-900">
     <!-- Sidebar -->
     <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
         <!-- Sidebar content akan dimuat di sini -->
@@ -60,50 +60,57 @@
         </header>
 
         <!-- Konten -->
-        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <div class="max-w-2xl mx-auto">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold text-gray-700">Edit Pengguna</h2>
+                    <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Edit Pengguna</h2>
                     <a href="/pengguna" class="text-sm text-indigo-600 hover:underline">&larr; Kembali ke Daftar
                         Pengguna</a>
                 </div>
 
-                <div class="bg-white p-8 rounded-lg shadow-md">
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
                     <form id="edit-user-form">
                         <div id="form-notification" class="hidden text-sm p-3 rounded-md mb-4"></div>
 
                         <div class="space-y-6">
                             <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                                <label for="name"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama
+                                    Lengkap</label>
                                 <input type="text" id="name" name="name" required
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
-                                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                                <label for="username"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
                                 <input type="text" id="username" name="username" required
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
-                                <label for="role" class="block text-sm font-medium text-gray-700">Peran (Role)</label>
+                                <label for="role"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Peran
+                                    (Role)</label>
                                 <select id="role" name="role" required
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 bg-white dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                                     <!-- Opsi peran akan dimuat oleh JavaScript -->
                                 </select>
                             </div>
                             <div>
-                                <label for="password" class="block text-sm font-medium text-gray-700">Password
+                                <label for="password"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password
                                     Baru</label>
                                 <input type="password" id="password" name="password"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-                                <p class="mt-2 text-xs text-gray-500">Biarkan kosong jika tidak ingin mengubah password.
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Biarkan kosong jika tidak ingin
+                                    mengubah password.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-5 border-t border-gray-200">
+                        <div class="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
                             <div class="flex justify-end">
                                 <a href="/pengguna"
-                                    class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    class="bg-white dark:bg-slate-600 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-slate-500 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
                                     Batal
                                 </a>
                                 <button type="submit"

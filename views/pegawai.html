@@ -66,7 +66,7 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 
-<body class="bg-slate-50">
+<body class="bg-slate-50 dark:bg-gray-900">
     <!-- Sidebar -->
     <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
         <!-- Sidebar content will be loaded here -->
@@ -80,9 +80,9 @@
         </header>
 
         <!-- Page Content -->
-        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-700">Manajemen Pejabat & Pegawai</h2>
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Pejabat & Pegawai</h2>
                 <div class="flex space-x-2">
                     <button id="add-pejabat-button"
                         class="bg-sky-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-700 transition-colors">
@@ -102,20 +102,21 @@
             <!-- ================================================== -->
 
             <!-- Pejabat List Container -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Daftar Kepala / Wakil Kepala Daerah</h3>
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-8">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Daftar Kepala / Wakil Kepala
+                    Daerah</h3>
                 <div id="pejabat-list-container" class="space-y-4">
                     <!-- Pejabat list will be rendered here by JavaScript -->
-                    <p class="text-gray-500">Memuat data pejabat...</p>
+                    <p class="text-gray-500 dark:text-gray-400">Memuat data pejabat...</p>
                 </div>
             </div>
 
             <!-- Employee List Container -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Daftar Pegawai</h3>
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Daftar Pegawai</h3>
                 <div id="pegawai-list-container" class="space-y-4">
                     <!-- Employee list will be rendered here by JavaScript -->
-                    <p class="text-gray-500">Memuat data pegawai...</p>
+                    <p class="text-gray-500 dark:text-gray-400">Memuat data pegawai...</p>
                 </div>
             </div>
         </main>
@@ -123,7 +124,7 @@
 
     <!-- Add/Edit Pejabat Modal -->
     <div id="pejabat-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
                 <h3 id="pejabat-modal-title" class="text-xl font-semibold text-white">Tambah Kepala/WK Daerah</h3>
@@ -136,24 +137,26 @@
                 <form id="pejabat-form">
                     <input type="hidden" id="pejabat-id">
                     <div>
-                        <label for="pejabat_nama_lengkap" class="block text-sm font-medium text-gray-700">Nama
+                        <label for="pejabat_nama_lengkap"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama
                             Lengkap</label>
                         <input type="text" id="pejabat_nama_lengkap" name="nama" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                     <div class="mt-4">
-                        <label for="pejabat_jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <label for="pejabat_jabatan"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jabatan</label>
                         <input type="text" id="pejabat_jabatan" name="jabatan" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                 </form>
                 <!-- Notification area -->
                 <div id="pejabat-form-notification" class="hidden text-sm p-2 rounded-md"></div>
             </div>
             <!-- Modal Footer -->
-            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t border-gray-700 rounded-b-lg">
                 <button id="cancel-pejabat-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                    class="bg-gray-200 dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pejabat-form"
                     class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
             </div>
@@ -162,7 +165,7 @@
 
     <!-- Add/Edit Pegawai Modal -->
     <div id="pegawai-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-auto relative flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
                 <h3 class="text-xl font-semibold text-white">Tambah Data Pegawai</h3>
@@ -175,20 +178,22 @@
                 <form id="pegawai-form">
                     <input type="hidden" id="pegawai-id" name="id">
                     <div>
-                        <label for="pegawai_nama_lengkap" class="block text-sm font-medium text-gray-700">Nama
+                        <label for="pegawai_nama_lengkap"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama
                             Lengkap</label>
                         <input type="text" id="pegawai_nama_lengkap" name="nama_lengkap" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                     <div>
-                        <label for="nip" class="block text-sm font-medium text-gray-700">NIP</label>
+                        <label for="nip" class="block text-sm font-medium text-gray-700 dark:text-gray-300">NIP</label>
                         <input type="text" id="nip" name="nip" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                     <div>
-                        <label for="pangkat" class="block text-sm font-medium text-gray-700">Pangkat</label>
+                        <label for="pangkat"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pangkat</label>
                         <select id="pangkat" name="pangkat"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             <option value="">Pilih Pangkat</option>
                             <option value="Juru Muda">Juru Muda</option>
                             <option value="Juru Muda Tingkat I">Juru Muda Tingkat I</option>
@@ -210,28 +215,31 @@
                         </select>
                     </div>
                     <div>
-                        <label for="golongan" class="block text-sm font-medium text-gray-700">Golongan</label>
+                        <label for="golongan"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Golongan</label>
                         <input type="text" id="golongan" name="golongan" readonly
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 bg-slate-100 cursor-not-allowed">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-gray-400 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 bg-slate-100 cursor-not-allowed">
                     </div>
                     <div>
-                        <label for="jabatan" class="block text-sm font-medium text-gray-700">Jabatan</label>
+                        <label for="jabatan"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jabatan</label>
                         <input type="text" id="jabatan" name="jabatan" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                     <div>
-                        <label for="bidang" class="block text-sm font-medium text-gray-700">Bidang</label>
+                        <label for="bidang"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bidang</label>
                         <input type="text" id="bidang" name="bidang"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                     </div>
                 </form>
                 <!-- Notification area -->
                 <div id="form-notification" class="hidden text-sm p-2 rounded-md"></div>
             </div>
             <!-- Modal Footer -->
-            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t border-gray-700 rounded-b-lg">
                 <button id="cancel-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
+                    class="bg-gray-200 dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Cancel</button>
                 <button type="submit" form="pegawai-form"
                     class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
             </div>

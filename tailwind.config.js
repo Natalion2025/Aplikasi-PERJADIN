@@ -5,6 +5,7 @@ module.exports = {
     './public/*/*.js',
     './public/components/*.html', // Tambahkan path ini untuk memindai komponen
   ],
+  darkMode: 'class', // <-- TAMBAHKAN BARIS INI
 
   theme: {
     extend: {

@@ -108,7 +108,7 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 
-<body class="bg-slate-50">
+<body class="bg-slate-50 dark:bg-gray-900">
     <!-- Sidebar -->
     <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
         <!-- Sidebar content will be loaded here -->
@@ -122,99 +122,111 @@
         </header>
 
         <!-- Page Content -->
-        <main class="p-8 bg-[#f5f9fc] min-h-screen">
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-700">Buat Surat Perintah Tugas (SPT) Baru</h2>
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Buat Surat Perintah Tugas (SPT) Baru
+                </h2>
             </div>
 
-            <div class="bg-white p-8 rounded-lg shadow-md w-full">
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md w-full">
                 <form id="form-spt" class="space-y-8">
                     <!-- Section 1: Info Surat & Dasar -->
-                    <div class="border-b border-gray-900/10 pb-10">
-                        <h3 class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                    <div class="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+                        <h3
+                            class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
                             <i class="fas fa-file-alt text-xl text-gray-400 w-6 text-center"></i>
                             <span>Informasi Surat</span>
                         </h3>
-                        <p class="mt-1 text-sm leading-6 text-gray-600">Detail dasar mengenai surat perintah tugas.</p>
+                        <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">Detail dasar mengenai surat
+                            perintah tugas.</p>
                         <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                             <div class="sm:col-span-3">
-                                <label for="nomor_surat" class="block text-sm font-medium leading-6 text-gray-900">Nomor
+                                <label for="nomor_surat"
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Nomor
                                     Surat</label>
                                 <div class="mt-2">
                                     <input type="text" id="nomor_surat" name="nomor_surat"
                                         placeholder="Contoh: 800/123/SPT/2024"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-3">
                                 <label for="tanggal_surat"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Tanggal Surat</label>
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tanggal
+                                    Surat</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_surat" name="tanggal_surat"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="col-span-full">
-                                <label for="dasar_surat" class="block text-sm font-medium leading-6 text-gray-900">Dasar
+                                <label for="dasar_surat"
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Dasar
                                     Surat Tugas</label>
                                 <div class="mt-2">
                                     <textarea id="dasar_surat" name="dasar_surat" rows="3"
                                         placeholder="Contoh: Surat Undangan Rapat Koordinasi..."
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
                                 </div>
-                                <p class="mt-2 text-xs text-gray-500">Dasar hukum atau surat lain yang menjadi acuan
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Dasar hukum atau surat lain
+                                    yang menjadi acuan
                                     penugasan.</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Section 2: Pejabat & Pegawai -->
-                    <div class="border-b border-gray-900/10 pb-10">
-                        <h3 class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                    <div class="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+                        <h3
+                            class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
                             <i class="fas fa-users text-xl text-gray-400 w-6 text-center"></i>
                             <span>Pihak Terkait</span>
                         </h3>
-                        <p class="mt-1 text-sm leading-6 text-gray-600">Pejabat yang memberi tugas dan pegawai yang
+                        <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">Pejabat yang memberi tugas
+                            dan pegawai yang
                             ditugaskan.</p>
                         <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                             <div class="col-span-full">
                                 <label for="pejabat_pemberi_tugas"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Pejabat Pemberi
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Pejabat
+                                    Pemberi
                                     Tugas</label>
                                 <div class="mt-2">
                                     <select id="pejabat_pemberi_tugas" name="pejabat_pemberi_tugas_id"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                         <option value="">-- Pilih Pejabat --</option>
                                         <!-- Options will be populated dynamically via JS -->
                                     </select>
                                 </div>
                             </div>
                             <div class="col-span-full">
-                                <label class="block text-sm font-medium leading-6 text-gray-900">Pegawai yang Diberi
+                                <label
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Pegawai
+                                    yang Diberi
                                     Tugas</label>
                                 <div id="pegawai-container" class="mt-2 space-y-4">
                                     <!-- Pegawai fields will be added here dynamically -->
                                     <div class="flex items-center gap-x-4">
                                         <select name="pegawai[0][id]"
-                                            class="block flex-grow rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                            class="block flex-grow rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                             <option value="">-- Pilih Pegawai --</option>
                                             <!-- Options will be populated dynamically via JS -->
                                         </select>
                                         <div class="flex items-center space-x-4 flex-shrink-0">
                                             <div class="flex items-center">
                                                 <input id="pengikut_0_bukan" name="pegawai[0][pengikut]" type="radio"
-                                                    value="0"
+                                                    value="0" checked
                                                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
                                                 <label for="pengikut_0_bukan"
-                                                    class="ml-2 block text-sm font-medium text-gray-900">Bukan
+                                                    class="ml-2 block text-sm font-medium text-gray-900 dark:text-gray-300">Bukan
                                                     Pengikut</label>
                                             </div>
                                             <div class="flex items-center">
                                                 <input id="pengikut_0_ya" name="pegawai[0][pengikut]" type="radio"
-                                                    value="1" checked
+                                                    value="1"
                                                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
                                                 <label for="pengikut_0_ya"
-                                                    class="ml-2 block text-sm font-medium text-gray-900">Pengikut</label>
+                                                    class="ml-2 block text-sm font-medium text-gray-900 dark:text-gray-300">Pengikut</label>
                                             </div>
                                         </div>
                                         <button type="button" class="text-red-600 hover:text-red-800"
@@ -232,69 +244,76 @@
                     </div>
 
                     <!-- Section 3: Info Perjalanan -->
-                    <div class="border-b border-gray-900/10 pb-10">
-                        <h3 class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                    <div class="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+                        <h3
+                            class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
                             <i class="fas fa-map-marked-alt text-xl text-gray-400 w-6 text-center"></i>
                             <span>Informasi Perjalanan Dinas</span>
                         </h3>
                         <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                             <div class="col-span-full">
                                 <label for="maksud_perjalanan"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Maksud dan Tujuan
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Maksud
+                                    dan Tujuan
                                     Perjalanan</label>
                                 <div class="mt-2">
                                     <textarea id="maksud_perjalanan" name="maksud_perjalanan" rows="3"
                                         placeholder="contoh: Menghadiri Rapat Koordinasi di Kota X & sebutkan spesifik lokasi jika perlu"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
                                 </div>
                             </div>
                             <div class="col-span-full">
                                 <label for="lokasi_tujuan"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Lokasi Tujuan</label>
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Lokasi
+                                    Tujuan</label>
                                 <div class="mt-2">
                                     <!-- Elemen ini akan diubah oleh Tom-Select -->
                                     <select id="lokasi_tujuan" name="lokasi_tujuan"
                                         placeholder="Ketik untuk mencari lokasi..." autocomplete="off"></select>
                                 </div>
-                                <p class="mt-2 text-xs text-gray-500">Anda juga bisa mengetik nama lokasi baru jika
+                                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Anda juga bisa mengetik nama
+                                    lokasi baru jika
                                     tidak
                                     ada dalam daftar.</p>
                             </div>
                             <div class="sm:col-span-2">
                                 <label for="tanggal_berangkat"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Tanggal Berangkat</label>
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tanggal
+                                    Berangkat</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_berangkat" name="tanggal_berangkat"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-2">
                                 <label for="tanggal_kembali"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Tanggal Kembali</label>
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tanggal
+                                    Kembali</label>
                                 <div class="mt-2">
                                     <input type="date" id="tanggal_kembali" name="tanggal_kembali"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
                             <div class="sm:col-span-2">
                                 <label for="lama_perjalanan"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Lama Perjalanan
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Lama
+                                    Perjalanan
                                     (hari)</label>
                                 <div class="mt-2">
                                     <input type="number" id="lama_perjalanan" name="lama_perjalanan" readonly
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 focus:ring-0 sm:text-sm sm:leading-6"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 dark:bg-slate-600 dark:text-gray-400 dark:ring-gray-700 focus:ring-0 sm:text-sm sm:leading-6"
                                         placeholder="Otomatis">
                                 </div>
                             </div>
                             <div class="sm:col-span-full">
                                 <label for="kendaraan"
-                                    class="flex items-center gap-x-2 text-sm font-medium leading-6 text-gray-900">
+                                    class="flex items-center gap-x-2 text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">
                                     <i class="fas fa-car-side text-gray-400"></i>
                                     <span>Kendaraan yang Digunakan</span>
                                 </label>
                                 <div class="mt-2">
                                     <select id="kendaraan" name="kendaraan"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                         <option value="Transportasi Umum">Transportasi Umum</option>
                                         <option value="Kendaraan Pribadi">Kendaraan Pribadi</option>
                                         <option value="Kendaraan Dinas">Kendaraan Dinas</option>
@@ -305,14 +324,17 @@
                     </div>
 
                     <!-- Section 4: Anggaran -->
-                    <div class="border-b border-gray-900/10 pb-10">
-                        <h3 class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900">
+                    <div class="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+                        <h3
+                            class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
                             <i class="fas fa-wallet text-xl text-gray-400 w-6 text-center"></i>
                             <span>Informasi Anggaran</span>
                         </h3>
                         <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                             <div class="sm:col-span-3">
-                                <label class="block text-sm font-medium leading-6 text-gray-900">Sumber Dana</label>
+                                <label
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Sumber
+                                    Dana</label>
                                 <fieldset class="mt-4">
                                     <legend class="sr-only">Sumber Dana</legend>
                                     <div class="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10">
@@ -321,7 +343,7 @@
                                                 value="APBD Murni"
                                                 class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
                                             <label for="sumber_dana_murni"
-                                                class="ml-3 block text-sm font-medium leading-6 text-gray-900">APBD
+                                                class="ml-3 block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">APBD
                                                 Murni</label>
                                         </div>
                                         <div class="flex items-center">
@@ -329,7 +351,7 @@
                                                 value="APBD Perubahan"
                                                 class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
                                             <label for="sumber_dana_perubahan"
-                                                class="ml-3 block text-sm font-medium leading-6 text-gray-900">APBD
+                                                class="ml-3 block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">APBD
                                                 Perubahan</label>
                                         </div>
                                     </div>
@@ -337,10 +359,12 @@
                             </div>
                             <div class="sm:col-span-3">
                                 <label for="kode_anggaran"
-                                    class="block text-sm font-medium leading-6 text-gray-900">Kode Mata Anggaran</label>
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Kode
+                                    Mata
+                                    Anggaran</label>
                                 <div class="mt-2">
                                     <select id="kode_anggaran" name="anggaran_id"
-                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 shadow-sm ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-gray-500 sm:text-sm sm:leading-6">
                                         <option value="">-- Memuat Anggaran... --</option>
                                         <!-- Opsi akan diisi oleh JavaScript -->
                                     </select>
@@ -352,7 +376,7 @@
                     <!-- Action Buttons -->
                     <div class="mt-6 flex items-center justify-end gap-x-6">
                         <button type="button" id="cancel-button"
-                            class="rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Batal</button>
+                            class="rounded-md bg-white dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50">Batal</button>
                         <button type="submit"
                             class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Simpan
                             SPT</button>

@@ -1,3 +1,22 @@
+// =================================================================
+// APLIKASI TEMA GLOBAL (DARK/LIGHT MODE)
+// =================================================================
+// Blok ini dieksekusi sesegera mungkin untuk menghindari "flash" konten terang.
+// Ia membaca pengaturan dari localStorage dan menerapkan kelas 'dark' ke <html> jika perlu.
+(function () {
+    try {
+        const savedSettings = localStorage.getItem('appSettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.darkMode) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+    } catch (e) {
+        console.error('Gagal menerapkan tema awal:', e);
+    }
+})();
+
 (function () {
     // Mencegah wrapper diinstal lebih dari sekali
     if (window.fetch.isWrapped) {
@@ -209,4 +228,3 @@ async function setupLayout() {
 
 // Jalankan setupLayout saat dokumen HTML selesai dimuat
 document.addEventListener('DOMContentLoaded', setupLayout);
-

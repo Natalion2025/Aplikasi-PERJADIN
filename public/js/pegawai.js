@@ -61,16 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderPejabatList = (pejabatList) => {
         pejabatListContainer.innerHTML = '';
         if (pejabatList.length === 0) {
-            pejabatListContainer.innerHTML = '<p class="text-gray-500">Belum ada data pejabat.</p>';
+            pejabatListContainer.innerHTML = '<p class="text-gray-500 dark:text-white">Belum ada data pejabat.</p>';
             return;
         }
         pejabatList.forEach(p => {
             const pejabatCard = document.createElement('div');
-            pejabatCard.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
+            pejabatCard.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border';
             pejabatCard.innerHTML = `
                 <div>
-                    <p class="font-semibold text-gray-800">${p.nama}</p>
-                    <p class="text-sm text-gray-600">${p.jabatan}</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">${p.nama}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">${p.jabatan}</p>
                 </div>
                 <div class="flex space-x-2">
                     <button class="edit-pejabat-btn text-blue-500 hover:text-blue-700" data-id="${p.id}"><i class="fas fa-edit"></i></button>
@@ -188,17 +188,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderPegawaiList = (pegawaiList) => {
         pegawaiListContainer.innerHTML = '';
         if (pegawaiList.length === 0) {
-            pegawaiListContainer.innerHTML = '<p class="text-gray-500">Belum ada data pegawai.</p>';
+            pegawaiListContainer.innerHTML = '<p class="text-gray-500 dark:text-white">Belum ada data pegawai.</p>';
             return;
         }
         pegawaiList.forEach(p => {
             const pegawaiCard = document.createElement('div');
-            pegawaiCard.className = 'flex justify-between items-start p-3 bg-gray-50 rounded-lg border';
+            pegawaiCard.className = 'flex justify-between items-start p-3 bg-gray-50 dark:bg-slate-700 rounded-lg border';
             pegawaiCard.innerHTML = `
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-800">${p.nama_lengkap || p.nama || 'Nama tidak tersedia'}</p>
-                    <p class="text-sm text-gray-600">NIP: ${p.nip || '-'}</p>
-                    <p class="text-sm text-gray-500">${p.jabatan || '-'} - ${p.pangkat || '-'} (${p.golongan || '-'})</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">${p.nama_lengkap || p.nama || 'Nama tidak tersedia'}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">NIP: ${p.nip || '-'}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-300">${p.jabatan || '-'} - ${p.pangkat || '-'} (${p.golongan || '-'})</p>
                 </div>
                 <div class="flex space-x-2 ml-4">
                     <button class="edit-pegawai-btn text-blue-500 hover:text-blue-700" data-id="${p.id}"><i class="fas fa-edit"></i></button>

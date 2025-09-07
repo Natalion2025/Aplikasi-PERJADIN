@@ -239,6 +239,12 @@ app.get('/pegawai', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pegawai.html'));
 });
 
+// Route untuk halaman Standar Biaya
+app.get('/standar-biaya', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'standar-biaya.html'));
+});
+
+
 // API untuk mendapatkan data pengguna yang sedang login
 app.get('/me', isApiAuthenticated, (req, res) => {
     if (req.session && req.session.user) {
