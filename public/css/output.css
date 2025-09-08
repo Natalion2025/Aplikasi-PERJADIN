@@ -624,25 +624,8 @@ video {
   position: sticky;
 }
 
-.inset-y-0 {
-  top: 0px;
-  bottom: 0px;
-}
-
-.left-0 {
-  left: 0px;
-}
-
 .right-0 {
   right: 0px;
-}
-
-.z-10 {
-  z-index: 10;
-}
-
-.z-30 {
-  z-index: 30;
 }
 
 .z-50 {
@@ -820,10 +803,6 @@ video {
   width: 1.5rem;
 }
 
-.w-64 {
-  width: 16rem;
-}
-
 .w-9 {
   width: 2.25rem;
 }
@@ -874,11 +853,6 @@ video {
 
 .border-collapse {
   border-collapse: collapse;
-}
-
-.-translate-x-full {
-  --tw-translate-x: -100%;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
 .rotate-180 {
@@ -1122,16 +1096,16 @@ video {
   border-bottom-width: 1px;
 }
 
-.border-t {
-  border-top-width: 1px;
-}
-
 .border-l {
   border-left-width: 1px;
 }
 
 .border-r {
   border-right-width: 1px;
+}
+
+.border-t {
+  border-top-width: 1px;
 }
 
 .border-gray-200 {
@@ -1270,10 +1244,6 @@ video {
   background-color: rgb(254 249 195 / var(--tw-bg-opacity, 1));
 }
 
-.bg-gradient-to-b {
-  background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
-}
-
 .bg-gradient-to-br {
   background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
 }
@@ -1284,18 +1254,8 @@ video {
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
 }
 
-.from-gray-800 {
-  --tw-gradient-from: #1f2937 var(--tw-gradient-from-position);
-  --tw-gradient-to: rgb(31 41 55 / 0) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
-
 .to-dark-blue {
   --tw-gradient-to: #34495e var(--tw-gradient-to-position);
-}
-
-.to-gray-900 {
-  --tw-gradient-to: #111827 var(--tw-gradient-to-position);
 }
 
 .object-contain {
@@ -1434,10 +1394,6 @@ video {
   vertical-align: middle;
 }
 
-.font-sans {
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-}
-
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
@@ -1471,10 +1427,6 @@ video {
 .text-xs {
   font-size: 0.75rem;
   line-height: 1rem;
-}
-
-.text-\[9px\] {
-  font-size: 9px;
 }
 
 .font-bold {
@@ -1713,14 +1665,6 @@ video {
   transition-duration: 200ms;
 }
 
-.duration-300 {
-  transition-duration: 300ms;
-}
-
-.ease-in-out {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .placeholder\:text-gray-400::-moz-placeholder {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity, 1));
@@ -1843,6 +1787,11 @@ video {
   color: rgb(31 41 55 / var(--tw-text-opacity, 1));
 }
 
+.hover\:text-green-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
+}
+
 .hover\:text-indigo-900:hover {
   --tw-text-opacity: 1;
   color: rgb(49 46 129 / var(--tw-text-opacity, 1));
@@ -1871,11 +1820,6 @@ video {
 .hover\:text-yellow-900:hover {
   --tw-text-opacity: 1;
   color: rgb(113 63 18 / var(--tw-text-opacity, 1));
-}
-
-.hover\:text-green-800:hover {
-  --tw-text-opacity: 1;
-  color: rgb(22 101 52 / var(--tw-text-opacity, 1));
 }
 
 .hover\:underline:hover {
@@ -2109,14 +2053,14 @@ video {
   --tw-ring-color: rgb(55 65 81 / var(--tw-ring-opacity, 1));
 }
 
-.dark\:hover\:bg-slate-500:hover:is(.dark *) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(100 116 139 / var(--tw-bg-opacity, 1));
-}
-
 .dark\:hover\:bg-gray-600:hover:is(.dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(75 85 99 / var(--tw-bg-opacity, 1));
+}
+
+.dark\:hover\:bg-slate-500:hover:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(100 116 139 / var(--tw-bg-opacity, 1));
 }
 
 @media (min-width: 640px) {
@@ -2181,10 +2125,6 @@ video {
 }
 
 @media (min-width: 1024px) {
-  .lg\:relative {
-    position: relative;
-  }
-
   .lg\:col-span-1 {
     grid-column: span 1 / span 1;
   }
@@ -2195,11 +2135,6 @@ video {
 
   .lg\:hidden {
     display: none;
-  }
-
-  .lg\:translate-x-0 {
-    --tw-translate-x: 0px;
-    transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   }
 
   .lg\:grid-cols-3 {
