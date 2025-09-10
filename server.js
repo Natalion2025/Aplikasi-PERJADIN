@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
+const ExcelJS = require('exceljs'); // Tambahkan modul ExcelJS
 
 // Impor rute
 const authRoutes = require('./routes/authRoutes');
@@ -80,6 +81,23 @@ db.run(`CREATE TABLE IF NOT EXISTS spt_pegawai (
     if (err) console.error("Error creating 'spt_pegawai' table:", err.message);
 });
 
+// Pastikan tabel 'standar_biaya' ada
+db.run(`CREATE TABLE IF NOT EXISTS standar_biaya (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipe_biaya TEXT NOT NULL,
+    uraian TEXT,
+    provinsi TEXT,
+    satuan TEXT,
+    gol_a INTEGER,
+    gol_b INTEGER,
+    gol_c INTEGER,
+    gol_d INTEGER,
+    besaran INTEGER,
+    biaya_kontribusi INTEGER
+)`, (err) => {
+    if (err) console.error("Error creating 'standar_biaya' table:", err.message);
+});
+
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
 const dbAll = util.promisify(db.all.bind(db));
@@ -98,10 +116,10 @@ app.use(express.json()); // Menggantikan bodyParser.json()
 app.use(express.urlencoded({ extended: true })); // Menggantikan bodyParser.urlencoded()
 app.use(express.static('public'));
 
-// Konfigurasi Multer untuk upload foto profil
-const avatarStorage = multer.diskStorage({
+// Konfigurasi Multer untuk upload file
+const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadPath = 'public/uploads/avatars';
+        const uploadPath = 'public/uploads';
         fs.mkdirSync(uploadPath, { recursive: true }); // Buat direktori jika belum ada
         cb(null, uploadPath);
     },
@@ -109,17 +127,22 @@ const avatarStorage = multer.diskStorage({
         // Buat nama file yang unik untuk menghindari konflik
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const extension = path.extname(file.originalname);
-        cb(null, `user-${req.session.user.id}-${uniqueSuffix}${extension}`);
+        cb(null, `upload-${uniqueSuffix}${extension}`);
     }
 });
 
 const upload = multer({
-    storage: avatarStorage,
+    storage: storage,
     fileFilter: (req, file, cb) => {
-        // Terima hanya file gambar
-        file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Hanya file gambar yang diizinkan!'), false);
+        // Terima hanya file Excel
+        if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+            file.mimetype === 'application/vnd.ms-excel') {
+            cb(null, true);
+        } else {
+            cb(new Error('Hanya file Excel yang diizinkan!'), false);
+        }
     },
-    limits: { fileSize: 5 * 1024 * 1024 } // Batas ukuran file 5MB
+    limits: { fileSize: 10 * 1024 * 1024 } // Batas ukuran file 10MB
 });
 
 // Konfigurasi Session
@@ -244,7 +267,6 @@ app.get('/standar-biaya', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'standar-biaya.html'));
 });
 
-
 // API untuk mendapatkan data pengguna yang sedang login
 app.get('/me', isApiAuthenticated, (req, res) => {
     if (req.session && req.session.user) {
@@ -289,7 +311,7 @@ app.get('/pengaturan/aplikasi', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pengaturan-aplikasi.html'));
 });
 
-// Rute utama, redirect ke dashboard atau login
+// Rute utama, redirect to dashboard atau login
 app.get('/', (req, res) => {
     if (req.session.user) {
         res.redirect('/dashboard');
@@ -1085,6 +1107,111 @@ app.delete('/api/sppd/:id', isApiAuthenticated, async (req, res) => { // REFAKTO
     } catch (err) {
         console.error(`[API ERROR] Gagal menghapus SPPD id ${id}:`, err);
         res.status(400).json({ "error": err.message });
+    }
+});
+
+// --- Rute API Standar Biaya ---
+
+// GET: Mengambil semua data standar biaya
+app.get('/api/standar-biaya', isApiAuthenticated, async (req, res) => {
+    try {
+        const rows = await dbAll("SELECT * FROM standar_biaya ORDER BY tipe_biaya, id", []);
+        res.json(rows);
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data standar biaya:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET: Mengambil data standar biaya berdasarkan tipe
+app.get('/api/standar-biaya/:tipe', isApiAuthenticated, async (req, res) => {
+    try {
+        const rows = await dbAll("SELECT * FROM standar_biaya WHERE tipe_biaya = ? ORDER BY id", [req.params.tipe]);
+        res.json(rows);
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data standar biaya:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST: Upload data standar biaya dari Excel
+app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Tidak ada file yang diunggah.' });
+    }
+
+    const tipeBiaya = req.body.tipe_biaya;
+    const filePath = req.file.path; // Dapatkan path file dari multer
+
+    try {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath); // Perbaikan: Baca dari file path, bukan buffer
+
+        const worksheet = workbook.worksheets[0];
+        const standarBiayaData = [];
+
+        // Mulai dari baris 3, asumsi 2 baris pertama adalah header
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+            if (rowNumber > 2) {
+                const rowData = row.values; // row.values adalah sparse array, index = nomor kolom
+
+                let data = {};
+                // Pemetaan kolom spesifik untuk Tipe A (Uang Harian) dan B (Penginapan)
+                // yang memiliki struktur kolom yang sama.
+                if (tipeBiaya === 'A' || tipeBiaya === 'B') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tempat Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: rowData[8] || null // Kolom H: Diklat/Bimtek
+                    };
+                }
+                // TODO: Tambahkan blok 'else if' untuk tipe biaya lain (C, D, dst.) dengan pemetaan kolom yang berbeda.
+
+                standarBiayaData.push(data);
+            }
+        });
+
+        // Hapus data lama dengan tipe_biaya yang sama
+        await runQuery('DELETE FROM standar_biaya WHERE tipe_biaya = ?', [tipeBiaya]);
+
+        // Simpan data baru
+        for (const data of standarBiayaData) {
+            const sql = `INSERT INTO standar_biaya 
+                (tipe_biaya, uraian, provinsi, satuan, gol_a, gol_b, gol_c, gol_d, besaran, biaya_kontribusi) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            await runQuery(sql, [
+                data.tipe_biaya,
+                data.uraian,
+                data.provinsi,
+                data.satuan,
+                data.gol_a,
+                data.gol_b,
+                data.gol_c,
+                data.gol_d,
+                data.besaran,
+                data.biaya_kontribusi
+            ]);
+        }
+
+        // Hapus file setelah diproses
+        fs.unlinkSync(filePath);
+
+        res.json({ message: 'Data standar biaya berhasil diupload dan disimpan.' });
+    } catch (error) {
+        console.error('[API ERROR] Gagal memproses file Excel:', error);
+        // Hapus file jika terjadi error saat pemrosesan
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        res.status(500).json({ message: 'Terjadi kesalahan saat memproses file Excel.' });
     }
 });
 
