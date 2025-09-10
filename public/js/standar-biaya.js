@@ -93,6 +93,289 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>`;
     };
 
+    const generateTableC = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Provinsi</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">Besaran (Rp)</th>
+                    <th scope="col" class="px-6 py-3 text-center">Diklat/Bimtek dan lain-lain kegiatan yang mengeluarkan biaya kontribusi (Rp)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.provinsi || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.besaran)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.biaya_kontribusi)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableD = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Uraian</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">Besaran (Rp)</th>
+                    <th scope="col" class="px-6 py-3 text-center">Dalam Kota Lebih dari 8 Jam (Rp)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.besaran)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.biaya_kontribusi)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableE = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Provinsi</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Hotel Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.provinsi || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableF = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Tempat Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableG = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Tempat Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableH = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Kota Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableI = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Kota Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableJ = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Kota Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300" rowspan="2">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center border-b border-gray-300" colspan="4">Tarif Per Golongan (Rp)</th>
+                </tr>
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">A</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">B</th>
+                    <th scope="col" class="px-6 py-3 text-center border-r border-gray-300">C</th>
+                    <th scope="col" class="px-6 py-3 text-center">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.uraian || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_a)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_b)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_c)}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.gol_d)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
+    const generateTableK = (data) => {
+        return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Provinsi Tujuan</th>
+                    <th scope="col" class="px-6 py-3 align-middle border-r border-gray-300">Satuan</th>
+                    <th scope="col" class="px-6 py-3 text-center">Besaran (Rp)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map((item, index) => `
+                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                    <td class="px-4 py-4 text-center">${index + 1}</td>
+                    <td class="px-6 py-4">${item.provinsi || ''}</td>
+                    <td class="px-6 py-4">${item.satuan || ''}</td>
+                    <td class="px-6 py-4 text-right">${formatCurrency(item.besaran)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+    };
+
     // --- CORE FUNCTIONS ---
     const updateAccordionContent = (accordionItem, data, tipeBiaya) => {
         const contentDiv = accordionItem.querySelector('.accordion-content');
@@ -110,6 +393,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 break;
             case 'B':
                 tableHTML = generateTableB(data);
+                break;
+            case 'C':
+                tableHTML = generateTableC(data);
+                break;
+            case 'D':
+                tableHTML = generateTableD(data);
+                break;
+            case 'E':
+                tableHTML = generateTableE(data);
+                break;
+            case 'F':
+                tableHTML = generateTableF(data);
+                break;
+            case 'G':
+                tableHTML = generateTableG(data);
+                break;
+            case 'H':
+                tableHTML = generateTableH(data);
+                break;
+            case 'I':
+                tableHTML = generateTableI(data);
+                break;
+            case 'J':
+                tableHTML = generateTableJ(data);
+                break;
+            case 'K':
+                tableHTML = generateTableK(data);
                 break;
             default:
                 console.warn(`Generator tabel untuk tipe "${tipeBiaya}" tidak ditemukan. Menggunakan format default.`);

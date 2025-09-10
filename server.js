@@ -1150,9 +1150,12 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
         const worksheet = workbook.worksheets[0];
         const standarBiayaData = [];
 
-        // Mulai dari baris 3, asumsi 2 baris pertama adalah header
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber > 2) {
+            // Perbaikan: Tentukan jumlah baris header yang akan dilewati berdasarkan tipe biaya.
+            // Tipe A, B, E, F, G, H, I, dan J memiliki 2 baris header. Tipe K (Taksi) hanya 1.
+            const headerRowsToSkip = (['A', 'B', 'E', 'F', 'G', 'H', 'I', 'J'].includes(tipeBiaya)) ? 2 : 1;
+
+            if (rowNumber > headerRowsToSkip) {
                 const rowData = row.values; // row.values adalah sparse array, index = nomor kolom
 
                 let data = {};
@@ -1170,6 +1173,123 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
                         gol_d: rowData[7] || null,          // Kolom G: Gol D
                         besaran: null,                      // Tidak digunakan untuk tipe ini
                         biaya_kontribusi: rowData[8] || null // Kolom H: Diklat/Bimtek
+                    };
+                } else if (tipeBiaya === 'C') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: null,                       // Tidak digunakan untuk tipe ini
+                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: null,                        // Tidak digunakan untuk tipe ini
+                        gol_b: null,                        // Tidak digunakan untuk tipe ini
+                        gol_c: null,                        // Tidak digunakan untuk tipe ini
+                        gol_d: null,                        // Tidak digunakan untuk tipe ini
+                        besaran: rowData[4] || null,        // Kolom D: Besaran
+                        biaya_kontribusi: rowData[5] || null // Kolom E: Kontribusi
+                    };
+                } else if (tipeBiaya === 'D') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Uraian
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: null,                        // Tidak digunakan untuk tipe ini
+                        gol_b: null,                        // Tidak digunakan untuk tipe ini
+                        gol_c: null,                        // Tidak digunakan untuk tipe ini
+                        gol_d: null,                        // Tidak digunakan untuk tipe ini
+                        besaran: rowData[4] || null,        // Kolom D: Luar Kota
+                        biaya_kontribusi: rowData[5] || null // Kolom E: Dalam Kota
+                    };
+                } else if (tipeBiaya === 'E') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: null,                       // Tidak digunakan untuk tipe ini
+                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'F') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'G') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'H') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'I') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'J') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: rowData[2] || null,         // Kolom B: Tujuan
+                        provinsi: null,                     // Tidak digunakan untuk tipe ini
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: rowData[4] || null,          // Kolom D: Gol A
+                        gol_b: rowData[5] || null,          // Kolom E: Gol B
+                        gol_c: rowData[6] || null,          // Kolom F: Gol C
+                        gol_d: rowData[7] || null,          // Kolom G: Gol D
+                        besaran: null,                      // Tidak digunakan untuk tipe ini
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                    };
+                } else if (tipeBiaya === 'K') {
+                    data = {
+                        tipe_biaya: tipeBiaya,
+                        uraian: null,                       // Tidak digunakan untuk tipe ini
+                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
+                        satuan: rowData[3] || null,         // Kolom C: Satuan
+                        gol_a: null,                        // Tidak digunakan untuk tipe ini
+                        gol_b: null,                        // Tidak digunakan untuk tipe ini
+                        gol_c: null,                        // Tidak digunakan untuk tipe ini
+                        gol_d: null,                        // Tidak digunakan untuk tipe ini
+                        besaran: rowData[4] || null,        // Kolom D: Besaran
+                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
                     };
                 }
                 // TODO: Tambahkan blok 'else if' untuk tipe biaya lain (C, D, dst.) dengan pemetaan kolom yang berbeda.
