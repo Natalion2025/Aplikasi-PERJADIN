@@ -1,43 +1,4 @@
 /**
- * Memuat data pengguna dan menampilkannya di header.
- * Menggunakan data dari server via API.
- */
-async function loadHeaderUserData() {
-    try {
-        console.log('[HEADER] Memuat data pengguna...');
-        const response = await fetch('/api/user/session');
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.warn('[HEADER] Sesi tidak valid, redirect ke login');
-                window.location.href = '/login';
-                return;
-            }
-            throw new Error(`Gagal mengambil data sesi: ${response.status}`);
-        }
-
-        const session = await response.json();
-        console.log('[HEADER] Data sesi:', session);
-
-        if (session.user) {
-            updateHeaderUI(session.user);
-        } else {
-            console.warn('[HEADER] Tidak ada data user dalam sesi');
-        }
-    } catch (error) {
-        console.error('[HEADER] Error saat memuat data:', error);
-        // Fallback ke data default
-        const userNameEl = document.getElementById('user-name');
-        const userRoleEl = document.getElementById('user-role');
-        const userAvatarEl = document.getElementById('user-avatar');
-
-        if (userNameEl) userNameEl.textContent = 'Pengguna';
-        if (userRoleEl) userRoleEl.textContent = 'user';
-        if (userAvatarEl) userAvatarEl.src = '/img/Gambarprofil.png';
-    }
-}
-
-/**
  * Memperbarui elemen UI di header dengan data pengguna.
  * @param {object} user - Objek pengguna dengan properti name, role, dan foto_profil.
  */
@@ -70,8 +31,9 @@ function handleAvatarUpdate(e) {
 
 /**
  * Inisialisasi fungsionalitas header.
+ * @param {object} user - Objek pengguna yang didapat dari `main1.js`.
  */
-function initializeHeader() {
+function initializeHeader(user) {
     console.log('[HEADER] Inisialisasi header...');
 
     const userMenuButton = document.getElementById('user-menu-button');
@@ -100,8 +62,8 @@ function initializeHeader() {
         console.warn('[HEADER] Elemen menu user tidak ditemukan');
     }
 
-    // Muat data user
-    loadHeaderUserData();
+    // Perbarui UI header dengan data yang diterima dari `main1.js`
+    updateHeaderUI(user);
 
     // Listen untuk update avatar
     document.addEventListener('avatarUpdated', handleAvatarUpdate);

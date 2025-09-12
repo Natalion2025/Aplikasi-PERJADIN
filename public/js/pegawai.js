@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // PERBAIKAN: Gunakan nama_lengkap yang sesuai dengan database
         const data = {
-            nama_lengkap: formData.get('nama'), // Mengambil dari input dengan name="nama"
+            nama_lengkap: formData.get('nama_lengkap'), // Mengambil dari input dengan name="nama_lengkap"
             nip: formData.get('nip'),
             pangkat: formData.get('pangkat'),
             golongan: formData.get('golongan'),

@@ -166,9 +166,15 @@ async function setupLayout() {
             return; // Hentikan eksekusi lebih lanjut
         }
 
-        // 3. Jika sesi valid, lanjutkan.
-        // Logika untuk mengisi data header sekarang sepenuhnya ditangani oleh
-        // header-logic.js, yang akan dipanggil di bawah.
+        // 3. Jika sesi valid, simpan data pengguna dari respons pertama.
+        const sessionData = await response.json();
+        const currentUser = sessionData.user;
+
+        if (!currentUser) {
+            console.error('[DIAGNOSTIK] Sesi valid tetapi tidak ada data pengguna. Mengalihkan ke login.');
+            window.location.href = '/login';
+            return;
+        }
 
         // 4. Muat skrip interaktivitas untuk komponen global (sidebar dan header)
         console.log('[DIAGNOSTIK] Memuat skrip sidebar dan header...');
@@ -187,8 +193,9 @@ async function setupLayout() {
 
         // Panggil inisialisasi header SETELAH skripnya dimuat.
         // Ini memastikan header-logic.js berjalan setelah komponen header ada di DOM.
+        // PERBAIKAN: Kirim data pengguna yang sudah didapat ke fungsi inisialisasi.
         if (typeof initializeHeader === 'function') {
-            initializeHeader();
+            initializeHeader(currentUser);
         } else {
             console.warn('DIAGNOSTIK: Fungsi inisialisasi header (initializeHeader) tidak ditemukan.');
         }

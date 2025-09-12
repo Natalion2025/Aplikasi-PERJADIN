@@ -277,6 +277,15 @@
                                     ada dalam daftar.</p>
                             </div>
                             <div class="sm:col-span-2">
+                                <label for="tempat_berangkat"
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tempat
+                                    Berangkat</label>
+                                <div class="mt-2">
+                                    <input type="text" id="tempat_berangkat" name="tempat_berangkat" value="Nanga Pinoh"
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6">
+                                </div>
+                            </div>
+                            <div class="sm:col-span-2">
                                 <label for="tanggal_berangkat"
                                     class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tanggal
                                     Berangkat</label>
@@ -285,7 +294,7 @@
                                         class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
-                            <div class="sm:col-span-2">
+                            <div class="sm:col-span-2 sm:col-start-3">
                                 <label for="tanggal_kembali"
                                     class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Tanggal
                                     Kembali</label>
@@ -294,7 +303,7 @@
                                         class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-gray-500 sm:text-sm sm:leading-6">
                                 </div>
                             </div>
-                            <div class="sm:col-span-2">
+                            <div class="sm:col-span-2 sm:col-start-5">
                                 <label for="lama_perjalanan"
                                     class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Lama
                                     Perjalanan
@@ -368,6 +377,26 @@
                                         <option value="">-- Memuat Anggaran... --</option>
                                         <!-- Opsi akan diisi oleh JavaScript -->
                                     </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Keterangan -->
+                    <div class="border-b border-gray-900/10 dark:border-gray-700 pb-10">
+                        <h3
+                            class="flex items-center gap-x-3 text-base font-semibold leading-7 text-gray-900 dark:text-gray-100">
+                            <i class="fas fa-info-circle text-xl text-gray-400 w-6 text-center"></i>
+                            <span>Keterangan Tambahan</span>
+                        </h3>
+                        <div class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                            <div class="col-span-full">
+                                <label for="keterangan"
+                                    class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">Keterangan</label>
+                                <div class="mt-2">
+                                    <textarea id="keterangan" name="keterangan" rows="3"
+                                        placeholder="Isi keterangan lain jika diperlukan..."
+                                        class="block w-full rounded-md border-0 ps-2 py-1.5 text-gray-900 dark:bg-slate-700 dark:text-white dark:ring-gray-600 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-gray-500 sm:text-sm sm:leading-6"></textarea>
                                 </div>
                             </div>
                         </div>

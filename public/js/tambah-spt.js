@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Tambahkan sekda ke daftar pemberi tugas jika ditemukan
                 // Pastikan nama yang valid (dari 'nama' atau 'nama_lengkap') disalin
                 pemberiTugas.push({
-                    id: sekda.id,
-                    nama: sekda.nama || sekda.nama_lengkap,
+                    id: sekda.id, // Gunakan 'nama_lengkap' yang konsisten
+                    nama: sekda.nama_lengkap,
                     jabatan: sekda.jabatan
                 });
             }
@@ -112,11 +112,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 .join('');
             pejabatSelect.innerHTML += pemberiTugasOptions;
 
-            // 2. Siapkan data untuk dropdown "Pegawai yang Diberi Tugas" (kecualikan sekda)
+            // 2. Siapkan data untuk dropdown "Pegawai yang Diberi Tugas"
             const pegawaiPelaksana = semuaPegawai.filter(p => !(p.jabatan && p.jabatan.toLowerCase() === 'sekretaris daerah'));
 
             // Buat logika yang sama untuk pegawai pelaksana
-            const pegawaiOptions = pegawaiPelaksana.map(p => `<option value="${p.id}">${p.nama || p.nama_lengkap} (NIP: ${p.nip})</option>`).join('');
+            const pegawaiOptions = pegawaiPelaksana.map(p => `<option value="${p.id}">${p.nama_lengkap} (NIP: ${p.nip})</option>`).join('');
 
             // Simpan template untuk baris pegawai baru
             pegawaiContainer.dataset.pegawaiOptions = pegawaiOptions;
@@ -171,6 +171,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('tanggal_kembali').value = spt.tanggal_kembali;
             document.getElementById('lama_perjalanan').value = spt.lama_perjalanan;
             document.getElementById('kendaraan').value = spt.kendaraan;
+            document.getElementById('tempat_berangkat').value = spt.tempat_berangkat || 'Nanga Pinoh';
+            document.getElementById('keterangan').value = spt.keterangan || '';
 
             // Set radio button sumber dana
             if (spt.sumber_dana) {
@@ -255,10 +257,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             pegawaiSelects.forEach(select => {
                 const pegawaiId = select.value;
-                // Cari radio button yang dicentang di dalam parent element yang sama
+                // Cari radio button yang dicentang di dalam baris (parent element) yang sama
                 const row = select.closest('.flex.items-center.gap-x-4');
                 const checkedRadio = row ? row.querySelector('input[type="radio"]:checked') : null;
-                const pengikutValue = checkedRadio ? checkedRadio.value : '0'; // Default ke '0' jika tidak ada yang dipilih
+                const pengikutValue = checkedRadio ? checkedRadio.value : '0'; // Default ke '0' (Bukan Pengikut) jika tidak ada yang dipilih
 
                 if (pegawaiId) {
                     pegawaiData.push({
@@ -286,13 +288,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 sumber_dana: document.querySelector('input[name="sumber_dana"]:checked')?.value,
                 kendaraan: document.getElementById('kendaraan').value,
                 anggaran_id: document.getElementById('kode_anggaran').value,
+                tempat_berangkat: document.getElementById('tempat_berangkat').value,
+                keterangan: document.getElementById('keterangan').value,
                 pegawai: pegawaiData
             };
 
             // Validasi data wajib
             const requiredFields = [
                 'nomor_surat', 'tanggal_surat', 'dasar_surat', 'pejabat_pemberi_tugas_id',
-                'maksud_perjalanan', 'lokasi_tujuan', 'tanggal_berangkat', 'tanggal_kembali',
+                'maksud_perjalanan', 'lokasi_tujuan', 'tempat_berangkat', 'tanggal_berangkat', 'tanggal_kembali',
                 'lama_perjalanan', 'sumber_dana', 'kendaraan', 'anggaran_id'
             ];
 

@@ -6,12 +6,11 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
-const ExcelJS = require('exceljs'); // Tambahkan modul ExcelJS
+const ExcelJS = require('exceljs');
 
 // Impor rute
 const authRoutes = require('./routes/authRoutes');
-const pegawaiRoutes = require('./routes/pegawaiRoutes.js'); // Impor rute pegawai
-// const userRoutes = require('./routes/userRoutes'); // Tidak digunakan, rute user didefinisikan langsung
+const pegawaiRoutes = require('./routes/pegawaiRoutes.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,11 +22,24 @@ const db = require('./database.js');
 db.run(`CREATE TABLE IF NOT EXISTS pejabat (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nama TEXT NOT NULL,
-    jabatan TEXT NOT NULL
+    jabatan TEXT NOT NULL,
+    nip TEXT
 )`, (err) => {
     if (err) {
-        // Log error jika gagal membuat tabel, tapi jangan hentikan server
         console.error("Error creating 'pejabat' table:", err.message);
+    }
+});
+
+// Cek dan perbaiki struktur tabel 'pejabat' jika kolom 'nip' belum ada.
+db.all("PRAGMA table_info(pejabat)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+    const hasNip = cols.some(col => col.name === 'nip');
+    if (!hasNip) {
+        console.warn("[DB MIGRATION] Kolom 'nip' tidak ditemukan. Menambahkan kolom ke tabel 'pejabat'...");
+        db.run("ALTER TABLE pejabat ADD COLUMN nip TEXT", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'nip':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'nip' berhasil ditambahkan.");
+        });
     }
 });
 
@@ -58,27 +70,80 @@ db.run(`CREATE TABLE IF NOT EXISTS spt (
     peran TEXT,
     maksud_perjalanan TEXT NOT NULL,
     lokasi_tujuan TEXT NOT NULL,
+    tempat_berangkat TEXT DEFAULT 'Nanga Pinoh',
     tanggal_berangkat DATE NOT NULL,
     tanggal_kembali DATE NOT NULL,
     lama_perjalanan INTEGER NOT NULL,
     sumber_dana TEXT,
     kendaraan TEXT,
     anggaran_id INTEGER NOT NULL,
+    keterangan TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    -- FOREIGN KEY akan ditambahkan jika tabel pejabat dan anggaran sudah pasti ada
 )`, (err) => {
     if (err) console.error("Error creating 'spt' table:", err.message);
+});
+
+// Cek dan perbaiki struktur tabel 'spt' jika kolom 'tempat_berangkat' belum ada.
+db.all("PRAGMA table_info(spt)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+    const hasTempatBerangkat = cols.some(col => col.name === 'tempat_berangkat');
+    if (!hasTempatBerangkat) {
+        console.warn("[DB MIGRATION] Kolom 'tempat_berangkat' tidak ditemukan. Menambahkan kolom ke tabel 'spt'...");
+        db.run("ALTER TABLE spt ADD COLUMN tempat_berangkat TEXT DEFAULT 'Nanga Pinoh'", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'tempat_berangkat':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'tempat_berangkat' berhasil ditambahkan.");
+        });
+    }
+});
+
+// Cek dan perbaiki struktur tabel 'spt' jika kolom 'keterangan' belum ada.
+db.all("PRAGMA table_info(spt)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+    const hasKeterangan = cols.some(col => col.name === 'keterangan');
+    if (!hasKeterangan) {
+        console.warn("[DB MIGRATION] Kolom 'keterangan' tidak ditemukan. Menambahkan kolom ke tabel 'spt'...");
+        db.run("ALTER TABLE spt ADD COLUMN keterangan TEXT", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'keterangan':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'keterangan' berhasil ditambahkan.");
+        });
+    }
 });
 
 // Pastikan tabel 'spt_pegawai' (linking table) ada
 db.run(`CREATE TABLE IF NOT EXISTS spt_pegawai (
     spt_id INTEGER NOT NULL,
     pegawai_id INTEGER NOT NULL,
+    is_pengikut INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (spt_id, pegawai_id),
     FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE,
     FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
 )`, (err) => {
     if (err) console.error("Error creating 'spt_pegawai' table:", err.message);
+});
+
+// Cek dan perbaiki struktur tabel 'spt_pegawai' jika kolom 'is_pengikut' belum ada.
+db.all("PRAGMA table_info(spt_pegawai)", (err, cols) => {
+    if (err) return;
+    const hasIsPengikut = cols.some(col => col.name === 'is_pengikut');
+    if (!hasIsPengikut) {
+        console.warn("[DB MIGRATION] Kolom 'is_pengikut' tidak ditemukan. Menambahkan kolom ke tabel 'spt_pegawai'...");
+        db.run("ALTER TABLE spt_pegawai ADD COLUMN is_pengikut INTEGER NOT NULL DEFAULT 0", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'is_pengikut':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'is_pengikut' berhasil ditambahkan.");
+        });
+    }
+});
+
+// Pastikan tabel 'sppd' (Surat Perjalanan Dinas) ada
+db.run(`CREATE TABLE IF NOT EXISTS sppd (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spt_id INTEGER NOT NULL,
+    nomor_sppd TEXT UNIQUE NOT NULL,
+    tanggal_sppd DATE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'sppd' table:", err.message);
 });
 
 // Pastikan tabel 'standar_biaya' ada
@@ -101,30 +166,28 @@ db.run(`CREATE TABLE IF NOT EXISTS standar_biaya (
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
 const dbAll = util.promisify(db.all.bind(db));
-// const dbRun = util.promisify(db.run.bind(db)); // DIHAPUS: Ini tidak andal karena kehilangan konteks 'this'.
 
 // Helper promise yang aman untuk db.run
 const runQuery = (sql, params = []) => new Promise((resolve, reject) => {
     db.run(sql, params, function (err) {
         if (err) return reject(err);
-        resolve(this); // 'this' berisi lastID dan changes
+        resolve(this);
     });
 });
 
 // Middleware
-app.use(express.json()); // Menggantikan bodyParser.json()
-app.use(express.urlencoded({ extended: true })); // Menggantikan bodyParser.urlencoded()
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 // Konfigurasi Multer untuk upload file
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = 'public/uploads';
-        fs.mkdirSync(uploadPath, { recursive: true }); // Buat direktori jika belum ada
+        fs.mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        // Buat nama file yang unik untuk menghindari konflik
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const extension = path.extname(file.originalname);
         cb(null, `upload-${uniqueSuffix}${extension}`);
@@ -134,7 +197,6 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     fileFilter: (req, file, cb) => {
-        // Terima hanya file Excel
         if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
             file.mimetype === 'application/vnd.ms-excel') {
             cb(null, true);
@@ -142,26 +204,24 @@ const upload = multer({
             cb(new Error('Hanya file Excel yang diizinkan!'), false);
         }
     },
-    limits: { fileSize: 10 * 1024 * 1024 } // Batas ukuran file 10MB
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 // Konfigurasi Session
 app.use(session({
-    // Mengaktifkan kembali SQLiteStore dengan opsi busyTimeout untuk stabilitas
     store: new SQLiteStore({
         db: 'sessions.db',
         dir: './database',
-        busyTimeout: 5000 // Tunggu 5 detik jika database terkunci
+        busyTimeout: 5000
     }),
-    secret: 'kunci-rahasia-perjadin-melawi', // Ganti dengan secret yang lebih kuat
+    secret: 'kunci-rahasia-perjadin-melawi',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 jam
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
 // Middleware untuk proteksi rute
 const isAuthenticated = (req, res, next) => {
-    // Log ini akan sangat membantu untuk debugging
     console.log(`[isAuthenticated] Mengecek sesi untuk rute: ${req.path}`);
     console.log('[isAuthenticated] Isi req.session:', req.session);
 
@@ -188,18 +248,16 @@ const isApiAuthenticated = (req, res, next) => {
     }
 };
 
-// Middleware BARU untuk proteksi rute khusus Super Admin
+// Middleware untuk proteksi rute khusus Super Admin
 const isSuperAdmin = (req, res, next) => {
-    // Pastikan user ada di session dan rolenya adalah 'superadmin'
     if (req.session.user && req.session.user.role === 'superadmin') {
         next();
     } else {
-        // Kirim status 403 Forbidden jika bukan super admin
         res.status(403).json({ message: 'Akses ditolak. Memerlukan hak akses Super Admin.' });
     }
 };
 
-// Middleware BARU untuk proteksi rute khusus Admin atau Super Admin (untuk halaman)
+// Middleware untuk proteksi rute khusus Admin atau Super Admin (untuk halaman)
 const isAdminOrSuperAdmin = (req, res, next) => {
     if (req.session.user && (req.session.user.role === 'admin' || req.session.user.role === 'superadmin')) {
         next();
@@ -208,7 +266,7 @@ const isAdminOrSuperAdmin = (req, res, next) => {
     }
 };
 
-// Middleware API BARU untuk proteksi rute khusus Admin atau Super Admin (untuk API)
+// Middleware API untuk proteksi rute khusus Admin atau Super Admin (untuk API)
 const isApiAdminOrSuperAdmin = (req, res, next) => {
     if (req.session.user && (req.session.user.role === 'admin' || req.session.user.role === 'superadmin')) {
         next();
@@ -237,27 +295,37 @@ app.get('/tambah-spt', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tambah-spt.html'));
 });
 
-// Halaman Register SPT (BARU)
+// Halaman Register SPT
 app.get('/spt', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'spt-register.html'));
 });
 
-// Halaman Edit SPT (BARU) - Menggunakan template yang sama dengan tambah
+// Halaman Edit SPT
 app.get('/edit-spt/:id', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tambah-spt.html'));
 });
 
-// Halaman Cetak SPT (BARU)
+// Halaman Cetak SPT
 app.get('/cetak/spt/:id', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'cetak-spt.html'));
 });
 
-// Halaman Anggaran (BARU)
+// Halaman Cetak SPPD
+app.get('/cetak/sppd/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-sppd.html'));
+});
+
+// Halaman Cetak SPPD Detail
+app.get('/cetak/sppd-detail/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-sppd.html'));
+});
+
+// Halaman Anggaran
 app.get('/anggaran', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'anggaran.html'));
 });
 
-//Halaman Tambah Pegawai
+// Halaman Tambah Pegawai
 app.get('/pegawai', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pegawai.html'));
 });
@@ -272,14 +340,9 @@ app.get('/me', isApiAuthenticated, (req, res) => {
     if (req.session && req.session.user) {
         res.json(req.session.user);
     } else {
-        // Ini seharusnya tidak terjadi jika isApiAuthenticated bekerja
         res.status(401).json({ message: 'Tidak terautentikasi' });
     }
 });
-
-// --- Rute API Pengguna (terproteksi) ---
-
-// API untuk mendapatkan semua pengguna (HANYA UNTUK SUPER ADMIN)
 
 // Halaman Setelan (terproteksi)
 app.get('/setelan', isAuthenticated, (req, res) => {
@@ -291,22 +354,22 @@ app.get('/profil', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'profil.html'));
 });
 
-// Rute untuk halaman manajemen pengguna (BARU)
+// Rute untuk halaman manajemen pengguna
 app.get('/pengguna', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pengguna.html'));
 });
 
-// Rute untuk halaman edit pengguna (BARU)
+// Rute untuk halaman edit pengguna
 app.get('/edit-pengguna/:id', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'edit-pengguna.html'));
 });
 
-// Rute untuk halaman tambah pengguna (BARU)
+// Rute untuk halaman tambah pengguna
 app.get('/tambah-pengguna', isAuthenticated, isAdminOrSuperAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tambah-pengguna.html'));
 });
 
-// Rute untuk halaman pengaturan aplikasi (BARU)
+// Rute untuk halaman pengaturan aplikasi
 app.get('/pengaturan/aplikasi', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pengaturan-aplikasi.html'));
 });
@@ -325,9 +388,7 @@ app.get('/', (req, res) => {
 // Gunakan rute yang sudah diimpor
 app.use('/api/auth', authRoutes);
 
-// Middleware "pembersih" untuk rute pegawai.
-// Ini memastikan bahwa data nama yang masuk ke API selalu konsisten (menggunakan properti 'nama').
-// Ini akan memperbaiki masalah di mana frontend mungkin mengirim 'nama_lengkap' sementara backend mengharapkan 'nama'.
+// Middleware "pembersih" untuk rute pegawai
 app.use('/api/pegawai', (req, res, next) => {
     if (req.body && req.body.nama_lengkap && !req.body.nama) {
         req.body.nama = req.body.nama_lengkap;
@@ -335,7 +396,7 @@ app.use('/api/pegawai', (req, res, next) => {
     next();
 });
 
-app.use('/api/pegawai', isApiAuthenticated, pegawaiRoutes); // Daftarkan rute pegawai
+app.use('/api/pegawai', isApiAuthenticated, pegawaiRoutes);
 
 // --- API routes for Pejabat (Kepala/WK Daerah) ---
 
@@ -366,14 +427,14 @@ app.get('/api/pejabat/:id', isApiAuthenticated, async (req, res) => {
 
 // POST a new pejabat
 app.post('/api/pejabat', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
-    const { nama, jabatan } = req.body;
+    const { nama, jabatan, nip } = req.body;
     if (!nama || !jabatan) {
         return res.status(400).json({ message: 'Nama dan Jabatan wajib diisi.' });
     }
     try {
-        const sql = 'INSERT INTO pejabat (nama, jabatan) VALUES (?, ?)';
-        const result = await runQuery(sql, [nama, jabatan]);
-        res.status(201).json({ id: result.lastID, nama, jabatan });
+        const sql = 'INSERT INTO pejabat (nama, jabatan, nip) VALUES (?, ?, ?)';
+        const result = await runQuery(sql, [nama, jabatan, nip || null]);
+        res.status(201).json({ id: result.lastID, nama, jabatan, nip });
     } catch (err) {
         console.error('[API ERROR] Gagal menambah pejabat:', err);
         res.status(500).json({ message: err.message });
@@ -382,17 +443,17 @@ app.post('/api/pejabat', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req,
 
 // PUT (update) a pejabat
 app.put('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
-    const { nama, jabatan } = req.body;
+    const { nama, jabatan, nip } = req.body;
     if (!nama || !jabatan) {
         return res.status(400).json({ message: 'Nama dan Jabatan wajib diisi.' });
     }
     try {
-        const sql = 'UPDATE pejabat SET nama = ?, jabatan = ? WHERE id = ?';
-        const result = await runQuery(sql, [nama, jabatan, req.params.id]);
+        const sql = 'UPDATE pejabat SET nama = ?, jabatan = ?, nip = ? WHERE id = ?';
+        const result = await runQuery(sql, [nama, jabatan, nip || null, req.params.id]);
         if (result.changes === 0) {
             return res.status(404).json({ message: 'Data pejabat tidak ditemukan.' });
         }
-        res.json({ id: req.params.id, nama, jabatan });
+        res.json({ id: req.params.id, nama, jabatan, nip });
     } catch (err) {
         console.error(`[API ERROR] Gagal memperbarui pejabat id ${req.params.id}:`, err);
         res.status(500).json({ message: err.message });
@@ -448,7 +509,6 @@ app.post('/api/anggaran', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
         return res.status(400).json({ message: 'Mata Anggaran dan Nilai Anggaran wajib diisi.' });
     }
 
-    // Ekstrak kode dan nama dari dropdown
     const [mata_anggaran_kode, mata_anggaran_nama] = mata_anggaran.split(' - ');
 
     try {
@@ -503,7 +563,6 @@ app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, asyn
 // GET: Mengambil semua data SPT untuk ditampilkan di register
 app.get('/api/spt', isApiAuthenticated, async (req, res) => {
     try {
-        // Query utama untuk mengambil data SPT dan informasi pejabat pemberi tugas
         const sql = `
             SELECT 
                 s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.tanggal_berangkat,
@@ -514,7 +573,6 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
         `;
         const spts = await dbAll(sql);
 
-        // Untuk setiap SPT, ambil daftar pegawai yang ditugaskan
         for (const spt of spts) {
             const pegawaiSql = `
                 SELECT pg.nama_lengkap FROM spt_pegawai sp
@@ -542,10 +600,9 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
             return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
         }
 
-        // Ambil ID pegawai DAN status is_pengikut
         const pegawaiSql = "SELECT pegawai_id, is_pengikut FROM spt_pegawai WHERE spt_id = ?";
         const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
-        spt.pegawai = pegawaiRows; // Kirim array objek { pegawai_id, is_pengikut }
+        spt.pegawai = pegawaiRows;
 
         res.json(spt);
     } catch (err) {
@@ -558,11 +615,10 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
 app.post('/api/spt', isApiAuthenticated, async (req, res) => {
     const {
         nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
-        maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
-        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai
+        maksud_perjalanan, lokasi_tujuan, tempat_berangkat, tanggal_berangkat, tanggal_kembali,
+        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai, keterangan
     } = req.body;
 
-    // Validasi dasar
     if (!nomor_surat || !tanggal_surat || !dasar_surat || !pejabat_pemberi_tugas_id ||
         !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali ||
         !lama_perjalanan || !sumber_dana || !kendaraan || !anggaran_id || !pegawai ||
@@ -570,42 +626,50 @@ app.post('/api/spt', isApiAuthenticated, async (req, res) => {
         return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
     }
 
+    const hasNonFollower = pegawai.some(p => p.pengikut === '0' || p.pengikut === 0);
+    if (!hasNonFollower) {
+        return res.status(400).json({ message: 'Harus ada minimal satu pegawai yang ditugaskan (bukan pengikut).' });
+    }
+
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        // 1. Insert ke tabel 'spt'
         const sptSql = `INSERT INTO spt (
-            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, 
-            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali, 
-            lama_perjalanan, sumber_dana, kendaraan, anggaran_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const sptResult = await runQuery(sptSql, [
-            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
-            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
-            lama_perjalanan, sumber_dana, kendaraan, anggaran_id
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat || 'Nanga Pinoh', tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan || ''
         ]);
 
         const newSptId = sptResult.lastID;
 
-        // 2. Insert ke tabel 'spt_pegawai' untuk setiap pegawai
-        // PERBAIKAN: Tambahkan kolom is_pengikut
         const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
         for (const pegawaiItem of pegawai) {
-            await runQuery(sptPegawaiSql, [newSptId, pegawaiItem.id, pegawaiItem.pengikut]); // Gunakan nilai 'pengikut' dari frontend
+            await runQuery(sptPegawaiSql, [newSptId, pegawaiItem.id, pegawaiItem.pengikut]);
         }
 
+        // Buat SPPD otomatis
+        const nomorSppd = `090/${newSptId}/SPD/${new Date(tanggal_surat).getFullYear()}`;
+        const sppdSql = `INSERT INTO sppd (spt_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?)`;
+        await runQuery(sppdSql, [newSptId, nomorSppd, tanggal_surat]);
+
         await runQuery('COMMIT');
-        res.status(201).json({ message: 'Surat Perintah Tugas berhasil disimpan!', sptId: newSptId });
+        res.status(201).json({ message: 'SPT dan SPPD berhasil dibuat!', sptId: newSptId });
     } catch (err) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
 
         if (err.message.includes('UNIQUE constraint failed')) {
             return res.status(409).json({ message: 'Nomor surat sudah digunakan. Gunakan nomor surat yang berbeda.' });
+        } else if (err.message.includes('SQLITE_CONSTRAINT_FOREIGNKEY')) {
+            return res.status(400).json({
+                message: 'Data terkait (pejabat, anggaran, atau pegawai) tidak valid. Pastikan pilihan Anda ada di daftar.',
+                error: err.message // Sertakan pesan error asli dari database untuk debugging lebih lanjut
+            });
         }
 
         console.error('[API ERROR] Gagal menyimpan SPT:', err);
-        res.status(500).json({ message: 'Gagal menyimpan SPT.', error: err.message });
+        res.status(500).json({ message: 'Gagal menyimpan SPT dan SPPD.', error: err.message });
     }
 });
 
@@ -614,11 +678,10 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
     const { id } = req.params;
     const {
         nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
-        maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
-        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai
+        maksud_perjalanan, lokasi_tujuan, tempat_berangkat, tanggal_berangkat, tanggal_kembali,
+        lama_perjalanan, sumber_dana, kendaraan, anggaran_id, pegawai, keterangan
     } = req.body;
 
-    // Validasi
     if (!nomor_surat || !tanggal_surat || !dasar_surat || !pejabat_pemberi_tugas_id ||
         !maksud_perjalanan || !lokasi_tujuan || !tanggal_berangkat || !tanggal_kembali ||
         !lama_perjalanan || !sumber_dana || !kendaraan || !anggaran_id || !pegawai ||
@@ -626,31 +689,31 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
         return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua kolom yang wajib diisi.' });
     }
 
+    const hasNonFollower = pegawai.some(p => p.pengikut === '0' || p.pengikut === 0);
+    if (!hasNonFollower) {
+        return res.status(400).json({ message: 'Harus ada minimal satu pegawai yang ditugaskan (bukan pengikut).' });
+    }
+
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        // 1. Update tabel 'spt'
         const sptSql = `UPDATE spt SET 
-            nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?,
-            maksud_perjalanan = ?, lokasi_tujuan = ?, tanggal_berangkat = ?, tanggal_kembali = ?,
-            lama_perjalanan = ?, sumber_dana = ?, kendaraan = ?, anggaran_id = ?
+            nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?, maksud_perjalanan = ?, lokasi_tujuan = ?, tempat_berangkat = ?, tanggal_berangkat = ?, tanggal_kembali = ?, lama_perjalanan = ?, sumber_dana = ?, kendaraan = ?, anggaran_id = ?, keterangan = ?
             WHERE id = ?`;
 
         await runQuery(sptSql, [
-            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id,
-            maksud_perjalanan, lokasi_tujuan, tanggal_berangkat, tanggal_kembali,
-            lama_perjalanan, sumber_dana, kendaraan, anggaran_id, id
+            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat || 'Nanga Pinoh', tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan || '', id
         ]);
 
-        // 2. Hapus pegawai lama dari 'spt_pegawai'
         await runQuery('DELETE FROM spt_pegawai WHERE spt_id = ?', [id]);
 
-        // 3. Insert pegawai baru ke 'spt_pegawai'
-        // PERBAIKAN: Tambahkan kolom is_pengikut
         const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
         for (const pegawaiItem of pegawai) {
-            await runQuery(sptPegawaiSql, [id, pegawaiItem.id, pegawaiItem.pengikut]); // Gunakan nilai 'pengikut' dari frontend
+            await runQuery(sptPegawaiSql, [id, pegawaiItem.id, pegawaiItem.pengikut]);
         }
+
+        const sppdUpdateSql = 'UPDATE sppd SET tanggal_sppd = ? WHERE spt_id = ?';
+        await runQuery(sppdUpdateSql, [tanggal_surat, id]);
 
         await runQuery('COMMIT');
         res.json({ message: 'Surat Perintah Tugas berhasil diperbarui!', sptId: id });
@@ -659,6 +722,11 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
 
         if (err.message.includes('UNIQUE constraint failed')) {
             return res.status(409).json({ message: 'Nomor surat sudah digunakan. Gunakan nomor surat yang berbeda.' });
+        } else if (err.message.includes('SQLITE_CONSTRAINT_FOREIGNKEY')) {
+            return res.status(400).json({
+                message: 'Data terkait (pejabat, anggaran, atau pegawai) tidak valid. Pastikan pilihan Anda ada di daftar.',
+                error: err.message // Sertakan pesan error asli dari database untuk debugging lebih lanjut
+            });
         }
 
         console.error(`[API ERROR] Gagal memperbarui SPT id ${id}:`, err);
@@ -668,26 +736,226 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
 
 // DELETE: Menghapus SPT
 app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
-    const result = await runQuery('DELETE FROM spt WHERE id = ?', [req.params.id]);
-    if (result.changes === 0) {
-        return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
+    try {
+        const result = await runQuery('DELETE FROM spt WHERE id = ?', [req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
+        }
+        res.json({ message: 'Data SPT berhasil dihapus.' });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal menghapus SPT id ${req.params.id}:`, err);
+        res.status(500).json({ message: 'Gagal menghapus SPT.', error: err.message });
     }
-    res.json({ message: 'Data SPT berhasil dihapus.' });
+});
+
+// --- Rute API SPPD (Surat Perjalanan Dinas) ---
+
+// GET: Mengambil semua data SPPD untuk register
+app.get('/api/sppd', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                sp.id, sp.nomor_sppd, sp.tanggal_sppd, sp.spt_id,
+                s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan,
+                s.tanggal_berangkat, s.tanggal_kembali,
+                p.nama_lengkap as pegawai_nama, p.nip as pegawai_nip
+            FROM sppd sp
+            JOIN spt s ON sp.spt_id = s.id
+            JOIN spt_pegawai spg ON s.id = spg.spt_id AND spg.is_pengikut = 0
+            JOIN pegawai p ON spg.pegawai_id = p.id
+            ORDER BY sp.tanggal_sppd DESC, sp.id DESC
+        `;
+        const rows = await dbAll(sql, []);
+        res.json({
+            "message": "success",
+            "data": rows
+        });
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data SPPD:', err);
+        res.status(500).json({ "error": err.message });
+    }
+});
+
+// GET: Mengambil data SPPD berdasarkan ID untuk keperluan cetak
+app.get('/api/sppd/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sql = `
+            SELECT 
+                sp.*, 
+                s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan,
+                s.tanggal_berangkat, s.tanggal_kembali, s.kendaraan, s.lama_perjalanan,
+                p.nama_lengkap as pegawai_nama, p.nip as pegawai_nip, p.pangkat, p.golongan, p.jabatan,
+                pj.nama as pejabat_nama, pj.jabatan as pejabat_jabatan, pj.nip as pejabat_nip
+            FROM sppd sp
+            JOIN spt s ON sp.spt_id = s.id
+            LEFT JOIN spt_pegawai spg ON s.id = spg.spt_id AND spg.is_pengikut = 0
+            LEFT JOIN pegawai p ON spg.pegawai_id = p.id
+            LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
+            WHERE sp.id = ?
+        `;
+
+        const sppdData = await dbGet(sql, [id]);
+
+        if (!sppdData) {
+            return res.status(404).json({ message: 'SPD tidak ditemukan.' });
+        }
+
+        const pengikutSql = `
+            SELECT p.nama_lengkap, p.nip 
+            FROM spt_pegawai sp
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            WHERE sp.spt_id = ? AND sp.is_pengikut = 1
+        `;
+        const pengikut = await dbAll(pengikutSql, [sppdData.spt_id]);
+
+        res.json({
+            sppd: sppdData,
+            spt: {
+                nomor_surat: sppdData.nomor_surat,
+                tanggal_surat: sppdData.tanggal_surat,
+                maksud_perjalanan: sppdData.maksud_perjalanan,
+                lokasi_tujuan: sppdData.lokasi_tujuan,
+                tanggal_berangkat: sppdData.tanggal_berangkat,
+                tanggal_kembali: sppdData.tanggal_kembali,
+                kendaraan: sppdData.kendaraan,
+                lama_perjalanan: sppdData.lama_perjalanan
+            },
+            pegawai: {
+                nama_lengkap: sppdData.pegawai_nama,
+                nip: sppdData.pegawai_nip,
+                pangkat: sppdData.pangkat,
+                golongan: sppdData.golongan,
+                jabatan: sppdData.jabatan
+            },
+            pejabat: {
+                nama: sppdData.pejabat_nama,
+                jabatan: sppdData.pejabat_jabatan,
+                nip: sppdData.pejabat_nip
+            },
+            pengikut: pengikut
+        });
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data SPD:', err);
+        res.status(500).json({ message: 'Gagal mengambil data SPD.' });
+    }
+});
+
+// API untuk membuat SPD otomatis dari SPT
+app.post('/api/sppd/auto-create', isApiAuthenticated, async (req, res) => {
+    try {
+        const { spt_id } = req.body;
+
+        const spt = await dbGet("SELECT * FROM spt WHERE id = ?", [spt_id]);
+        if (!spt) {
+            return res.status(404).json({ message: 'SPT tidak ditemukan.' });
+        }
+
+        const existingSppd = await dbGet("SELECT * FROM sppd WHERE spt_id = ?", [spt_id]);
+        if (existingSppd) {
+            return res.status(400).json({ message: 'SPD sudah ada untuk SPT ini.' });
+        }
+
+        const currentYear = new Date().getFullYear();
+        const countSppd = await dbGet("SELECT COUNT(*) as count FROM sppd WHERE strftime('%Y', tanggal_sppd) = ?", [currentYear.toString()]);
+        const nomorSppd = `800/${countSppd.count + 1}/SETDA/${currentYear}`;
+
+        const insertSql = `
+            INSERT INTO sppd (nomor_sppd, tanggal_sppd, spt_id) 
+            VALUES (?, datetime('now'), ?)
+        `;
+        const result = await runQuery(insertSql, [nomorSppd, spt_id]);
+
+        res.json({
+            message: 'SPD berhasil dibuat otomatis.',
+            sppdId: result.lastID,
+            nomorSppd: nomorSppd
+        });
+    } catch (err) {
+        console.error('[API ERROR] Gagal membuat SPD otomatis:', err);
+        res.status(500).json({ message: 'Gagal membuat SPD otomatis.' });
+    }
+});
+
+// GET: Mengambil data SPPD berdasarkan SPT ID untuk keperluan cetak
+app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
+    try {
+        const { spt_id } = req.params;
+
+        const sptSql = "SELECT * FROM spt WHERE id = ?";
+        const spt = await dbGet(sptSql, [spt_id]);
+        if (!spt) {
+            return res.status(404).json({ message: 'Data SPT terkait tidak ditemukan.' });
+        }
+
+        let sppd = await dbGet("SELECT * FROM sppd WHERE spt_id = ?", [spt_id]);
+        if (!sppd) {
+            // Jika SPPD tidak ada (untuk data lama), buat secara on-the-fly
+            console.log(`[INFO] SPPD untuk SPT ID ${spt_id} tidak ditemukan, membuat data baru...`);
+            const nomorSppd = `090/${spt.id}/SPD/${new Date(spt.tanggal_surat).getFullYear()}`;
+            const sppdSqlInsert = `INSERT INTO sppd (spt_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?)`;
+            const result = await runQuery(sppdSqlInsert, [spt.id, nomorSppd, spt.tanggal_surat]);
+
+            // Ambil kembali data SPPD yang baru dibuat
+            sppd = await dbGet("SELECT * FROM sppd WHERE id = ?", [result.lastID]);
+        }
+
+        const pegawaiSql = `
+            SELECT p.* FROM pegawai p
+            JOIN spt_pegawai sp ON p.id = sp.pegawai_id
+            WHERE sp.spt_id = ? AND sp.is_pengikut = 0 
+            LIMIT 1 
+        `;
+        let pegawaiUtama = await dbGet(pegawaiSql, [spt_id]);
+        if (!pegawaiUtama) {
+            console.warn(`[WARN] Pegawai utama (bukan pengikut) tidak ditemukan untuk SPT ID ${spt.id}.`);
+            pegawaiUtama = { nama_lengkap: 'Data Pegawai Tidak Ditemukan', nip: '-', pangkat: '-', golongan: '-', jabatan: '-' };
+        }
+
+        let pejabat = await dbGet("SELECT id, nama, jabatan, nip FROM pejabat WHERE id = ?", [spt.pejabat_pemberi_tugas_id]);
+        if (!pejabat) {
+            const pegawaiAsPejabat = await dbGet("SELECT id, nama_lengkap as nama, jabatan, nip FROM pegawai WHERE id = ?", [spt.pejabat_pemberi_tugas_id]);
+            pejabat = pegawaiAsPejabat;
+        }
+
+        if (!pejabat) {
+            console.warn(`[WARN] Pejabat pemberi tugas dengan ID ${spt.pejabat_pemberi_tugas_id} tidak ditemukan untuk SPT ID ${spt.id}.`);
+            pejabat = { nama: 'Data Pejabat Tidak Ditemukan', jabatan: 'Data Jabatan Tidak Ditemukan', nip: '-' };
+        }
+
+        let anggaran = await dbGet("SELECT mata_anggaran_kode, mata_anggaran_nama FROM anggaran WHERE id = ?", [spt.anggaran_id]);
+        if (!anggaran) {
+            console.warn(`[WARN] Data anggaran dengan ID ${spt.anggaran_id} tidak ditemukan untuk SPT ID ${spt.id}.`);
+            anggaran = { mata_anggaran_kode: 'Tidak Ditemukan', mata_anggaran_nama: '' };
+        }
+
+        const pengikutSql = `
+            SELECT p.nama_lengkap, p.nip 
+            FROM spt_pegawai sp
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            WHERE sp.spt_id = ? AND sp.is_pengikut = 1
+        `;
+        const pengikut = await dbAll(pengikutSql, [spt_id]);
+
+        res.json({ sppd, spt, pegawai: pegawaiUtama, pejabat, pengikut, anggaran });
+
+    } catch (err) {
+        console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}:`, err);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
 });
 
 // --- Rute API Profil Pengguna (terproteksi) ---
-// Rute ini harus didefinisikan SEBELUM rute umum '/api/user' agar tidak tertangkap olehnya.
 
 // GET: Mengambil data profil gabungan untuk pengguna yang sedang login
 app.get('/api/user/profile', isApiAuthenticated, async (req, res) => {
-    // Halaman profil sekarang menyertakan NIP, Jabatan, dan foto dari tabel 'users'.
     const sql = 'SELECT id, name, username, role, nip, jabatan, foto_profil FROM users WHERE id = ?';
     try {
         const user = await dbGet(sql, [req.session.user.id]);
         if (!user) {
             return res.status(404).json({ message: 'Profil pengguna tidak ditemukan.' });
         }
-        // Kirim data dalam format yang konsisten dengan ekspektasi frontend
         res.json({ user: user });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data profil:', err);
@@ -704,7 +972,6 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
     if (!name || !username) {
         return res.status(400).json({ message: 'Nama Lengkap dan Username harus diisi.' });
     }
-    // Superadmin cannot change their username
     if (userRole === 'superadmin' && username !== oldUsername) {
         return res.status(403).json({ message: 'Super Admin tidak dapat mengubah username.' });
     }
@@ -712,10 +979,8 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
     try {
         await runQuery('BEGIN TRANSACTION', []);
 
-        // Ambil data pengguna saat ini untuk memeriksa foto lama
         const currentUser = await dbGet('SELECT foto_profil FROM users WHERE id = ?', [userId]);
 
-        // Uniqueness check if username is being changed
         if (username !== oldUsername) {
             const existingUser = await dbGet('SELECT id FROM users WHERE username = ? AND id != ?', [username, userId]);
             if (existingUser) {
@@ -723,7 +988,6 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
             }
         }
 
-        // Uniqueness check for NIP (NIP harus unik di antara pengguna)
         if (nip) {
             const existingNipUser = await dbGet('SELECT id FROM users WHERE nip = ? AND id != ?', [nip, userId]);
             if (existingNipUser) {
@@ -731,7 +995,6 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
             }
         }
 
-        // Siapkan query update
         let updateFields = ['name = ?', 'username = ?', 'nip = ?', 'jabatan = ?'];
         let updateParams = [name, username, nip || null, jabatan || null];
 
@@ -743,12 +1006,10 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
         }
 
         if (req.file) {
-            // Jika ada file baru diupload, simpan path-nya
             const newPhotoPath = req.file.path.replace(/\\/g, "/").replace('public/', '');
             updateFields.push('foto_profil = ?');
             updateParams.push(newPhotoPath);
 
-            // Hapus foto lama jika ada
             if (currentUser && currentUser.foto_profil) {
                 const oldPhotoFullPath = path.join(__dirname, 'public', currentUser.foto_profil);
                 if (fs.existsSync(oldPhotoFullPath)) {
@@ -763,15 +1024,13 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
 
         await runQuery('COMMIT', []);
 
-        // Update session data
         req.session.user.name = name;
         req.session.user.username = username;
-        req.session.save(); // Simpan perubahan sesi
+        req.session.save();
 
         res.json({ message: 'Profil berhasil diperbarui.' });
 
     } catch (error) {
-        // Jika terjadi error setelah file diupload, hapus file yang baru diupload
         if (req.file) {
             fs.unlinkSync(req.file.path);
         }
@@ -784,7 +1043,6 @@ app.put('/api/user/profile', isApiAuthenticated, upload.single('foto_profil'), a
 // API untuk mendapatkan semua pengguna (HANYA UNTUK SUPER ADMIN)
 app.get('/api/users', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     try {
-        // Ambil semua pengguna kecuali password mereka
         const users = await dbAll('SELECT id, username, name, role, nip, jabatan, foto_profil FROM users ORDER BY name ASC', []);
         res.json(users);
     } catch (err) {
@@ -797,23 +1055,19 @@ app.get('/api/users', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, re
 app.post('/api/users', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const { name, username, password, role } = req.body;
     try {
-        // Validasi input dasar
         if (!name || !username || !password || !role) {
             return res.status(400).json({ message: 'Semua field harus diisi.' });
         }
 
-        // Cek apakah username sudah ada
         const existingUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
         if (existingUser) {
             return res.status(409).json({ message: 'Username sudah digunakan.' });
         }
 
-        // Hash password sebelum disimpan
         const hash = await bcrypt.hash(password, 10);
 
         const sql = 'INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)';
 
-        // Bungkus db.run dalam Promise untuk mendapatkan this.lastID
         const result = await new Promise((resolve, reject) => {
             db.run(sql, [name, username, hash, role], function (err) {
                 if (err) return reject(err);
@@ -829,7 +1083,7 @@ app.post('/api/users', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, r
 });
 
 // API untuk mendapatkan detail satu pengguna (HANYA UNTUK SUPER ADMIN)
-app.get('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => { // Middleware sudah sesuai
+app.get('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const sql = "SELECT id, name, username, role FROM users WHERE id = ?";
     try {
         const user = await dbGet(sql, [req.params.id]);
@@ -844,24 +1098,21 @@ app.get('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
 });
 
 // API untuk mengedit pengguna (HANYA UNTUK SUPER ADMIN)
-app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => { // Middleware sudah sesuai
+app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const { name, username, role, password } = req.body;
     const userIdToUpdate = parseInt(req.params.id, 10);
     const loggedInUser = req.session.user;
 
     try {
-        // Validasi input
         if (!name || !username || !role) {
             return res.status(400).json({ message: 'Nama, username, dan role harus diisi.' });
         }
 
-        // Ambil data pengguna yang akan diupdate untuk validasi peran
         const userToUpdate = await dbGet('SELECT role FROM users WHERE id = ?', [userIdToUpdate]);
         if (!userToUpdate) {
             return res.status(404).json({ message: 'Pengguna tidak ditemukan.' });
         }
 
-        // Logika keamanan untuk Admin
         if (loggedInUser.role === 'admin') {
             if (userToUpdate.role !== 'user') {
                 return res.status(403).json({ message: 'Admin hanya dapat mengubah pengguna dengan peran "User".' });
@@ -871,7 +1122,6 @@ app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
             }
         }
 
-        // Logika keamanan untuk Super Admin (mencegah menghapus super admin terakhir)
         if (loggedInUser.role === 'superadmin' && userToUpdate.role === 'superadmin' && role !== 'superadmin') {
             const superadminCountResult = await dbGet("SELECT COUNT(*) as count FROM users WHERE role = 'superadmin'");
             if (superadminCountResult && superadminCountResult.count <= 1) {
@@ -879,13 +1129,11 @@ app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
             }
         }
 
-        // Cek apakah username baru sudah digunakan oleh user lain
         const existingUser = await dbGet('SELECT id FROM users WHERE username = ? AND id != ?', [username, userIdToUpdate]);
         if (existingUser) {
             return res.status(409).json({ message: 'Username sudah digunakan oleh pengguna lain.' });
         }
 
-        // Siapkan query update
         let updateFields = ['name = ?', 'username = ?', 'role = ?'];
         let params = [name, username, role];
         if (password && password.trim() !== '') {
@@ -911,28 +1159,24 @@ app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
 });
 
 // API untuk menghapus pengguna (HANYA UNTUK SUPER ADMIN)
-app.delete('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => { // Middleware sudah sesuai
+app.delete('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const userIdToDelete = parseInt(req.params.id, 10);
     const loggedInUser = req.session.user;
 
     try {
-        // Mencegah pengguna menghapus akunnya sendiri
         if (userIdToDelete === loggedInUser.id) {
             return res.status(403).json({ message: 'Anda tidak dapat menghapus akun Anda sendiri.' });
         }
 
-        // Ambil data pengguna yang akan dihapus untuk validasi peran
         const userToDelete = await dbGet('SELECT role FROM users WHERE id = ?', [userIdToDelete]);
         if (!userToDelete) {
             return res.status(404).json({ message: 'Pengguna tidak ditemukan.' });
         }
 
-        // Logika keamanan: Admin hanya bisa hapus 'user'
         if (loggedInUser.role === 'admin' && userToDelete.role !== 'user') {
             return res.status(403).json({ message: 'Admin hanya dapat menghapus pengguna dengan peran "User".' });
         }
 
-        // Logika keamanan: Superadmin tidak bisa hapus 'superadmin' lain
         if (loggedInUser.role === 'superadmin' && userToDelete.role === 'superadmin') {
             return res.status(403).json({ message: 'Super Admin tidak dapat menghapus Super Admin lainnya.' });
         }
@@ -952,7 +1196,6 @@ app.delete('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (
 
 // API baru untuk mendapatkan daftar peran yang tersedia
 app.get('/api/roles', isApiAuthenticated, isApiAdminOrSuperAdmin, (req, res) => {
-    // Definisikan peran di satu tempat. Mudah untuk diubah di masa depan.
     const roles = [
         { value: 'user', text: 'User' },
         { value: 'admin', text: 'Admin' },
@@ -969,12 +1212,10 @@ app.get('/api/user/session', async (req, res) => {
 
     if (req.session && req.session.user && req.session.user.id) {
         try {
-            // Ambil data lengkap user dari database untuk memastikan data selalu fresh
             const sql = 'SELECT id, name, username, role, nip, jabatan, foto_profil FROM users WHERE id = ?';
             const user = await dbGet(sql, [req.session.user.id]);
 
             if (user) {
-                // Perbarui sesi dengan data terbaru dan kirim ke frontend
                 req.session.user = user;
                 res.json({ user: user });
             } else {
@@ -989,32 +1230,31 @@ app.get('/api/user/session', async (req, res) => {
     }
 });
 
-// --- Rute API Pengguna (terproteksi) ---
-
-// API untuk mendapatkan semua pengguna (HANYA UNTUK SUPER ADMIN)
-
 // API untuk data dashboard (dibuat dinamis)
-app.get('/api/dashboard/stats', isApiAuthenticated, async (req, res) => { // Gunakan middleware API dan async
+app.get('/api/dashboard/stats', isApiAuthenticated, async (req, res) => {
     try {
         const sqlTotal = 'SELECT COUNT(*) as totalPerjalanan FROM sppd';
-        const sqlBulanIni = "SELECT COUNT(*) as perjalananBulanIni FROM sppd WHERE strftime('%Y-%m', tanggal_berangkat) = strftime('%Y-%m', 'now')";
+        const sqlBulanIni = `
+            SELECT COUNT(*) as perjalananBulanIni FROM sppd 
+            JOIN spt ON sppd.spt_id = spt.id 
+            WHERE strftime('%Y-%m', spt.tanggal_berangkat) = strftime('%Y-%m', 'now')
+        `;
         const sqlPerjalananPerBulan = `
             SELECT
-                strftime('%Y-%m', tanggal_berangkat) as bulan,
+                strftime('%Y-%m', s.tanggal_berangkat) as bulan,
                 COUNT(*) as jumlah
-            FROM sppd
-            WHERE tanggal_berangkat >= date('now', '-12 months')
+            FROM sppd sp
+            JOIN spt s ON sp.spt_id = s.id
+            WHERE s.tanggal_berangkat >= date('now', '-12 months')
             GROUP BY bulan
             ORDER BY bulan ASC
         `;
-        // Jalankan query secara paralel
         const [totalRow, bulanIniRow, perjalananBulananData] = await Promise.all([
             dbGet(sqlTotal),
             dbGet(sqlBulanIni),
             dbAll(sqlPerjalananPerBulan)
         ]);
 
-        // Siapkan data untuk 12 bulan terakhir, isi 0 jika tidak ada data
         const labels = [];
         const data = [];
         const now = new Date();
@@ -1038,75 +1278,6 @@ app.get('/api/dashboard/stats', isApiAuthenticated, async (req, res) => { // Gun
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil statistik dashboard:', err);
         res.status(500).json({ message: err.message });
-    }
-});
-
-// --- Rute API SPPD (terproteksi) ---
-
-// GET: Mengambil semua data SPPD
-app.get('/api/sppd', isApiAuthenticated, async (req, res) => { // REFAKTOR: Gunakan async/await
-    const sql = "SELECT * FROM sppd ORDER BY id DESC";
-    try {
-        const rows = await dbAll(sql, []);
-        res.json({
-            "message": "success",
-            "data": rows
-        });
-    } catch (err) {
-        console.error('[API ERROR] Gagal mengambil data SPPD:', err);
-        res.status(500).json({ "error": err.message });
-    }
-});
-
-// POST: Membuat SPPD baru
-app.post('/api/sppd', isApiAuthenticated, async (req, res) => { // REFAKTOR: Gunakan async/await
-    const {
-        nomor_surat, nama_pegawai, nip, pangkat_golongan, jabatan,
-        maksud_perjalanan, tempat_tujuan, lama_perjalanan,
-        tanggal_berangkat, tanggal_kembali
-    } = req.body;
-
-    try {
-        const sql = `INSERT INTO sppd (nomor_surat, nama_pegawai, nip, pangkat_golongan, jabatan, maksud_perjalanan, tempat_tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali) VALUES (?,?,?,?,?,?,?,?,?,?)`;
-        const params = [nomor_surat, nama_pegawai, nip, pangkat_golongan, jabatan, maksud_perjalanan, tempat_tujuan, lama_perjalanan, tanggal_berangkat, tanggal_kembali];
-
-        // Bungkus db.run dalam Promise untuk mendapatkan this.lastID
-        const result = await new Promise((resolve, reject) => {
-            db.run(sql, params, function (err) {
-                if (err) return reject(err);
-                resolve({ lastID: this.lastID });
-            });
-        });
-
-        res.status(201).json({
-            "message": "success",
-            "data": req.body,
-            "id": result.lastID
-        });
-    } catch (err) {
-        console.error('[API ERROR] Gagal membuat SPPD baru:', err);
-        res.status(400).json({ "error": err.message });
-    }
-});
-
-// DELETE: Menghapus SPPD berdasarkan ID
-app.delete('/api/sppd/:id', isApiAuthenticated, async (req, res) => { // REFAKTOR: Gunakan async/await
-    const id = req.params.id;
-    try {
-        const sql = 'DELETE FROM sppd WHERE id = ?';
-        const result = await new Promise((resolve, reject) => {
-            db.run(sql, [id], function (err) {
-                if (err) return reject(err);
-                resolve({ changes: this.changes });
-            });
-        });
-        if (result.changes === 0) {
-            return res.status(404).json({ message: 'SPPD tidak ditemukan.' });
-        }
-        res.json({ "message": "deleted", "changes": result.changes });
-    } catch (err) {
-        console.error(`[API ERROR] Gagal menghapus SPPD id ${id}:`, err);
-        res.status(400).json({ "error": err.message });
     }
 });
 
@@ -1141,167 +1312,160 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
     }
 
     const tipeBiaya = req.body.tipe_biaya;
-    const filePath = req.file.path; // Dapatkan path file dari multer
+    const filePath = req.file.path;
 
     try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(filePath); // Perbaikan: Baca dari file path, bukan buffer
+        await workbook.xlsx.readFile(filePath);
 
         const worksheet = workbook.worksheets[0];
         const standarBiayaData = [];
 
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            // Perbaikan: Tentukan jumlah baris header yang akan dilewati berdasarkan tipe biaya.
-            // Tipe A, B, E, F, G, H, I, dan J memiliki 2 baris header. Tipe K (Taksi) hanya 1.
             const headerRowsToSkip = (['A', 'B', 'E', 'F', 'G', 'H', 'I', 'J'].includes(tipeBiaya)) ? 2 : 1;
 
             if (rowNumber > headerRowsToSkip) {
-                const rowData = row.values; // row.values adalah sparse array, index = nomor kolom
+                const rowData = row.values;
 
                 let data = {};
-                // Pemetaan kolom spesifik untuk Tipe A (Uang Harian) dan B (Penginapan)
-                // yang memiliki struktur kolom yang sama.
                 if (tipeBiaya === 'A' || tipeBiaya === 'B') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tempat Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: rowData[8] || null // Kolom H: Diklat/Bimtek
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: rowData[8] || null
                     };
                 } else if (tipeBiaya === 'C') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: null,                       // Tidak digunakan untuk tipe ini
-                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: null,                        // Tidak digunakan untuk tipe ini
-                        gol_b: null,                        // Tidak digunakan untuk tipe ini
-                        gol_c: null,                        // Tidak digunakan untuk tipe ini
-                        gol_d: null,                        // Tidak digunakan untuk tipe ini
-                        besaran: rowData[4] || null,        // Kolom D: Besaran
-                        biaya_kontribusi: rowData[5] || null // Kolom E: Kontribusi
+                        uraian: null,
+                        provinsi: rowData[2] || null,
+                        satuan: rowData[3] || null,
+                        gol_a: null,
+                        gol_b: null,
+                        gol_c: null,
+                        gol_d: null,
+                        besaran: rowData[4] || null,
+                        biaya_kontribusi: rowData[5] || null
                     };
                 } else if (tipeBiaya === 'D') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Uraian
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: null,                        // Tidak digunakan untuk tipe ini
-                        gol_b: null,                        // Tidak digunakan untuk tipe ini
-                        gol_c: null,                        // Tidak digunakan untuk tipe ini
-                        gol_d: null,                        // Tidak digunakan untuk tipe ini
-                        besaran: rowData[4] || null,        // Kolom D: Luar Kota
-                        biaya_kontribusi: rowData[5] || null // Kolom E: Dalam Kota
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: null,
+                        gol_b: null,
+                        gol_c: null,
+                        gol_d: null,
+                        besaran: rowData[4] || null,
+                        biaya_kontribusi: rowData[5] || null
                     };
                 } else if (tipeBiaya === 'E') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: null,                       // Tidak digunakan untuk tipe ini
-                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: null,
+                        provinsi: rowData[2] || null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'F') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'G') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'H') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'I') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'J') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: rowData[2] || null,         // Kolom B: Tujuan
-                        provinsi: null,                     // Tidak digunakan untuk tipe ini
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: rowData[4] || null,          // Kolom D: Gol A
-                        gol_b: rowData[5] || null,          // Kolom E: Gol B
-                        gol_c: rowData[6] || null,          // Kolom F: Gol C
-                        gol_d: rowData[7] || null,          // Kolom G: Gol D
-                        besaran: null,                      // Tidak digunakan untuk tipe ini
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: rowData[2] || null,
+                        provinsi: null,
+                        satuan: rowData[3] || null,
+                        gol_a: rowData[4] || null,
+                        gol_b: rowData[5] || null,
+                        gol_c: rowData[6] || null,
+                        gol_d: rowData[7] || null,
+                        besaran: null,
+                        biaya_kontribusi: null
                     };
                 } else if (tipeBiaya === 'K') {
                     data = {
                         tipe_biaya: tipeBiaya,
-                        uraian: null,                       // Tidak digunakan untuk tipe ini
-                        provinsi: rowData[2] || null,       // Kolom B: Provinsi
-                        satuan: rowData[3] || null,         // Kolom C: Satuan
-                        gol_a: null,                        // Tidak digunakan untuk tipe ini
-                        gol_b: null,                        // Tidak digunakan untuk tipe ini
-                        gol_c: null,                        // Tidak digunakan untuk tipe ini
-                        gol_d: null,                        // Tidak digunakan untuk tipe ini
-                        besaran: rowData[4] || null,        // Kolom D: Besaran
-                        biaya_kontribusi: null              // Tidak digunakan untuk tipe ini
+                        uraian: null,
+                        provinsi: rowData[2] || null,
+                        satuan: rowData[3] || null,
+                        gol_a: null,
+                        gol_b: null,
+                        gol_c: null,
+                        gol_d: null,
+                        besaran: rowData[4] || null,
+                        biaya_kontribusi: null
                     };
                 }
-                // TODO: Tambahkan blok 'else if' untuk tipe biaya lain (C, D, dst.) dengan pemetaan kolom yang berbeda.
 
                 standarBiayaData.push(data);
             }
         });
 
-        // Hapus data lama dengan tipe_biaya yang sama
         await runQuery('DELETE FROM standar_biaya WHERE tipe_biaya = ?', [tipeBiaya]);
 
-        // Simpan data baru
         for (const data of standarBiayaData) {
             const sql = `INSERT INTO standar_biaya 
                 (tipe_biaya, uraian, provinsi, satuan, gol_a, gol_b, gol_c, gol_d, besaran, biaya_kontribusi) 
@@ -1321,13 +1485,11 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
             ]);
         }
 
-        // Hapus file setelah diproses
         fs.unlinkSync(filePath);
 
         res.json({ message: 'Data standar biaya berhasil diupload dan disimpan.' });
     } catch (error) {
         console.error('[API ERROR] Gagal memproses file Excel:', error);
-        // Hapus file jika terjadi error saat pemrosesan
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
