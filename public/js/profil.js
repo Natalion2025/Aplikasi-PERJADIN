@@ -151,4 +151,4 @@ function initializeProfilePage() {
 }
 
 // Jalankan inisialisasi setelah DOM dimuat
-document.addEventListener('DOMContentLoaded', initializeProfilePage);
+initializeProfilePage();

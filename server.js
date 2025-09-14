@@ -83,6 +83,20 @@ db.run(`CREATE TABLE IF NOT EXISTS spt (
     if (err) console.error("Error creating 'spt' table:", err.message);
 });
 
+// Cek dan perbaiki struktur tabel 'spt' jika kolom 'status' belum ada.
+db.all("PRAGMA table_info(spt)", (err, cols) => {
+    if (err) return;
+    const hasStatus = cols.some(col => col.name === 'status');
+    if (!hasStatus) {
+        console.warn("[DB MIGRATION] Kolom 'status' tidak ditemukan. Menambahkan kolom ke tabel 'spt'...");
+        db.run("ALTER TABLE spt ADD COLUMN status TEXT DEFAULT 'aktif'", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'status':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'status' berhasil ditambahkan.");
+        });
+    }
+});
+
+
 // Cek dan perbaiki struktur tabel 'spt' jika kolom 'tempat_berangkat' belum ada.
 db.all("PRAGMA table_info(spt)", (err, cols) => {
     if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
@@ -162,6 +176,44 @@ db.run(`CREATE TABLE IF NOT EXISTS standar_biaya (
 )`, (err) => {
     if (err) console.error("Error creating 'standar_biaya' table:", err.message);
 });
+
+// Pastikan tabel 'laporan_perjadin' ada
+db.run(`CREATE TABLE IF NOT EXISTS laporan_perjadin (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spt_id INTEGER NOT NULL,
+    tanggal_laporan DATE NOT NULL,
+    tempat_laporan TEXT NOT NULL,
+    judul TEXT NOT NULL,
+    identitas_pelapor TEXT,
+    dasar_perjalanan TEXT,
+    tujuan_perjalanan TEXT,
+    lama_dan_tanggal_perjalanan TEXT,
+    deskripsi_kronologis TEXT,
+    tempat_dikunjungi TEXT,
+    hasil_dicapai TEXT,
+    transportasi TEXT,
+    akomodasi TEXT,
+    kesimpulan TEXT,
+    lampiran_path TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE SET NULL
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_perjadin' table:", err.message);
+});
+
+// Pastikan tabel 'pembatalan_spt' ada
+db.run(`CREATE TABLE IF NOT EXISTS pembatalan_spt (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spt_id INTEGER NOT NULL,
+    tempat_pembatalan TEXT NOT NULL,
+    tanggal_pembatalan DATE NOT NULL,
+    alasan TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'pembatalan_spt' table:", err.message);
+});
+
 
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
@@ -333,6 +385,26 @@ app.get('/pegawai', (req, res) => {
 // Route untuk halaman Standar Biaya
 app.get('/standar-biaya', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'standar-biaya.html'));
+});
+
+// Rute untuk halaman Laporan Register
+app.get('/laporan', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'laporan-register.html'));
+});
+
+// Rute untuk halaman Buat Laporan
+app.get('/buat-laporan', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'buat-laporan.html'));
+});
+
+// Rute untuk halaman Edit Laporan (menggunakan file yang sama dengan buat-laporan)
+app.get('/edit-laporan/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'buat-laporan.html'));
+});
+
+// Rute untuk halaman Cetak Laporan
+app.get('/cetak/laporan/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-laporan.html'));
 });
 
 // API untuk mendapatkan data pengguna yang sedang login
@@ -565,8 +637,10 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
             SELECT 
-                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.tanggal_berangkat,
-                p.nama as pejabat_nama, p.jabatan as pejabat_jabatan
+                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, 
+                s.tanggal_berangkat, s.status,
+                p.nama as pejabat_nama, p.jabatan as pejabat_jabatan,
+                (SELECT COUNT(*) FROM laporan_perjadin WHERE spt_id = s.id) as laporan_count
             FROM spt s
             LEFT JOIN pejabat p ON s.pejabat_pemberi_tugas_id = p.id
             ORDER BY s.tanggal_surat DESC, s.id DESC
@@ -745,6 +819,36 @@ app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (re
     } catch (err) {
         console.error(`[API ERROR] Gagal menghapus SPT id ${req.params.id}:`, err);
         res.status(500).json({ message: 'Gagal menghapus SPT.', error: err.message });
+    }
+});
+
+// POST: Membatalkan SPT
+app.post('/api/spt/cancel', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { spt_id, tempat_pembatalan, tanggal_pembatalan, alasan } = req.body;
+
+    if (!spt_id || !tempat_pembatalan || !tanggal_pembatalan) {
+        return res.status(400).json({ message: 'Data pembatalan tidak lengkap.' });
+    }
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        // 1. Update status di tabel SPT
+        const updateResult = await runQuery("UPDATE spt SET status = 'dibatalkan' WHERE id = ? AND status = 'aktif'", [spt_id]);
+        if (updateResult.changes === 0) {
+            throw new Error('SPT tidak ditemukan atau sudah dibatalkan sebelumnya.');
+        }
+
+        // 2. Simpan catatan pembatalan
+        const insertSql = 'INSERT INTO pembatalan_spt (spt_id, tempat_pembatalan, tanggal_pembatalan, alasan) VALUES (?, ?, ?, ?)';
+        await runQuery(insertSql, [spt_id, tempat_pembatalan, tanggal_pembatalan, alasan]);
+
+        await runQuery('COMMIT');
+        res.status(200).json({ message: 'Surat Tugas berhasil dibatalkan.' });
+    } catch (error) {
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback pembatalan:', rbErr));
+        console.error('[API ERROR] Gagal membatalkan SPT:', error);
+        res.status(500).json({ message: error.message || 'Terjadi kesalahan pada server.' });
     }
 });
 
@@ -930,6 +1034,13 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             anggaran = { mata_anggaran_kode: 'Tidak Ditemukan', mata_anggaran_nama: '' };
         }
 
+        // Ambil data Pengguna Anggaran (Kepala Dinas)
+        let penggunaAnggaran = await dbGet("SELECT nama_lengkap FROM pegawai WHERE jabatan = 'Kepala Dinas' LIMIT 1");
+        if (!penggunaAnggaran) {
+            console.warn(`[WARN] Data Pengguna Anggaran (Kepala Dinas) tidak ditemukan.`);
+            penggunaAnggaran = { nama_lengkap: 'Kepala Dinas (Data tidak ditemukan)' };
+        }
+
         const pengikutSql = `
             SELECT p.nama_lengkap, p.nip 
             FROM spt_pegawai sp
@@ -938,7 +1049,7 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         `;
         const pengikut = await dbAll(pengikutSql, [spt_id]);
 
-        res.json({ sppd, spt, pegawai: pegawaiUtama, pejabat, pengikut, anggaran });
+        res.json({ sppd, spt, pegawai: pegawaiUtama, pejabat, pengikut, anggaran, penggunaAnggaran });
 
     } catch (err) {
         console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}:`, err);
@@ -1494,6 +1605,134 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
             fs.unlinkSync(filePath);
         }
         res.status(500).json({ message: 'Terjadi kesalahan saat memproses file Excel.' });
+    }
+});
+
+// --- Rute API Laporan Perjalanan Dinas ---
+
+// GET: Mengambil semua laporan untuk register
+app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                l.id, l.judul, l.tanggal_laporan,
+                s.nomor_surat
+            FROM laporan_perjadin l
+            JOIN spt s ON l.spt_id = s.id
+            ORDER BY l.tanggal_laporan DESC
+        `;
+        const laporan = await dbAll(sql);
+        res.json(laporan);
+    } catch (error) {
+        console.error('[API ERROR] Gagal mengambil daftar laporan:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// GET: Mengambil data satu laporan untuk edit/cetak
+app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `SELECT * FROM laporan_perjadin WHERE id = ?`;
+        const laporan = await dbGet(sql, [req.params.id]);
+        if (!laporan) {
+            return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
+        }
+        res.json(laporan);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// POST: Membuat laporan baru
+const laporanUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, 'public/uploads/laporan'),
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, `lampiran-${uniqueSuffix}${path.extname(file.originalname)}`);
+        }
+    })
+}).single('lampiran');
+
+app.post('/api/laporan', isApiAuthenticated, laporanUpload, async (req, res) => {
+    try {
+        const data = req.body;
+        const lampiranPath = req.file ? req.file.path.replace(/\\/g, "/").replace('public/', '') : null;
+
+        const sql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, identitas_pelapor, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi, akomodasi, kesimpulan, lampiran_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        await runQuery(sql, [data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan, data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi, data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan, lampiranPath]);
+
+        res.status(201).json({ message: 'Laporan berhasil disimpan!' });
+    } catch (error) {
+        console.error('[API ERROR] Gagal menyimpan laporan:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
+});
+
+// PUT: Memperbarui laporan yang ada
+app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const data = req.body;
+        const existingLaporan = await dbGet('SELECT lampiran_path FROM laporan_perjadin WHERE id = ?', [id]);
+        if (!existingLaporan) {
+            return res.status(404).json({ message: 'Laporan yang akan diedit tidak ditemukan.' });
+        }
+
+        let lampiranPath = existingLaporan.lampiran_path;
+
+        if (req.file) {
+            if (lampiranPath) {
+                const oldFilePath = path.join(__dirname, 'public', lampiranPath);
+                if (fs.existsSync(oldFilePath)) {
+                    fs.unlinkSync(oldFilePath);
+                }
+            }
+            lampiranPath = req.file.path.replace(/\\/g, "/").replace('public/', '');
+        }
+
+        const sql = `UPDATE laporan_perjadin SET 
+            spt_id = ?, tanggal_laporan = ?, tempat_laporan = ?, judul = ?, 
+            identitas_pelapor = ?, dasar_perjalanan = ?, tujuan_perjalanan = ?, 
+            lama_dan_tanggal_perjalanan = ?, deskripsi_kronologis = ?, tempat_dikunjungi = ?, 
+            hasil_dicapai = ?, transportasi = ?, akomodasi = ?, kesimpulan = ?, 
+            lampiran_path = ?
+            WHERE id = ?`;
+
+        await runQuery(sql, [
+            data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul,
+            data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan,
+            data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
+            data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan,
+            lampiranPath, id
+        ]);
+
+        res.status(200).json({ message: 'Laporan berhasil diperbarui!' });
+    } catch (error) {
+        console.error(`[API ERROR] Gagal memperbarui laporan id ${id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
+});
+
+// DELETE: Menghapus laporan
+app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const laporan = await dbGet('SELECT lampiran_path FROM laporan_perjadin WHERE id = ?', [id]);
+        const result = await runQuery('DELETE FROM laporan_perjadin WHERE id = ?', [id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
+        }
+        if (laporan && laporan.lampiran_path) {
+            const filePath = path.join(__dirname, 'public', laporan.lampiran_path);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+        res.json({ message: 'Laporan berhasil dihapus.' });
+    } catch (error) {
+        console.error(`[API ERROR] Gagal menghapus laporan id ${id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
 

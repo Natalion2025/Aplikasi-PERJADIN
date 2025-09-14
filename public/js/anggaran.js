@@ -1,5 +1,5 @@
 // public/js/anggaran.js
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     // Elemen Modal
     const openModalBtn = document.getElementById('tambah-anggaran-button');
     const modal = document.getElementById('anggaran-modal');
@@ -184,4 +184,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inisialisasi halaman
     loadAnggaran();
-});
+})();

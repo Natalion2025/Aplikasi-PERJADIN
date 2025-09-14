@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     const settingsForm = document.getElementById('settings-form');
     const darkModeToggle = document.getElementById('dark-mode-toggle');
     const languageSelect = document.getElementById('language');
@@ -117,4 +117,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Terapkan pengaturan saat halaman pertama kali dimuat
     // (Ini penting jika pengguna membuka tab baru)
     applySettings(currentSettings);
-});
+})();

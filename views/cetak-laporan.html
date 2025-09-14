@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Laporan Perjalanan Dinas</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #fff;
+            color: #000;
+            font-size: 12pt;
+        }
+
+        .page-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1.5cm;
+            margin: 1cm auto;
+            border: 1px #D3D3D3 solid;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .judul-laporan {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .judul-laporan h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-block {
+            text-align: justify;
+            margin-bottom: 1rem;
+        }
+
+        @media print {
+
+            body,
+            .page-container {
+                margin: 0;
+                box-shadow: none;
+                border: none;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="text-center my-4 no-print">
+        <button onclick="window.print()" class="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700">
+            Cetak Laporan
+        </button>
+    </div>
+    <div id="print-area" class="page-container">
+        <p class="text-center">Memuat data laporan...</p>
+    </div>
+    <script src="/js/cetak-laporan.js"></script>
+</body>
+
+</html>

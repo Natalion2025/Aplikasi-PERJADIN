@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buat Laporan Perjadin - Aplikasi Perjadin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        /* Saat sidebar terlihat, geser konten utama di semua ukuran layar */
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-bar {
+            height: 4px;
+            width: 0%;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-gray-900">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar"></aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container"></header>
+
+        <!-- Page Content -->
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen" data-page-script="/js/buat-laporan.js">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Laporan Perjalanan Dinas Dalam
+                    Negeri
+                </h2>
+                <a href="/laporan" class="text-sm text-indigo-600 hover:underline">&larr; Kembali ke Daftar Laporan</a>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md w-full">
+                <form id="form-laporan" class="space-y-8">
+                    <!-- Info Laporan -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="spt_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor
+                                SPT</label>
+                            <select id="spt_id" name="spt_id" required
+                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                <option value="">-- Pilih SPT --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tanggal_laporan"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal
+                                Laporan</label>
+                            <input type="date" id="tanggal_laporan" name="tanggal_laporan" required
+                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label for="tempat_laporan"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tempat Laporan
+                                Dibuat</label>
+                            <input type="text" id="tempat_laporan" name="tempat_laporan" required value="Nanga Pinoh"
+                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        </div>
+                    </div>
+
+                    <!-- 1. Informasi Dasar -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">1. Informasi Dasar</h3>
+                        <div class="space-y-4">
+                            <input type="text" id="judul" name="judul"
+                                placeholder="Judul laporan yang mencerminkan isi perjalanan dinas" required
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <textarea id="identitas_pelapor" name="identitas_pelapor" rows="3"
+                                placeholder="Identitas Pelapor: Nama, NIP, Jabatan, Unit Kerja (otomatis dari SPT)"
+                                readonly
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed"></textarea>
+                            <textarea id="dasar_perjalanan" name="dasar_perjalanan" rows="2"
+                                placeholder="Dasar Perjalanan Dinas (otomatis dari SPT)" readonly
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-600 dark:text-gray-400 rounded-md shadow-sm cursor-not-allowed"></textarea>
+                            <textarea id="tujuan_perjalanan" name="tujuan_perjalanan" rows="3"
+                                placeholder="Tujuan Perjalanan Dinas (otomatis dari SPT)" readonly
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-600 dark:text-gray-400 rounded-md shadow-sm cursor-not-allowed"></textarea>
+                            <input type="text" id="lama_dan_tanggal_perjalanan" name="lama_dan_tanggal_perjalanan"
+                                placeholder="Lama dan Tanggal Perjalanan (otomatis dari SPT)" readonly
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-600 dark:text-gray-400 rounded-md shadow-sm cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <!-- 2. Rincian Kegiatan -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">2. Rincian Kegiatan
+                        </h3>
+                        <div class="space-y-4">
+                            <textarea id="deskripsi_kronologis" name="deskripsi_kronologis" rows="5"
+                                placeholder="Deskripsi Perjalanan (Kronologis)..."
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
+                            <input type="text" id="tempat_dikunjungi" name="tempat_dikunjungi"
+                                placeholder="Tempat yang Dikunjungi (otomatis dari SPT)" readonly
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-600 dark:text-gray-400 rounded-md shadow-sm cursor-not-allowed">
+                            <textarea id="hasil_dicapai" name="hasil_dicapai" rows="4"
+                                placeholder="Hasil yang Dicapai..."
+                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 3. Rincian Pengeluaran -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">3. Rincian Pengeluaran
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="transportasi"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transportasi</label>
+                                <select id="transportasi" name="transportasi"
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                    <option>Bus</option>
+                                    <option>Taksi</option>
+                                    <option>Kereta Api</option>
+                                    <option>Kapal</option>
+                                    <option>Pesawat</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="akomodasi"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Akomodasi</label>
+                                <select id="akomodasi" name="akomodasi"
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                    <option>Hotel</option>
+                                    <option>Ditanggung Panitia</option>
+                                    <option>Rumah Warga (30%)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Kesimpulan -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">4. Kesimpulan</h3>
+                        <textarea id="kesimpulan" name="kesimpulan" rows="4" placeholder="Kesimpulan dan rekomendasi..."
+                            class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
+                    </div>
+
+                    <!-- 5. Lampiran -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">5. Lampiran</h3>
+                        <label for="lampiran" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload
+                            bukti (JPG, PNG,
+                            PDF)</label>
+                        <input type="file" id="lampiran" name="lampiran"
+                            class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div
+                        class="mt-6 flex items-center justify-end gap-x-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <a href="/laporan"
+                            class="rounded-md bg-white dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50">Batal</a>
+                        <button type="submit"
+                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                            Simpan Laporan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/main1.js"></script>
+</body>
+
+</html>

@@ -23,6 +23,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).format(amount);
     };
 
+    /**
+     * Menentukan tingkat biaya perjalanan dinas berdasarkan jabatan dan golongan.
+     * @param {object} pegawai - Objek pegawai yang berisi jabatan dan golongan.
+     * @returns {string} Tingkat biaya perjalanan dinas (Golongan B, C, atau D).
+     */
+    const getTingkatBiaya = (pegawai) => {
+        const jabatan = (pegawai.jabatan || '').toLowerCase();
+        const golongan = pegawai.golongan || '';
+
+        // Prioritas 1: Golongan B (Pejabat Eselon II atau Golongan IV/c ke atas)
+        if (jabatan === 'kepala dinas' || golongan === 'IV/c' || golongan === 'IV/d' || golongan === 'IV/e') {
+            return 'Golongan B';
+        }
+
+        // Prioritas 2: Golongan C (Pejabat Eselon III)
+        if (
+            jabatan === 'sekretaris' ||
+            jabatan.startsWith('kepala bidang') ||
+            jabatan.startsWith('kepala bagian')
+        ) {
+            return 'Golongan C';
+        }
+
+        // Prioritas 3: Golongan D (Pejabat Eselon IV, Staf, dan lainnya)
+        // Ini mencakup semua kondisi sisanya, termasuk:
+        // - Jabatan seperti Kepala Seksi, Kepala Sub Bagian, dll.
+        // - Pegawai dengan golongan I, II, dan III.
+        // - Pegawai tanpa jabatan.
+        return 'Golongan D';
+    };
+
     const fetchSppdData = async () => {
         try {
             // Selalu gunakan API yang mengambil data SPPD berdasarkan ID SPT-nya.
@@ -50,7 +81,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             pegawai,
             pejabat,
             pengikut,
-            anggaran } = data;
+            anggaran,
+            penggunaAnggaran } = data;
 
         if (!sppd || !spt || !pegawai || !pejabat) {
             printArea.innerHTML = `<p class="text-center text-red-500">Data tidak lengkap untuk mencetak SPPD.</p>`;
@@ -86,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <tr>
                     <td style="width: 5%;">1.</td>
                     <td style="width: 45%;">Pengguna Anggaran</td>
-                    <td colspan="2">${pejabat.jabatan || ''}</td>
+                    <td colspan="2">${penggunaAnggaran ? penggunaAnggaran.nama_lengkap : 'Kepala Dinas'}</td>
                 </tr>
                 <tr>
                     <td>2.</td>
@@ -103,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td colspan="2">
                         <p>a. ${pegawai.pangkat || ''} (${pegawai.golongan || ''})</p>
                         <p>b. ${pegawai.jabatan || ''}</p>
-                        <p>c. Sesuai Peraturan Bupati</p>
+                        <p>c. ${getTingkatBiaya(pegawai)}</p>
                     </td>
                 </tr>
                 <tr>

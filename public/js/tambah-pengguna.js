@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     const form = document.getElementById('add-user-form');
     const roleSelect = document.getElementById('role');
     const notificationEl = document.getElementById('form-notification');
@@ -88,4 +88,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inisialisasi halaman
     loadRoles();
-});
+})();

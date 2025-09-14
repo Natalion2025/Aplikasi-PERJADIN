@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     const sptTableBody = document.getElementById('spt-table-body');
     let currentUserRole = 'user'; // Default role
 
@@ -23,10 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<ul>${spt.pegawai_ditugaskan.map(nama => `<li class="list-disc ml-4 dark:text-gray-400">${nama}</li>`).join('')}</ul>`
                 : '<span class="text-gray-400">Tidak ada</span>';
 
+            const isCancelled = spt.status === 'dibatalkan';
+            const hasReport = spt.laporan_count > 0;
+
             const actionButtons = (role === 'admin' || role === 'superadmin')
                 ? `<a href="/edit-spt/${spt.id}" class="edit-btn text-yellow-600 hover:text-yellow-900 ml-4">Edit</a>
                    <button data-id="${spt.id}" data-nomor="${spt.nomor_surat}" class="delete-btn text-red-600 hover:text-red-900 ml-4">Hapus</button>`
                 : '';
+
+            const reportButton = (!isCancelled && !hasReport)
+                ? `<a href="/buat-laporan?spt_id=${spt.id}" class="text-blue-600 hover:text-blue-900 ml-4">Buat Laporan</a>`
+                : hasReport
+                    ? `<span class="text-gray-400 ml-4 cursor-not-allowed">Sudah Dilaporkan</span>`
+                    : '';
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -46,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/spt/${spt.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900">Cetak</a>
                     <a href="/cetak/sppd/${spt.id}" target="_blank" class="text-green-600 hover:text-green-900 ml-4">Cetak SPD</a>
+                    ${reportButton}
                     ${actionButtons}
                 </td>
             `;
@@ -94,4 +104,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadSptData();
-});
+})();

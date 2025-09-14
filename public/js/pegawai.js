@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+(function () {
     // --- Elemen Global ---
     const pageNotification = document.getElementById('page-notification');
 
@@ -306,4 +306,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Inisialisasi ---
     loadPejabat();
     loadPegawai();
-});
+})();

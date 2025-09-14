@@ -103,11 +103,9 @@ const handleFormSubmit = async (event) => {
     }
 };
 
-document.addEventListener('layout-loaded', () => {
-    loadUserDataAndRoles();
+loadUserDataAndRoles();
 
-    const form = document.getElementById('edit-user-form');
-    if (form) {
-        form.addEventListener('submit', handleFormSubmit);
-    }
-});
+const form = document.getElementById('edit-user-form');
+if (form) {
+    form.addEventListener('submit', handleFormSubmit);
+}

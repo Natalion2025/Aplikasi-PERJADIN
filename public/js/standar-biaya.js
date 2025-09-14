@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
     // --- SELECTORS ---
     const accordionHeaders = document.querySelectorAll('.accordion-header');
     const uploadButtons = document.querySelectorAll('.upload-excel-btn');
@@ -523,4 +523,4 @@ document.addEventListener('DOMContentLoaded', function () {
         const tipe = button.getAttribute('data-tipe');
         if (tipe) loadStandarBiayaData(tipe);
     });
-});
+})();
