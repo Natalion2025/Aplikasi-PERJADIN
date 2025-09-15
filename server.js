@@ -201,6 +201,36 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_perjadin (
     if (err) console.error("Error creating 'laporan_perjadin' table:", err.message);
 });
 
+// Cek dan migrasikan kolom 'lampiran_path' dari 'laporan_perjadin'
+db.all("PRAGMA table_info(laporan_perjadin)", (err, cols) => {
+    if (err) return;
+    const hasLampiranPath = cols.some(col => col.name === 'lampiran_path');
+    if (hasLampiranPath) {
+        console.warn("[DB MIGRATION] Kolom 'lampiran_path' sudah usang. Menghapusnya dari 'laporan_perjadin'...");
+        // SQLite tidak mendukung DROP COLUMN secara langsung di semua versi.
+        // Cara aman adalah dengan membuat tabel baru, salin data, hapus tabel lama, dan rename.
+        // Untuk kesederhanaan di sini, kita asumsikan versi SQLite yang lebih baru atau ini adalah pengembangan awal.
+        // Jika gagal, Anda mungkin perlu melakukannya secara manual.
+        db.run("ALTER TABLE laporan_perjadin DROP COLUMN lampiran_path", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menghapus kolom 'lampiran_path'. Mungkin perlu dilakukan manual.", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'lampiran_path' berhasil dihapus.");
+        });
+    }
+});
+
+// Pastikan tabel 'laporan_lampiran' ada
+db.run(`CREATE TABLE IF NOT EXISTS laporan_lampiran (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    laporan_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,
+    file_name TEXT,
+    file_type TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_lampiran' table:", err.message);
+});
+
 // Pastikan tabel 'pembatalan_spt' ada
 db.run(`CREATE TABLE IF NOT EXISTS pembatalan_spt (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1634,9 +1664,12 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `SELECT * FROM laporan_perjadin WHERE id = ?`;
         const laporan = await dbGet(sql, [req.params.id]);
-        if (!laporan) {
-            return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
-        }
+        if (!laporan) return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
+
+        // Ambil juga lampirannya
+        const lampiranSql = `SELECT * FROM laporan_lampiran WHERE laporan_id = ?`;
+        laporan.lampiran = await dbAll(lampiranSql, [req.params.id]);
+
         res.json(laporan);
     } catch (error) {
         console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}:`, error);
@@ -1647,87 +1680,132 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
 // POST: Membuat laporan baru
 const laporanUpload = multer({
     storage: multer.diskStorage({
-        destination: (req, file, cb) => cb(null, 'public/uploads/laporan'),
+        destination: (req, file, cb) => {
+            const uploadPath = 'public/uploads/laporan';
+            fs.mkdirSync(uploadPath, { recursive: true }); // Pastikan direktori ada
+            cb(null, uploadPath);
+        },
         filename: (req, file, cb) => {
             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
             cb(null, `lampiran-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     })
-}).single('lampiran');
+}).array('lampiran', 10); // Terima hingga 10 file dengan nama field 'lampiran'
 
-app.post('/api/laporan', isApiAuthenticated, laporanUpload, async (req, res) => {
-    try {
+app.post('/api/laporan', isApiAuthenticated, (req, res) => {
+    laporanUpload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ message: 'Gagal mengunggah file.', error: err.message });
+        }
+
         const data = req.body;
-        const lampiranPath = req.file ? req.file.path.replace(/\\/g, "/").replace('public/', '') : null;
+        try {
+            await runQuery('BEGIN TRANSACTION');
 
-        const sql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, identitas_pelapor, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi, akomodasi, kesimpulan, lampiran_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, identitas_pelapor, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi, akomodasi, kesimpulan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const result = await runQuery(laporanSql, [data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan, data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi, data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan]);
+            const laporanId = result.lastID;
 
-        await runQuery(sql, [data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan, data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi, data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan, lampiranPath]);
+            if (req.files && req.files.length > 0) {
+                const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
+                for (const file of req.files) {
+                    const filePath = file.path.replace(/\\/g, "/").replace('public/', '');
+                    await runQuery(lampiranSql, [laporanId, filePath, file.originalname, file.mimetype]);
+                }
+            }
 
-        res.status(201).json({ message: 'Laporan berhasil disimpan!' });
-    } catch (error) {
-        console.error('[API ERROR] Gagal menyimpan laporan:', error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
-    }
+            await runQuery('COMMIT');
+            res.status(201).json({ message: 'Laporan berhasil disimpan!' });
+        } catch (error) {
+            await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+            console.error('[API ERROR] Gagal menyimpan laporan:', error);
+            res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+        }
+    });
 });
 
 // PUT: Memperbarui laporan yang ada
-app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload, async (req, res) => {
+app.put('/api/laporan/:id', isApiAuthenticated, (req, res) => {
     const { id } = req.params;
-    try {
-        const data = req.body;
-        const existingLaporan = await dbGet('SELECT lampiran_path FROM laporan_perjadin WHERE id = ?', [id]);
-        if (!existingLaporan) {
-            return res.status(404).json({ message: 'Laporan yang akan diedit tidak ditemukan.' });
+    laporanUpload(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ message: 'Gagal mengunggah file baru.', error: err.message });
         }
 
-        let lampiranPath = existingLaporan.lampiran_path;
+        const data = req.body;
+        const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
 
-        if (req.file) {
-            if (lampiranPath) {
-                const oldFilePath = path.join(__dirname, 'public', lampiranPath);
-                if (fs.existsSync(oldFilePath)) {
-                    fs.unlinkSync(oldFilePath);
+        try {
+            await runQuery('BEGIN TRANSACTION');
+
+            // 1. Hapus file lama yang diminta untuk dihapus
+            if (deletedFiles.length > 0) {
+                const placeholders = deletedFiles.map(() => '?').join(',');
+                const filesToDelete = await dbAll(`SELECT file_path FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
+
+                for (const file of filesToDelete) {
+                    const oldFilePath = path.join(__dirname, 'public', file.file_path);
+                    if (fs.existsSync(oldFilePath)) {
+                        fs.unlinkSync(oldFilePath);
+                    }
+                }
+                await runQuery(`DELETE FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
+            }
+
+            // 2. Tambah file baru
+            if (req.files && req.files.length > 0) {
+                const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
+                for (const file of req.files) {
+                    const filePath = file.path.replace(/\\/g, "/").replace('public/', '');
+                    await runQuery(lampiranSql, [id, filePath, file.originalname, file.mimetype]);
                 }
             }
-            lampiranPath = req.file.path.replace(/\\/g, "/").replace('public/', '');
-        }
 
-        const sql = `UPDATE laporan_perjadin SET 
+            // 3. Update data utama laporan
+            const sql = `UPDATE laporan_perjadin SET 
             spt_id = ?, tanggal_laporan = ?, tempat_laporan = ?, judul = ?, 
             identitas_pelapor = ?, dasar_perjalanan = ?, tujuan_perjalanan = ?, 
             lama_dan_tanggal_perjalanan = ?, deskripsi_kronologis = ?, tempat_dikunjungi = ?, 
-            hasil_dicapai = ?, transportasi = ?, akomodasi = ?, kesimpulan = ?, 
-            lampiran_path = ?
+            hasil_dicapai = ?, transportasi = ?, akomodasi = ?, kesimpulan = ?
             WHERE id = ?`;
 
-        await runQuery(sql, [
-            data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul,
-            data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan,
-            data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
-            data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan,
-            lampiranPath, id
-        ]);
+            await runQuery(sql, [
+                data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul,
+                data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan,
+                data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
+                data.hasil_dicapai, data.transportasi, data.akomodasi, data.kesimpulan,
+                id
+            ]);
 
-        res.status(200).json({ message: 'Laporan berhasil diperbarui!' });
-    } catch (error) {
-        console.error(`[API ERROR] Gagal memperbarui laporan id ${id}:`, error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
-    }
+            await runQuery('COMMIT');
+            res.status(200).json({ message: 'Laporan berhasil diperbarui!' });
+        } catch (error) {
+            await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+            console.error(`[API ERROR] Gagal memperbarui laporan id ${id}:`, error);
+            res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+        }
+    });
 });
 
 // DELETE: Menghapus laporan
 app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
     const { id } = req.params;
     try {
-        const laporan = await dbGet('SELECT lampiran_path FROM laporan_perjadin WHERE id = ?', [id]);
+        // Ambil semua path lampiran terkait sebelum menghapus
+        const lampiran = await dbAll('SELECT file_path FROM laporan_lampiran WHERE laporan_id = ?', [id]);
+
+        // Hapus record laporan (akan menghapus lampiran via CASCADE)
         const result = await runQuery('DELETE FROM laporan_perjadin WHERE id = ?', [id]);
         if (result.changes === 0) {
             return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
         }
-        if (laporan && laporan.lampiran_path) {
-            const filePath = path.join(__dirname, 'public', laporan.lampiran_path);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+        // Hapus file fisik dari server
+        if (lampiran && lampiran.length > 0) {
+            for (const item of lampiran) {
+                const filePath = path.join(__dirname, 'public', item.file_path);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
         }
         res.json({ message: 'Laporan berhasil dihapus.' });
     } catch (error) {

@@ -35,6 +35,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pelaporName = (laporan.identitas_pelapor || '').split('\n')[0];
         const pelaporNip = (laporan.identitas_pelapor || '').split('\n')[1];
 
+        // Filter lampiran untuk hanya menampilkan gambar
+        const imageAttachments = (laporan.lampiran || []).filter(lampiran =>
+            /\.(jpg|jpeg|png|gif)$/i.test(lampiran.file_name)
+        );
+
+        let lampiranHtml = '';
+        if (imageAttachments.length > 0) {
+            lampiranHtml = `
+                <div class="lampiran-container">
+                    <h3 class="lampiran-title">LAMPIRAN DOKUMENTASI</h3>
+                    <div class="lampiran-grid">
+                        ${imageAttachments.map(img => `
+                            <div class="lampiran-item">
+                                <img src="/${img.file_path}" alt="${img.file_name}">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+
         printArea.innerHTML = `
             <div class="judul-laporan">
                 <h3>LAPORAN HASIL PERJALANAN DINAS</h3>
@@ -66,7 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p style="font-weight: bold; text-decoration: underline;">${pelaporName}</p>
                 <p>${pelaporNip || ''}</p>
             </div>
-        `;
+        ` + lampiranHtml; // Tambahkan HTML lampiran di akhir
     };
 
     const data = await fetchLaporanData();

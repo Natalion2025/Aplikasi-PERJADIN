@@ -11,6 +11,15 @@
     const lamaDanTanggalEl = document.getElementById('lama_dan_tanggal_perjalanan');
     const tempatDikunjungiEl = document.getElementById('tempat_dikunjungi');
 
+    // Elemen untuk upload file
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.getElementById('lampiran-input');
+    const filePreviewList = document.getElementById('file-preview-list');
+
+    let newFiles = []; // Menyimpan file baru yang akan diupload
+    let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
+    let deletedFiles = []; // Menyimpan ID file yang akan dihapus (mode edit)
+
     const formatDate = (dateString) => {
         // Handle YYYY-MM-DD format for input type date
         if (dateString && dateString.includes('T')) {
@@ -96,6 +105,15 @@
             if (!response.ok) throw new Error('Gagal memuat data laporan untuk diedit.');
             const laporan = await response.json();
 
+            // Jika SPT terkait tidak ada di daftar opsi (karena sudah punya laporan),
+            // kita perlu menambahkannya secara manual agar bisa ditampilkan.
+            const sptResponse = await fetch(`/api/spt/${laporan.spt_id}`);
+            if (sptResponse.ok) {
+                const sptData = await sptResponse.json();
+                const option = new Option(sptData.nomor_surat, sptData.id, true, true);
+                sptSelect.appendChild(option);
+            }
+
             await loadSptOptions(); // Muat semua opsi SPT dulu
 
             sptSelect.value = laporan.spt_id;
@@ -113,6 +131,12 @@
             document.getElementById('akomodasi').value = laporan.akomodasi;
             document.getElementById('kesimpulan').value = laporan.kesimpulan;
 
+            // Tampilkan lampiran yang sudah ada
+            if (laporan.lampiran && laporan.lampiran.length > 0) {
+                existingFiles = laporan.lampiran;
+                renderFilePreviews();
+            }
+
             sptSelect.disabled = true; // Cegah perubahan SPT saat edit
 
         } catch (error) {
@@ -122,6 +146,104 @@
         }
     };
 
+    // --- FUNGSI-FUNGSI UNTUK FILE UPLOAD ---
+
+    const renderFilePreviews = () => {
+        filePreviewList.innerHTML = '';
+
+        // Render file yang sudah ada (mode edit)
+        existingFiles.forEach(file => {
+            const previewEl = createFilePreviewElement(file.id, file.file_name, `/${file.file_path}`, true);
+            filePreviewList.appendChild(previewEl);
+        });
+
+        // Render file baru yang akan diupload
+        newFiles.forEach((file, index) => {
+            const previewEl = createFilePreviewElement(index, file.name, URL.createObjectURL(file), false);
+            filePreviewList.appendChild(previewEl);
+        });
+    };
+
+    const createFilePreviewElement = (id, name, url, isExisting) => {
+        const isImage = name.match(/\.(jpeg|jpg|png|gif)$/i);
+        const fileExt = name.split('.').pop().toUpperCase();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600';
+        wrapper.dataset.id = id;
+        wrapper.dataset.isExisting = isExisting;
+
+        const previewContent = isImage
+            ? `<img src="${url}" alt="Preview" class="w-16 h-16 object-cover rounded-md mr-4">`
+            : `<div class="w-16 h-16 flex items-center justify-center bg-slate-200 dark:bg-slate-600 rounded-md mr-4">
+                 <span class="text-lg font-bold text-slate-500 dark:text-slate-400">${fileExt}</span>
+               </div>`;
+
+        wrapper.innerHTML = `
+            <div class="flex items-center flex-grow">
+                ${previewContent}
+                <div class="flex-grow">
+                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">${name}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${isExisting ? 'Tersimpan' : 'Baru'}</p>
+                </div>
+            </div>
+            <button type="button" class="delete-file-btn text-red-500 hover:text-red-700 ml-4 flex-shrink-0">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `;
+        return wrapper;
+    };
+
+    const handleFiles = (files) => {
+        for (const file of files) {
+            newFiles.push(file);
+        }
+        renderFilePreviews();
+    };
+
+    fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.add('border-indigo-600', 'bg-indigo-50', 'dark:bg-slate-800/50');
+    });
+
+    fileUploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('border-indigo-600', 'bg-indigo-50', 'dark:bg-slate-800/50');
+    });
+
+    fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('border-indigo-600', 'bg-indigo-50', 'dark:bg-slate-800/50');
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            handleFiles(files);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+            handleFiles(fileInput.files);
+            fileInput.value = ''; // Reset input agar bisa pilih file yang sama lagi
+        }
+    });
+
+    filePreviewList.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-file-btn');
+        if (deleteBtn) {
+            const wrapper = deleteBtn.closest('div[data-id]');
+            const id = wrapper.dataset.id;
+            const isExisting = wrapper.dataset.isExisting === 'true';
+
+            if (isExisting) {
+                deletedFiles.push(id); // Tambahkan ID ke daftar hapus
+                existingFiles = existingFiles.filter(f => f.id != id); // Hapus dari daftar tampilan
+            } else {
+                newFiles.splice(id, 1); // Hapus dari array file baru
+            }
+            renderFilePreviews(); // Render ulang
+        }
+    });
+
     // Event listener untuk form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -129,10 +251,19 @@
         const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
         const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
 
-        // Aktifkan sementara dropdown SPT agar nilainya terkirim
-        if (isEditMode) sptSelect.disabled = false;
         const formData = new FormData(form);
-        if (isEditMode) sptSelect.disabled = true;
+
+        if (isEditMode) {
+            formData.append('spt_id', sptSelect.value);
+            formData.append('deleted_files', JSON.stringify(deletedFiles));
+        }
+
+        // Hapus 'lampiran' default dari FormData karena kita akan menambahkannya secara manual
+        formData.delete('lampiran');
+        // Tambahkan file baru ke FormData
+        newFiles.forEach(file => {
+            formData.append('lampiran', file);
+        });
 
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;

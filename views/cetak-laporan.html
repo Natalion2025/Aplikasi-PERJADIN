@@ -19,6 +19,7 @@
         .page-container {
             width: 21cm;
             min-height: 29.7cm;
+            /* Kurangi padding untuk memberi lebih banyak ruang */
             padding: 1.5cm;
             margin: 1cm auto;
             border: 1px #D3D3D3 solid;
@@ -52,6 +53,41 @@
             margin-bottom: 1rem;
         }
 
+        /* Gaya untuk Lampiran */
+        .lampiran-container {
+            /* page-break-before: always; akan membuat lampiran selalu di halaman baru */
+            page-break-before: always;
+            margin-top: 2rem;
+        }
+
+        .lampiran-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin-bottom: 1.5rem;
+            text-decoration: underline;
+        }
+
+        .lampiran-grid {
+            display: grid;
+            /* 2 kolom untuk menampung 4 foto dalam satu halaman */
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1cm;
+            justify-items: center;
+        }
+
+        .lampiran-item img {
+            /* Ukuran setara 3R lebih (sekitar 10,2 cm x 13,2 cm) */
+            width: 10.2cm;
+            height: 13.2cm;
+            object-fit: cover;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+
         @media print {
 
             body,
@@ -59,6 +95,8 @@
                 margin: 0;
                 box-shadow: none;
                 border: none;
+                /* Atur margin halaman cetak menjadi lebih kecil */
+                padding: 1cm;
             }
 
             .no-print {

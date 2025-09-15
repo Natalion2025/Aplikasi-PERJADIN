@@ -202,13 +202,32 @@
 
                     <!-- 5. Lampiran -->
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">5. Lampiran</h3>
-                        <label for="lampiran" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Upload
-                            bukti (JPG, PNG,
-                            PDF)</label>
-                        <input type="file" id="lampiran" name="lampiran"
-                            class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">5. Lampiran (Bukti
+                            Perjalanan)</h3>
+                        <div id="file-upload-area"
+                            class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-gray-400/50 px-6 py-10">
+                            <div class="text-center">
+                                <i class="fas fa-photo-video mx-auto h-12 w-12 text-gray-300" aria-hidden="true"></i>
+                                <div class="mt-4 flex text-sm leading-6 text-gray-600 dark:text-gray-300">
+                                    <label for="lampiran-input"
+                                        class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500">
+                                        <span>Pilih file untuk diupload</span>
+                                        <input id="lampiran-input" name="lampiran" type="file" class="sr-only" multiple
+                                            accept="image/jpeg,image/png,application/pdf">
+                                    </label>
+                                    <p class="pl-1">atau seret dan lepas di sini</p>
+                                </div>
+                                <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">PNG, JPG, PDF hingga 10MB
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Daftar Pratinjau File -->
+                        <div id="file-preview-list" class="mt-6 space-y-4">
+                            <!-- Pratinjau file akan muncul di sini -->
+                        </div>
                     </div>
+
 
                     <!-- Action Buttons -->
                     <div
