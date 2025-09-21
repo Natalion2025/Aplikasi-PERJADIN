@@ -33,28 +33,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const nl2br = (str) => (str || '').replace(/(\r\n|\n\r|\r|\n)/g, '<br>');
 
-        // Buat daftar semua yang bertanda tangan (pelapor utama + pengikut)
+        // Buat daftar penandatangan dari semua pegawai yang terkait dengan SPT
         const allSigners = [];
-        if (laporan.identitas_pelapor) {
-            const [nama, nip] = laporan.identitas_pelapor.split('\n');
-            allSigners.push({
-                nama: nama || 'Nama Pelapor Tidak Ditemukan',
-                nip: nip || ''
-            });
-        }
-        if (laporan.pengikut && laporan.pengikut.length > 0) {
-            laporan.pengikut.forEach(p => {
+        if (laporan.pegawai && laporan.pegawai.length > 0) {
+            laporan.pegawai.forEach(p => {
                 allSigners.push({
                     nama: p.nama_lengkap,
                     nip: `NIP. ${p.nip}`
                 });
             });
+        } else if (laporan.identitas_pelapor) {
+            // Fallback ke data lama jika data pegawai tidak ada
+            const [nama, nip] = laporan.identitas_pelapor.split('\n');
+            allSigners.push({ nama: nama, nip: nip });
         }
 
-        // Membuat HTML untuk blok tanda tangan
+
         const signatureBlocksHtml = allSigners.map(signer => `
             <div class="signature-block">
-                <p class="h-20"></p>
                 <p style="font-weight: bold; text-decoration: underline;">${signer.nama}</p>
                 <p>${signer.nip}</p>
             </div>
@@ -112,15 +108,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // Render konten ke area yang sesuai
         printArea.innerHTML = laporanContentHtml;
         attachmentArea.innerHTML = lampiranHtml;
     };
 
-
     const data = await fetchLaporanData();
     renderLaporan(data);
 
+    // Memberi sedikit jeda sebelum mencetak, memastikan semua konten sudah dirender
     setTimeout(() => {
         window.print();
     }, 500);

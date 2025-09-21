@@ -4,7 +4,7 @@
     const pageTitle = document.querySelector('h2');
 
     // Elemen form yang akan diisi otomatis
-    const judulEl = document.getElementById('judul');
+    // const judulEl = document.getElementById('judul'); // Tidak digunakan lagi
     const identitasPelaporEl = document.getElementById('identitas_pelapor');
     const dasarPerjalananEl = document.getElementById('dasar_perjalanan');
     const tujuanPerjalananEl = document.getElementById('tujuan_perjalanan');
@@ -143,13 +143,12 @@
                 sptSelect.appendChild(option);
             }
 
-            await loadSptOptions(); // Muat semua opsi SPT dulu
-
             sptSelect.value = laporan.spt_id;
             document.getElementById('tanggal_laporan').value = formatDate(laporan.tanggal_laporan);
             document.getElementById('tempat_laporan').value = laporan.tempat_laporan;
-            judulEl.value = laporan.judul;
+            document.getElementById('judul').value = laporan.judul;
             identitasPelaporEl.value = laporan.identitas_pelapor;
+
             dasarPerjalananEl.value = laporan.dasar_perjalanan;
             tujuanPerjalananEl.value = laporan.tujuan_perjalanan;
             lamaDanTanggalEl.value = laporan.lama_dan_tanggal_perjalanan;

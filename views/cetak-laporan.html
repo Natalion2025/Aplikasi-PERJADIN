@@ -53,6 +53,27 @@
             margin-bottom: 1rem;
         }
 
+        .signature-container {
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            /* Izinkan item pindah ke baris baru */
+            justify-content: flex-start;
+            /* Mulai dari kiri */
+            margin-top: 2rem;
+            gap: 2rem;
+            /* Jarak antar blok tanda tangan */
+        }
+
+        .signature-block {
+            text-align: left;
+            width: 40%;
+            /* Beri sedikit ruang ekstra */
+            min-width: 250px;
+            /* Lebar minimum untuk menghindari terlalu sempit */
+            margin-top: 3rem;
+        }
+
         /* Gaya untuk Lampiran */
         .lampiran-container {
             /* page-break-before: always; akan membuat lampiran selalu di halaman baru */
