@@ -16,9 +16,38 @@
     const fileInput = document.getElementById('lampiran-input');
     const filePreviewList = document.getElementById('file-preview-list');
 
+    // Elemen untuk Rincian Pengeluaran Dinamis
+    const transportasiContainer = document.getElementById('transportasi-container');
+    const tambahTransportasiBtn = document.getElementById('tambah-transportasi-btn');
+    const transportasiTemplate = document.getElementById('transportasi-template');
+
+    const akomodasiContainer = document.getElementById('akomodasi-container');
+    const tambahAkomodasiBtn = document.getElementById('tambah-akomodasi-btn');
+    const akomodasiTemplate = document.getElementById('akomodasi-template');
+
+    const kontribusiContainer = document.getElementById('kontribusi-container');
+    const tambahKontribusiBtn = document.getElementById('tambah-kontribusi-btn');
+    const kontribusiTemplate = document.getElementById('kontribusi-template');
+
+    const lainLainContainer = document.getElementById('lain-lain-container');
+    const tambahLainLainBtn = document.getElementById('tambah-lain-lain-btn');
+    const lainLainTemplate = document.getElementById('lain-lain-template');
+
     let newFiles = []; // Menyimpan file baru yang akan diupload
     let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
     let deletedFiles = []; // Menyimpan ID file yang akan dihapus (mode edit)
+
+    // --- Fungsi Helper untuk Format Angka ---
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined || value === '') return '';
+        const number = parseFloat(String(value).replace(/[^0-9,-]+/g, '').replace(',', '.'));
+        if (isNaN(number)) return '';
+        return new Intl.NumberFormat('id-ID').format(number);
+    };
+
+    const parseCurrency = (value) => {
+        return parseFloat(String(value || '').replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0;
+    };
 
     const formatDate = (dateString) => {
         // Handle YYYY-MM-DD format for input type date
@@ -127,8 +156,44 @@
             document.getElementById('deskripsi_kronologis').value = laporan.deskripsi_kronologis;
             tempatDikunjungiEl.value = laporan.tempat_dikunjungi;
             document.getElementById('hasil_dicapai').value = laporan.hasil_dicapai;
-            document.getElementById('transportasi').value = laporan.transportasi;
-            document.getElementById('akomodasi').value = laporan.akomodasi;
+
+            // Isi data transportasi dinamis
+            if (laporan.transportasi_jenis) {
+                addTransportasiItem({
+                    jenis: laporan.transportasi_jenis,
+                    perusahaan: laporan.transportasi_perusahaan,
+                    nominal: laporan.transportasi_nominal
+                });
+            }
+
+            // Isi data akomodasi dinamis
+            if (laporan.akomodasi_jenis) {
+                addAkomodasiItem({
+                    jenis: laporan.akomodasi_jenis,
+                    nama: laporan.akomodasi_nama,
+                    harga_satuan: laporan.akomodasi_harga_satuan,
+                    malam: laporan.akomodasi_malam,
+                    nominal: laporan.akomodasi_nominal
+                });
+            }
+
+            // Isi data kontribusi dinamis
+            if (laporan.kontribusi_jenis) {
+                addKontribusiItem({
+                    jenis: laporan.kontribusi_jenis,
+                    nominal: laporan.kontribusi_nominal
+                });
+            }
+
+            // Isi data biaya lain-lain dinamis
+            if (laporan.lain_lain_uraian) {
+                addLainLainItem({
+                    uraian: laporan.lain_lain_uraian,
+                    nominal: laporan.lain_lain_nominal
+                });
+            }
+            checkRemoveButtons();
+
             document.getElementById('kesimpulan').value = laporan.kesimpulan;
 
             // Tampilkan lampiran yang sudah ada
@@ -244,6 +309,83 @@
         }
     });
 
+    // --- FUNGSI UNTUK RINCIAN PENGELUARAN DINAMIS ---
+
+    const addTransportasiItem = (data = {}) => {
+        const templateContent = transportasiTemplate.content.cloneNode(true);
+        const newItem = templateContent.querySelector('.transport-item');
+        newItem.querySelector('[name="transportasi_jenis"]').value = data.jenis || 'Bus';
+        newItem.querySelector('[name="transportasi_perusahaan"]').value = data.perusahaan || '';
+        newItem.querySelector('[name="transportasi_nominal"]').value = formatCurrency(data.nominal);
+        transportasiContainer.appendChild(newItem);
+        checkRemoveButtons();
+    };
+
+    const addAkomodasiItem = (data = {}) => {
+        const templateContent = akomodasiTemplate.content.cloneNode(true);
+        const newItem = templateContent.querySelector('.akomodasi-item');
+        newItem.querySelector('[name="akomodasi_jenis"]').value = data.jenis || 'Hotel';
+        newItem.querySelector('[name="akomodasi_nama"]').value = data.nama || '';
+        newItem.querySelector('[name="akomodasi_harga_satuan"]').value = formatCurrency(data.harga_satuan) || '';
+        newItem.querySelector('[name="akomodasi_malam"]').value = data.malam || '';
+        akomodasiContainer.appendChild(newItem);
+        updateAkomodasiTotal(newItem); // Hitung total jika ada data awal
+        checkRemoveButtons();
+    };
+
+    const addKontribusiItem = (data = {}) => {
+        const templateContent = kontribusiTemplate.content.cloneNode(true);
+        const newItem = templateContent.querySelector('.kontribusi-item');
+        newItem.querySelector('[name="kontribusi_jenis"]').value = data.jenis || 'Bimbingan Teknis';
+        newItem.querySelector('[name="kontribusi_nominal"]').value = formatCurrency(data.nominal);
+        kontribusiContainer.appendChild(newItem);
+        checkRemoveButtons();
+    }
+
+    const addLainLainItem = (data = {}) => {
+        const templateContent = lainLainTemplate.content.cloneNode(true);
+        const newItem = templateContent.querySelector('.lain-lain-item');
+        newItem.querySelector('[name="lain_lain_uraian"]').value = data.uraian || '';
+        newItem.querySelector('[name="lain_lain_nominal"]').value = formatCurrency(data.nominal);
+        lainLainContainer.appendChild(newItem);
+        checkRemoveButtons();
+    }
+
+    const checkRemoveButtons = () => {
+        const transportItems = transportasiContainer.querySelectorAll('.transport-item');
+        transportItems.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-item-btn');
+            removeBtn.classList.toggle('hidden', transportItems.length <= 1);
+        });
+        const akomodasiItems = akomodasiContainer.querySelectorAll('.akomodasi-item');
+        akomodasiItems.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-item-btn');
+            removeBtn.classList.toggle('hidden', akomodasiItems.length <= 1);
+        });
+        const kontribusiItems = kontribusiContainer.querySelectorAll('.kontribusi-item');
+        kontribusiItems.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-item-btn');
+            removeBtn.classList.toggle('hidden', kontribusiItems.length <= 1);
+        });
+        const lainLainItems = lainLainContainer.querySelectorAll('.lain-lain-item');
+        lainLainItems.forEach((item, index) => {
+            const removeBtn = item.querySelector('.remove-item-btn');
+            removeBtn.classList.toggle('hidden', lainLainItems.length <= 1);
+        });
+    };
+
+    const updateAkomodasiTotal = (itemElement) => {
+        const hargaSatuanEl = itemElement.querySelector('[name="akomodasi_harga_satuan"]');
+        const jumlahMalamEl = itemElement.querySelector('[name="akomodasi_malam"]');
+        const totalNominalEl = itemElement.querySelector('[name="akomodasi_nominal"]');
+
+        const harga = parseCurrency(hargaSatuanEl.value);
+        const malam = parseInt(jumlahMalamEl.value) || 0;
+
+        const total = harga * malam;
+        totalNominalEl.value = formatCurrency(total);
+    };
+
     // Event listener untuk form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -252,6 +394,77 @@
         const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
 
         const formData = new FormData(form);
+
+        // Kumpulkan data transportasi dinamis
+        const transportasiData = [];
+        transportasiContainer.querySelectorAll('.transport-item').forEach(item => {
+            transportasiData.push({
+                jenis: item.querySelector('[name="transportasi_jenis"]').value,
+                perusahaan: item.querySelector('[name="transportasi_perusahaan"]').value,
+                nominal: parseCurrency(item.querySelector('[name="transportasi_nominal"]').value)
+            });
+        });
+
+        // Kumpulkan data akomodasi dinamis
+        const akomodasiData = [];
+        akomodasiContainer.querySelectorAll('.akomodasi-item').forEach(item => {
+            akomodasiData.push({
+                jenis: item.querySelector('[name="akomodasi_jenis"]').value,
+                nama: item.querySelector('[name="akomodasi_nama"]').value,
+                harga_satuan: parseCurrency(item.querySelector('[name="akomodasi_harga_satuan"]').value),
+                malam: item.querySelector('[name="akomodasi_malam"]').value,
+                nominal: parseCurrency(item.querySelector('[name="akomodasi_nominal"]').value)
+            });
+        });
+
+        // Kumpulkan data kontribusi dinamis
+        const kontribusiData = [];
+        kontribusiContainer.querySelectorAll('.kontribusi-item').forEach(item => {
+            kontribusiData.push({
+                jenis: item.querySelector('[name="kontribusi_jenis"]').value,
+                nominal: parseCurrency(item.querySelector('[name="kontribusi_nominal"]').value)
+            });
+        });
+
+        // Kumpulkan data biaya lain-lain dinamis
+        const lainLainData = [];
+        lainLainContainer.querySelectorAll('.lain-lain-item').forEach(item => {
+            lainLainData.push({
+                uraian: item.querySelector('[name="lain_lain_uraian"]').value,
+                nominal: parseCurrency(item.querySelector('[name="lain_lain_nominal"]').value)
+            });
+        });
+
+        // Hapus field-field dinamis yang tidak perlu dikirim secara individual
+        formData.delete('transportasi_jenis');
+        formData.delete('transportasi_perusahaan');
+        formData.delete('transportasi_nominal');
+        formData.delete('akomodasi_jenis');
+        formData.delete('akomodasi_nama');
+        formData.delete('akomodasi_harga_satuan');
+        formData.delete('akomodasi_malam');
+        formData.delete('akomodasi_nominal');
+        formData.delete('kontribusi_jenis');
+        formData.delete('kontribusi_nominal');
+        formData.delete('lain_lain_uraian');
+        formData.delete('lain_lain_nominal');
+
+        // Tambahkan data dinamis ke FormData
+        formData.append('transportasi_jenis', transportasiData.length > 0 ? transportasiData[0].jenis : '');
+        formData.append('transportasi_perusahaan', transportasiData.length > 0 ? transportasiData[0].perusahaan : '');
+        formData.append('transportasi_nominal', transportasiData.length > 0 ? transportasiData[0].nominal : 0);
+
+        formData.append('akomodasi_jenis', akomodasiData.length > 0 ? akomodasiData[0].jenis : '');
+        formData.append('akomodasi_nama', akomodasiData.length > 0 ? akomodasiData[0].nama : '');
+        formData.append('akomodasi_harga_satuan', akomodasiData.length > 0 ? akomodasiData[0].harga_satuan : 0);
+        formData.append('akomodasi_malam', akomodasiData.length > 0 ? akomodasiData[0].malam : 0);
+        formData.append('akomodasi_nominal', akomodasiData.length > 0 ? akomodasiData[0].nominal : 0);
+
+        formData.append('kontribusi_jenis', kontribusiData.length > 0 ? kontribusiData[0].jenis : '');
+        formData.append('kontribusi_nominal', kontribusiData.length > 0 ? kontribusiData[0].nominal : 0);
+
+        formData.append('lain_lain_uraian', lainLainData.length > 0 ? lainLainData[0].uraian : '');
+        formData.append('lain_lain_nominal', lainLainData.length > 0 ? lainLainData[0].nominal : 0);
 
         if (isEditMode) {
             formData.append('spt_id', sptSelect.value);
@@ -292,6 +505,65 @@
     // Event listener untuk perubahan SPT
     sptSelect.addEventListener('change', populateFormFromSpt);
 
+    // --- LOGIKA UNTUK TAMBAH/HAPUS RINCIAN PENGELUARAN ---
+    tambahTransportasiBtn.addEventListener('click', () => addTransportasiItem());
+    tambahAkomodasiBtn.addEventListener('click', () => addAkomodasiItem());
+    tambahKontribusiBtn.addEventListener('click', () => addKontribusiItem());
+    tambahLainLainBtn.addEventListener('click', () => addLainLainItem());
+
+    transportasiContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.transport-item').remove();
+            checkRemoveButtons();
+        }
+    });
+
+    akomodasiContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.akomodasi-item').remove();
+            checkRemoveButtons();
+        }
+    });
+
+    kontribusiContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.kontribusi-item').remove();
+            checkRemoveButtons();
+        }
+    });
+
+    lainLainContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-item-btn')) {
+            e.target.closest('.lain-lain-item').remove();
+            checkRemoveButtons();
+        }
+    });
+
+    // Event listener untuk kalkulasi otomatis total akomodasi
+    akomodasiContainer.addEventListener('input', (e) => {
+        if (e.target.classList.contains('akomodasi-calc')) {
+            const itemElement = e.target.closest('.akomodasi-item');
+            updateAkomodasiTotal(itemElement);
+        }
+    });
+
+    // Event listener untuk memformat input mata uang secara otomatis
+    form.addEventListener('input', (e) => {
+        if (e.target.classList.contains('currency-input')) {
+            // Simpan posisi kursor
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            const oldValue = e.target.value;
+            e.target.value = formatCurrency(e.target.value);
+            // Kembalikan posisi kursor dengan memperhitungkan penambahan/pengurangan titik
+            const newLength = e.target.value.length;
+            const oldLength = oldValue.length;
+            e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
+        }
+    });
+
+    // --- AKHIR LOGIKA TRANSPORTASI ---
+
     // Inisialisasi
     const initializePage = async () => {
         const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
@@ -303,14 +575,11 @@
             if (submitButton) submitButton.textContent = 'Simpan Perubahan';
             await loadLaporanForEdit(laporanId);
         } else {
+            addTransportasiItem(); // Tambah satu baris default
+            addAkomodasiItem(); // Tambah satu baris default
+            addKontribusiItem(); // Tambah satu baris default
+            addLainLainItem(); // Tambah satu baris default
             await loadSptOptions();
-            // Cek apakah ada spt_id di URL (untuk mode tambah dari register)
-            const urlParams = new URLSearchParams(window.location.search);
-            const sptIdFromUrl = urlParams.get('spt_id');
-            if (sptIdFromUrl) {
-                sptSelect.value = sptIdFromUrl;
-                populateFormFromSpt();
-            }
         }
     };
 

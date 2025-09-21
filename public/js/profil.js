@@ -118,7 +118,7 @@ function initializeProfilePage() {
                     showProfileNotification('Konfirmasi password tidak cocok.', true);
                     return;
                 }
-                formData.append('newPassword', newPassword);
+                // newPassword sudah ada di formData dari form, tidak perlu append manual
             }
 
             try {

@@ -78,6 +78,31 @@ if (!window.App.sidebarInitialized) {
             });
         };
 
+        /**
+         * Menyisipkan item menu baru ke dalam sidebar.
+         * Ini adalah pendekatan sementara karena struktur menu tidak didefinisikan di file ini.
+         */
+        const injectMenuItems = () => {
+            // Cari item menu 'Hasil Perjadin' sebagai acuan posisi
+            const laporanMenuItem = document.querySelector('a[href="/laporan"]');
+            if (laporanMenuItem) {
+                const parentList = laporanMenuItem.parentElement; // elemen <li>
+
+                // Buat elemen untuk menu Pembayaran
+                const pembayaranLi = document.createElement('li');
+                pembayaranLi.innerHTML = `
+                    <a href="/pembayaran"
+                        class="flex items-center p-3 my-1 text-sm rounded-lg hover:bg-white hover:text-indigo-600 transition-colors duration-200">
+                        <i class="fas fa-money-check-alt w-6 text-center"></i>
+                        <span class="ml-3">Pembayaran</span>
+                    </a>
+                `;
+
+                // Sisipkan menu Pembayaran setelah menu Hasil Perjadin
+                parentList.insertAdjacentElement('afterend', pembayaranLi);
+            }
+        };
+
         // --- Logika Eksekusi Utama ---
         const sidebar = document.getElementById('sidebar');
         if (window.innerWidth >= 993 && sidebar) {
@@ -87,6 +112,7 @@ if (!window.App.sidebarInitialized) {
         initializeSidebarToggle();
         initializeSidebarDropdown();
         initializeLogout();
+        injectMenuItems(); // Panggil fungsi untuk menyisipkan menu
     };
 
     // Tandai bahwa modul sidebar telah di-setup untuk mencegah pemuatan ulang.

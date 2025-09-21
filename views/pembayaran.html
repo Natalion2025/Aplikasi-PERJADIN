@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Pembayaran - Aplikasi Perjadin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tom Select CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Custom styles to make Tom-Select blend with Tailwind forms */
+        :root {
+            --ts-border-radius: 0.375rem;
+            /* rounded-md */
+            --tailwind-input-height: 38px;
+            /* h-9.5 */
+        }
+
+        .ts-control {
+            box-sizing: border-box;
+            padding: 0.375rem 0.75rem 0.375rem 0.75rem !important;
+            min-height: var(--tailwind-input-height) !important;
+            border-radius: var(--ts-border-radius) !important;
+            transition: box-shadow 0.15s ease-in-out;
+            border-width: 1px;
+            border-color: #cbd5e1;
+            /* slate-300 */
+        }
+
+        .dark .ts-control {
+            background-color: #334155;
+            /* slate-700 */
+            border-color: #4b5563;
+            /* gray-600 */
+        }
+
+        .ts-wrapper.focus .ts-control,
+        .ts-wrapper.dropdown-active .ts-control {
+            box-shadow: 0 0 0 1px #0ea5e9;
+            /* focus:ring-1 focus:ring-sky-500 */
+            border-color: #0ea5e9;
+            /* focus:border-sky-500 */
+        }
+
+        .ts-dropdown .ts-option {
+            padding: 0.5rem 0.75rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50 dark:bg-gray-900">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content akan dimuat di sini -->
+    </aside>
+
+    <!-- Konten utama -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content akan dimuat di sini -->
+        </header>
+
+        <!-- Konten -->
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Pembayaran</h2>
+                <button id="buat-bukti-button"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Buat Bukti Bayar
+                </button>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Daftar Bukti Pembayaran</h3>
+                <div id="pembayaran-list-container" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Nomor Bukti</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Tanggal</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Penerima & Uraian</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Nominal</th>
+                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="pembayaran-table-body"
+                            class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
+                            <!-- Data akan dimuat di sini oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Buat Bukti Bayar -->
+    <div id="pembayaran-modal" class="modal-overlay hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto relative flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                <h3 id="pembayaran-modal-title" class="text-xl font-semibold text-white">Buat Bukti Pembayaran Baru</h3>
+                <button id="close-pembayaran-modal-button" class="text-gray-300 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+                <form id="pembayaran-form" class="space-y-6">
+                    <input type="hidden" id="pembayaran-id">
+                    <div>
+                        <label for="anggaran_id"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kode/Mata
+                            Anggaran</label>
+                        <select id="anggaran_id" name="anggaran_id" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            <option value="">-- Pilih Anggaran --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="spt_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Register
+                            SPT</label>
+                        <select id="spt_id" name="spt_id" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            <option value="">-- Pilih SPT --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="nama_penerima"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Penerima
+                            Pembayaran</label>
+                        <textarea id="nama_penerima" name="nama_penerima" rows="3" required
+                            placeholder="Akan terisi otomatis setelah memilih Register SPT"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="uraian_pembayaran"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uraian Pembayaran</label>
+                        <textarea id="uraian_pembayaran" name="uraian_pembayaran" rows="3" required
+                            placeholder="Contoh: Pembayaran biaya perjalanan dinas ke..."
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="nominal_bayar"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nominal Bayar
+                            (Rp)</label>
+                        <input type="number" id="nominal_bayar" name="nominal_bayar" required
+                            placeholder="Masukkan hanya angka, contoh: 500000"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+                </form>
+            </div>
+            <!-- Modal Footer -->
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                <button id="cancel-pembayaran-button" type="button"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                <button type="submit" form="pembayaran-form"
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main1.js"></script>
+    <script src="/js/header-logic.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <!-- Tom Select JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <script src="/js/pembayaran.js"></script>
+</body>
+
+</html>

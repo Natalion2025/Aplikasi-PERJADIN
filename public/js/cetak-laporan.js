@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const printArea = document.getElementById('print-area');
+    const attachmentArea = document.getElementById('attachment-area');
     const pathParts = window.location.pathname.split('/');
     const laporanId = pathParts[pathParts.length - 1];
 
@@ -32,10 +33,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const nl2br = (str) => (str || '').replace(/(\r\n|\n\r|\r|\n)/g, '<br>');
 
-        const pelaporName = (laporan.identitas_pelapor || '').split('\n')[0];
-        const pelaporNip = (laporan.identitas_pelapor || '').split('\n')[1];
+        // Buat daftar semua yang bertanda tangan (pelapor utama + pengikut)
+        const allSigners = [];
+        if (laporan.identitas_pelapor) {
+            const [nama, nip] = laporan.identitas_pelapor.split('\n');
+            allSigners.push({
+                nama: nama || 'Nama Pelapor Tidak Ditemukan',
+                nip: nip || ''
+            });
+        }
+        if (laporan.pengikut && laporan.pengikut.length > 0) {
+            laporan.pengikut.forEach(p => {
+                allSigners.push({
+                    nama: p.nama_lengkap,
+                    nip: `NIP. ${p.nip}`
+                });
+            });
+        }
 
-        // Filter lampiran untuk hanya menampilkan gambar
+        // Membuat HTML untuk blok tanda tangan
+        const signatureBlocksHtml = allSigners.map(signer => `
+            <div class="signature-block">
+                <p class="h-20"></p>
+                <p style="font-weight: bold; text-decoration: underline;">${signer.nama}</p>
+                <p>${signer.nip}</p>
+            </div>
+        `).join('');
+
         const imageAttachments = (laporan.lampiran || []).filter(lampiran =>
             /\.(jpg|jpeg|png|gif)$/i.test(lampiran.file_name)
         );
@@ -43,8 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let lampiranHtml = '';
         if (imageAttachments.length > 0) {
             lampiranHtml = `
-                <div class="lampiran-container">
-                    <h3 class="lampiran-title">LAMPIRAN DOKUMENTASI</h3>
+                <div class="page-container lampiran-container">
+                    <h3 class="lampiran-title">LAMPIRAN LAPORAN - DOKUMENTASI</h3>
                     <div class="lampiran-grid">
                         ${imageAttachments.map(img => `
                             <div class="lampiran-item">
@@ -55,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>`;
         }
 
-        printArea.innerHTML = `
+        const laporanContentHtml = `
             <div class="judul-laporan">
                 <h3>LAPORAN HASIL PERJALANAN DINAS</h3>
             </div>
@@ -79,15 +103,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="section-title">V. PENUTUP</div>
             <div class="content-block">Demikian laporan ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</div>
 
-            <div style="margin-top: 4rem; text-align: right; width: 50%; margin-left: 50%;">
+            <div style="margin-top: 4rem;">
                 <p>${laporan.tempat_laporan}, ${formatDate(laporan.tanggal_laporan)}</p>
                 <p>Yang Melaksanakan Perjalanan Dinas,</p>
-                <div style="height: 80px;"></div>
-                <p style="font-weight: bold; text-decoration: underline;">${pelaporName}</p>
-                <p>${pelaporNip || ''}</p>
+                <div class="signature-container">
+                    ${signatureBlocksHtml}
+                </div>
             </div>
-        ` + lampiranHtml; // Tambahkan HTML lampiran di akhir
+        `;
+
+        // Render konten ke area yang sesuai
+        printArea.innerHTML = laporanContentHtml;
+        attachmentArea.innerHTML = lampiranHtml;
     };
+
 
     const data = await fetchLaporanData();
     renderLaporan(data);

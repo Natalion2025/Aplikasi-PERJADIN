@@ -162,7 +162,8 @@ async function setupLayout() {
         if (!response.ok) {
             // Log yang lebih detail untuk debugging
             console.error(`[DIAGNOSTIK] Verifikasi sesi gagal (Status: ${response.status}). Mengalihkan ke login.`);
-            window.location.href = '/login';
+            // PERBAIKAN: Tambahkan parameter ?force=true untuk menghancurkan sesi lama di server
+            window.location.href = '/login?force=true';
             return; // Hentikan eksekusi lebih lanjut
         }
 

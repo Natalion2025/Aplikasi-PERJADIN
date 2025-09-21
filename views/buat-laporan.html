@@ -167,29 +167,140 @@
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">3. Rincian Pengeluaran
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-1 gap-x-8 gap-y-6">
+                            <!-- Kolom Transportasi -->
                             <div>
                                 <label for="transportasi"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transportasi</label>
-                                <select id="transportasi" name="transportasi"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                                    <option>Bus</option>
-                                    <option>Taksi</option>
-                                    <option>Kereta Api</option>
-                                    <option>Kapal</option>
-                                    <option>Pesawat</option>
-                                </select>
+                                <div id="transportasi-container" class="mt-1 space-y-4">
+                                    <!-- Baris Transportasi akan ditambahkan oleh JS -->
+                                </div>
+                                <button type="button" id="tambah-transportasi-btn"
+                                    class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Tambah
+                                    Transportasi</button>
                             </div>
+
+                            <!-- Kolom Akomodasi -->
                             <div>
-                                <label for="akomodasi"
+                                <label
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Akomodasi</label>
-                                <select id="akomodasi" name="akomodasi"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                                    <option>Hotel</option>
-                                    <option>Ditanggung Panitia</option>
-                                    <option>Rumah Warga (30%)</option>
-                                </select>
+                                <div id="akomodasi-container" class="mt-1 space-y-4">
+                                    <!-- Baris Akomodasi akan ditambahkan oleh JS -->
+                                </div>
+                                <button type="button" id="tambah-akomodasi-btn"
+                                    class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Tambah
+                                    Akomodasi</button>
                             </div>
+
+                            <!-- Kolom Biaya Kontribusi -->
+                            <div>
+                                <label for="kontribusi"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya Kontribusi
+                                    (Kursus/Pelatihan/BIMTEK)</label>
+                                <div id="kontribusi-container" class="mt-1 space-y-4">
+                                    <!-- Baris Kontribusi ini akan ditambahkan oleh JS -->
+                                </div>
+                                <button type="button" id="tambah-kontribusi-btn"
+                                    class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Tambah
+                                    Kontribusi</button>
+                            </div>
+
+                            <!-- Kolom Biaya Lain-lain -->
+                            <div>
+                                <label for="lain-lain"
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya Lain-lain
+                                    (jika ada)</label>
+                                <div id="lain-lain-container" class="mt-1 space-y-4">
+                                    <!-- Baris Biaya Lain-lain akan ditambahkan oleh JS -->
+                                </div>
+                                <button type="button" id="tambah-lain-lain-btn"
+                                    class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Tambah Biaya
+                                    Lain-lain</button>
+                            </div>
+
+                            <!-- Template untuk Transportasi -->
+                            <template id="transportasi-template">
+                                <div class="transport-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                    <select name="transportasi_jenis"
+                                        class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                        <option>Bus</option>
+                                        <option>Taksi</option>
+                                        <option>Kereta Api</option>
+                                        <option>Kapal</option>
+                                        <option>Pesawat</option>
+                                    </select>
+                                    <input type="text" name="transportasi_perusahaan"
+                                        placeholder="Nama Maskapai/Perusahaan"
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                    <div class="flex items-center gap-2 md:col-span-1">
+                                        <input type="text" name="transportasi_nominal" placeholder="Nominal (Rp)"
+                                            class="flex-grow block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                                        <button type="button"
+                                            class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                                class="fas fa-minus-circle"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Template untuk Akomodasi -->
+                            <template id="akomodasi-template">
+                                <div class="akomodasi-item grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                                    <select name="akomodasi_jenis"
+                                        class="md:col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                        <option>Hotel</option>
+                                        <option>Ditanggung Panitia</option>
+                                        <option>Rumah Warga (30%)</option>
+                                    </select>
+                                    <input type="text" name="akomodasi_nama" placeholder="Nama Hotel"
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                    <input type="text" name="akomodasi_harga_satuan" placeholder="Harga Satuan (Rp)"
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc currency-input">
+                                    <input type="number" name="akomodasi_malam" placeholder="Qty"
+                                        class="md:col-span-1 block w-full text-center px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc">
+                                    <span
+                                        class="text-gray-600 dark:text-gray-400 text-center md:col-span-1">malam</span>
+                                    <input type="text" name="akomodasi_nominal" placeholder="Total (Rp)" readonly
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed">
+                                    <button type="button"
+                                        class="remove-item-btn text-red-500 hover:text-red-700 hidden justify-self-start"><i
+                                            class="fas fa-minus-circle"></i></button>
+                                </div>
+                            </template>
+
+                            <!-- Template untuk Biaya Kontribusi -->
+                            <template id="kontribusi-template">
+                                <div class="kontribusi-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                    <select name="kontribusi_jenis" placeholder="Biaya Kontribusi"
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                        <option>Bimbingan Teknis</option>
+                                        <option>Kursus</option>
+                                        <option>Pelatihan/Diklat</option>
+                                    </select>
+                                    <div class="flex items-center gap-2 md:col-span-1">
+                                        <input type="text" name="kontribusi_nominal" placeholder="Nominal (Rp)"
+                                            class="flex-grow block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                                        <span class="text-gray-600 dark:text-gray-400 text-center">/kegiatan</span>
+                                        <button type="button"
+                                            class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                                class="fas fa-minus-circle"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Template untuk Biaya Lain-lain -->
+                            <template id="lain-lain-template">
+                                <div class="lain-lain-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                                    <input type="text" name="lain_lain_uraian" placeholder="Uraian Biaya"
+                                        class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                    <div class="flex items-center gap-2 md:col-span-1">
+                                        <input type="text" name="lain_lain_nominal" placeholder="Nominal (Rp)"
+                                            class="block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                                        <button type="button"
+                                            class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                                class="fas fa-minus-circle"></i></button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
