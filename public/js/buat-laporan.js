@@ -4,7 +4,6 @@
     const pageTitle = document.querySelector('h2');
 
     // Elemen form yang akan diisi otomatis
-    // const judulEl = document.getElementById('judul'); // Tidak digunakan lagi
     const identitasPelaporEl = document.getElementById('identitas_pelapor');
     const dasarPerjalananEl = document.getElementById('dasar_perjalanan');
     const tujuanPerjalananEl = document.getElementById('tujuan_perjalanan');
@@ -108,12 +107,22 @@
             if (!response.ok) throw new Error('Gagal memuat detail SPT.');
             const sptDetail = await response.json();
 
-            // Ambil data pegawai utama
-            const pegawaiUtamaId = sptDetail.pegawai.find(p => p.is_pengikut === 0)?.pegawai_id;
-            if (pegawaiUtamaId) {
-                const pegawaiRes = await fetch(`/api/pegawai/${pegawaiUtamaId}`);
-                const pegawai = await pegawaiRes.json();
-                identitasPelaporEl.value = `${pegawai.nama_lengkap}\nNIP. ${pegawai.nip}\n${pegawai.jabatan}`;
+            // Ambil semua pegawai yang terlibat (pelaksana dan pengikut)
+            // Urutkan agar pelaksana utama (bukan pengikut) selalu di atas.
+            const semuaPelaksana = (sptDetail.pegawai || []).sort((a, b) => a.is_pengikut - b.is_pengikut);
+
+            if (semuaPelaksana.length > 0) {
+                // Format informasi untuk setiap pelaksana dan gabungkan dengan pemisah baris
+                const identitasText = semuaPelaksana.map(p => {
+                    return `${p.nama_lengkap}\nNIP. ${p.nip}\n${p.jabatan}`;
+                }).join('\n\n'); // Beri jarak antar pegawai
+
+                identitasPelaporEl.value = identitasText;
+                // Secara dinamis sesuaikan tinggi textarea agar semua nama terlihat
+                identitasPelaporEl.rows = identitasText.split('\n').length;
+            } else {
+                identitasPelaporEl.value = 'Tidak ada data pegawai ditemukan pada SPT ini.';
+                identitasPelaporEl.rows = 1;
             }
 
             dasarPerjalananEl.value = sptDetail.dasar_surat;
@@ -148,6 +157,9 @@
             document.getElementById('tempat_laporan').value = laporan.tempat_laporan;
             document.getElementById('judul').value = laporan.judul;
             identitasPelaporEl.value = laporan.identitas_pelapor;
+            // Sesuaikan juga tinggi textarea saat mode edit
+            const lineCount = (laporan.identitas_pelapor || '').split('\n').length;
+            identitasPelaporEl.rows = lineCount > 1 ? lineCount : 3; // Minimal 3 baris
 
             dasarPerjalananEl.value = laporan.dasar_perjalanan;
             tujuanPerjalananEl.value = laporan.tujuan_perjalanan;
