@@ -74,22 +74,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderSurat = (data) => {
         if (!data) return;
 
-        // Perbaikan: Destructure 'pengikut' juga dari data
+        // Ambil sppdList, bukan sppd tunggal
         const {
-            sppd,
+            sppdList,
             spt,
-            pegawai,
             pejabat,
             pengikut,
             anggaran,
             penggunaAnggaran } = data;
 
-        if (!sppd || !spt || !pegawai || !pejabat) {
+        if (!sppdList || sppdList.length === 0 || !spt || !pejabat) {
             printArea.innerHTML = `<p class="text-center text-red-500">Data tidak lengkap untuk mencetak SPPD.</p>`;
             return;
         }
 
-        printArea.innerHTML = `
+        // Buat HTML untuk setiap SPPD dan gabungkan
+        const allSppdHtml = sppdList.map(sppd => {
+            const pegawai = sppd.pegawai; // Ambil data pegawai dari setiap item SPPD
+
+            return `
+            <div style="page-break-after: always;">
+            <div class="page-container">
             <div class="kop-surat">
                 <img src="/assets/logomelawi.png" alt="Logo Melawi">
                 <div class="text-kop">
@@ -105,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div>
                     <p>Lembar ke : 1 (satu)</p>
                     <p>Kode No. : 090</p>
-                    <p>Nomor : ${sppd.nomor_sppd || ''}</p>
+                    <p>Nomor : ${sppd.nomor_sppd || 'N/A'}</p>
                 </div>
             </div>
 
@@ -123,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <tr>
                     <td>2.</td>
                     <td>Nama/NIP Pegawai yang diperintahkan</td>
-                    <td colspan="2">${pegawai.nama_lengkap || ''} <br> ${pegawai.nip || ''}</td>
+                    <td colspan="2">${pegawai.nama_lengkap || 'N/A'} <br> ${pegawai.nip || 'N/A'}</td>
                 </tr>
                 <tr>
                     <td>3.</td>
@@ -133,9 +138,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <p>c. Tingkat Biaya Perjalanan Dinas</p>
                     </td>
                     <td colspan="2">
-                        <p>a. ${pegawai.pangkat || ''} (${pegawai.golongan || ''})</p>
-                        <p>b. ${pegawai.jabatan || ''}</p>
-                        <p>c. ${getTingkatBiaya(pegawai)}</p>
+                        <p>a. ${pegawai.pangkat || '-'} (${pegawai.golongan || '-'})</p>
+                        <p>b. ${pegawai.jabatan || '-'}</p>
+                        <p>c. ${getTingkatBiaya(pegawai) || '-'}</p>
                     </td>
                 </tr>
                 <tr>
@@ -182,12 +187,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td></td>
                     <td>
                         ${pengikut && pengikut.length > 0
-                ? pengikut.map((p, index) => `${index + 1}. ${p.nama_lengkap}`).join('<br>')
-                : '-'}
+                    ? pengikut.map((p, index) => `${index + 1}. ${p.nama_lengkap}`).join('<br>')
+                    : '-'}
                     </td>
                     <td>${pengikut && pengikut.length > 0
-                ? pengikut.map((p, index) => `${index + 1}. ${p.nip}`).join('<br>')
-                : '-'}</td>
+                    ? pengikut.map((p, index) => `${index + 1}. ${p.nip}`).join('<br>')
+                    : '-'}</td>
                     <td colspan="2"></td>
                 </tr>
                 <tr>
@@ -222,7 +227,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p>pertanggungjawaban sesuai ketentuan.</p>
                 </div>
             </div>
+            </div>
+            </div>
         `;
+        }).join('');
+
+        printArea.innerHTML = allSppdHtml;
     };
 
     const data = await fetchSppdData();

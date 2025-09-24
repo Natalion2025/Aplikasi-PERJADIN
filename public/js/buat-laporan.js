@@ -4,7 +4,7 @@
     const pageTitle = document.querySelector('h2');
 
     // Elemen form yang akan diisi otomatis
-    const identitasPelaporEl = document.getElementById('identitas_pelapor');
+    const penandatanganContainer = document.getElementById('penandatangan-container');
     const dasarPerjalananEl = document.getElementById('dasar_perjalanan');
     const tujuanPerjalananEl = document.getElementById('tujuan_perjalanan');
     const lamaDanTanggalEl = document.getElementById('lama_dan_tanggal_perjalanan');
@@ -111,18 +111,26 @@
             // Urutkan agar pelaksana utama (bukan pengikut) selalu di atas.
             const semuaPelaksana = (sptDetail.pegawai || []).sort((a, b) => a.is_pengikut - b.is_pengikut);
 
-            if (semuaPelaksana.length > 0) {
-                // Format informasi untuk setiap pelaksana dan gabungkan dengan pemisah baris
-                const identitasText = semuaPelaksana.map(p => {
-                    return `${p.nama_lengkap}\nNIP. ${p.nip}\n${p.jabatan}`;
-                }).join('\n\n'); // Beri jarak antar pegawai
+            // Kosongkan kontainer dan tambahkan checkbox untuk setiap pelaksana
+            penandatanganContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Pilih penandatangan laporan (otomatis dari SPT):</p>';
 
-                identitasPelaporEl.value = identitasText;
-                // Secara dinamis sesuaikan tinggi textarea agar semua nama terlihat
-                identitasPelaporEl.rows = identitasText.split('\n').length;
+            if (semuaPelaksana.length > 0) {
+                semuaPelaksana.forEach(p => {
+                    const isChecked = p.is_pengikut === 0; // Secara default, hanya pelaksana utama yang dicentang
+                    const checkboxHtml = `
+                        <div class="flex items-start">
+                            <input id="signer_${p.pegawai_id}" name="penandatangan_ids" type="checkbox" value="${p.pegawai_id}" ${isChecked ? 'checked' : ''}
+                                class="h-4 w-4 mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                            <label for="signer_${p.pegawai_id}" class="ml-3 text-sm">
+                                <span class="font-medium text-gray-900 dark:text-gray-200">${p.nama_lengkap}</span>
+                                <span class="text-gray-500 dark:text-gray-400 block">NIP. ${p.nip} | ${p.jabatan}</span>
+                            </label>
+                        </div>
+                    `;
+                    penandatanganContainer.insertAdjacentHTML('beforeend', checkboxHtml);
+                });
             } else {
-                identitasPelaporEl.value = 'Tidak ada data pegawai ditemukan pada SPT ini.';
-                identitasPelaporEl.rows = 1;
+                penandatanganContainer.innerHTML += '<p class="text-sm text-red-500">Tidak ada data pegawai ditemukan pada SPT ini.</p>';
             }
 
             dasarPerjalananEl.value = sptDetail.dasar_surat;
@@ -156,10 +164,26 @@
             document.getElementById('tanggal_laporan').value = formatDate(laporan.tanggal_laporan);
             document.getElementById('tempat_laporan').value = laporan.tempat_laporan;
             document.getElementById('judul').value = laporan.judul;
-            identitasPelaporEl.value = laporan.identitas_pelapor;
-            // Sesuaikan juga tinggi textarea saat mode edit
-            const lineCount = (laporan.identitas_pelapor || '').split('\n').length;
-            identitasPelaporEl.rows = lineCount > 1 ? lineCount : 3; // Minimal 3 baris
+
+            // Panggil populateFormFromSpt untuk membuat checkbox, lalu centang sesuai data yang tersimpan
+            await populateFormFromSpt();
+            // Penanganan error saat parsing JSON
+            let selectedIds = [];
+            if (laporan.penandatangan_ids) {
+                try {
+                    selectedIds = JSON.parse(laporan.penandatangan_ids);
+                } catch (e) {
+                    console.error("Failed to parse penandatangan_ids:", e);
+                    alert("Terjadi kesalahan data penandatangan. Data mungkin tidak ditampilkan dengan benar.");
+                }
+            }
+            if (selectedIds.length > 0) {
+                penandatanganContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                selectedIds.forEach(id => {
+                    const cb = penandatanganContainer.querySelector(`input[value="${id}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
 
             dasarPerjalananEl.value = laporan.dasar_perjalanan;
             tujuanPerjalananEl.value = laporan.tujuan_perjalanan;
@@ -404,9 +428,33 @@
         const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
         const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
 
-        const formData = new FormData(form);
+        const selectedSignerIds = Array.from(penandatanganContainer.querySelectorAll('input[name="penandatangan_ids"]:checked'))
+            .map(cb => cb.value);
 
-        // Kumpulkan data transportasi dinamis
+        if (selectedSignerIds.length === 0) {
+            alert('Pilih minimal satu penandatangan laporan.');
+            return;
+        }
+
+        const formData = new FormData();
+
+        // Ambil data form biasa
+        formData.append('spt_id', sptSelect.value);
+        formData.append('tanggal_laporan', document.getElementById('tanggal_laporan').value);
+        formData.append('tempat_laporan', document.getElementById('tempat_laporan').value);
+        formData.append('judul', document.getElementById('judul').value);
+        formData.append('dasar_perjalanan', dasarPerjalananEl.value);
+        formData.append('tujuan_perjalanan', tujuanPerjalananEl.value);
+        formData.append('lama_dan_tanggal_perjalanan', lamaDanTanggalEl.value);
+        formData.append('deskripsi_kronologis', document.getElementById('deskripsi_kronologis').value);
+        formData.append('tempat_dikunjungi', tempatDikunjungiEl.value);
+        formData.append('hasil_dicapai', document.getElementById('hasil_dicapai').value);
+        formData.append('kesimpulan', document.getElementById('kesimpulan').value);
+
+        // Simpan penandatangan_ids sebagai string JSON
+        formData.append('penandatangan_ids', JSON.stringify(selectedSignerIds));
+
+        // Kumpulkan dan tambahkan data dinamis ke FormData
         const transportasiData = [];
         transportasiContainer.querySelectorAll('.transport-item').forEach(item => {
             transportasiData.push({
@@ -415,8 +463,12 @@
                 nominal: parseCurrency(item.querySelector('[name="transportasi_nominal"]').value)
             });
         });
+        if (transportasiData.length > 0) {
+            formData.append('transportasi_jenis', transportasiData[0].jenis);
+            formData.append('transportasi_perusahaan', transportasiData[0].perusahaan);
+            formData.append('transportasi_nominal', transportasiData[0].nominal);
+        }
 
-        // Kumpulkan data akomodasi dinamis
         const akomodasiData = [];
         akomodasiContainer.querySelectorAll('.akomodasi-item').forEach(item => {
             akomodasiData.push({
@@ -427,8 +479,14 @@
                 nominal: parseCurrency(item.querySelector('[name="akomodasi_nominal"]').value)
             });
         });
+        if (akomodasiData.length > 0) {
+            formData.append('akomodasi_jenis', akomodasiData[0].jenis);
+            formData.append('akomodasi_nama', akomodasiData[0].nama);
+            formData.append('akomodasi_harga_satuan', akomodasiData[0].harga_satuan);
+            formData.append('akomodasi_malam', akomodasiData[0].malam);
+            formData.append('akomodasi_nominal', akomodasiData[0].nominal);
+        }
 
-        // Kumpulkan data kontribusi dinamis
         const kontribusiData = [];
         kontribusiContainer.querySelectorAll('.kontribusi-item').forEach(item => {
             kontribusiData.push({
@@ -436,8 +494,11 @@
                 nominal: parseCurrency(item.querySelector('[name="kontribusi_nominal"]').value)
             });
         });
+        if (kontribusiData.length > 0) {
+            formData.append('kontribusi_jenis', kontribusiData[0].jenis);
+            formData.append('kontribusi_nominal', kontribusiData[0].nominal);
+        }
 
-        // Kumpulkan data biaya lain-lain dinamis
         const lainLainData = [];
         lainLainContainer.querySelectorAll('.lain-lain-item').forEach(item => {
             lainLainData.push({
@@ -445,46 +506,16 @@
                 nominal: parseCurrency(item.querySelector('[name="lain_lain_nominal"]').value)
             });
         });
-
-        // Hapus field-field dinamis yang tidak perlu dikirim secara individual
-        formData.delete('transportasi_jenis');
-        formData.delete('transportasi_perusahaan');
-        formData.delete('transportasi_nominal');
-        formData.delete('akomodasi_jenis');
-        formData.delete('akomodasi_nama');
-        formData.delete('akomodasi_harga_satuan');
-        formData.delete('akomodasi_malam');
-        formData.delete('akomodasi_nominal');
-        formData.delete('kontribusi_jenis');
-        formData.delete('kontribusi_nominal');
-        formData.delete('lain_lain_uraian');
-        formData.delete('lain_lain_nominal');
-
-        // Tambahkan data dinamis ke FormData
-        formData.append('transportasi_jenis', transportasiData.length > 0 ? transportasiData[0].jenis : '');
-        formData.append('transportasi_perusahaan', transportasiData.length > 0 ? transportasiData[0].perusahaan : '');
-        formData.append('transportasi_nominal', transportasiData.length > 0 ? transportasiData[0].nominal : 0);
-
-        formData.append('akomodasi_jenis', akomodasiData.length > 0 ? akomodasiData[0].jenis : '');
-        formData.append('akomodasi_nama', akomodasiData.length > 0 ? akomodasiData[0].nama : '');
-        formData.append('akomodasi_harga_satuan', akomodasiData.length > 0 ? akomodasiData[0].harga_satuan : 0);
-        formData.append('akomodasi_malam', akomodasiData.length > 0 ? akomodasiData[0].malam : 0);
-        formData.append('akomodasi_nominal', akomodasiData.length > 0 ? akomodasiData[0].nominal : 0);
-
-        formData.append('kontribusi_jenis', kontribusiData.length > 0 ? kontribusiData[0].jenis : '');
-        formData.append('kontribusi_nominal', kontribusiData.length > 0 ? kontribusiData[0].nominal : 0);
-
-        formData.append('lain_lain_uraian', lainLainData.length > 0 ? lainLainData[0].uraian : '');
-        formData.append('lain_lain_nominal', lainLainData.length > 0 ? lainLainData[0].nominal : 0);
+        if (lainLainData.length > 0) {
+            formData.append('lain_lain_uraian', lainLainData[0].uraian);
+            formData.append('lain_lain_nominal', lainLainData[0].nominal);
+        }
 
         if (isEditMode) {
-            formData.append('spt_id', sptSelect.value);
             formData.append('deleted_files', JSON.stringify(deletedFiles));
         }
 
-        // Hapus 'lampiran' default dari FormData karena kita akan menambahkannya secara manual
-        formData.delete('lampiran');
-        // Tambahkan file baru ke FormData
+        // Tambahkan file baru
         newFiles.forEach(file => {
             formData.append('lampiran', file);
         });

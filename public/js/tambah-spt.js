@@ -195,17 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Hapus baris pegawai default
             pegawaiContainer.innerHTML = '';
             // Tambahkan baris pegawai sesuai data dari server
-            spt.pegawai.forEach(pegawaiData => {
-                tambahPegawaiBtn.click(); // Panggil event click untuk membuat baris baru
-                const newRow = pegawaiContainer.lastChild;
-                const newSelect = newRow.querySelector('select');
-                const radioName = newSelect.name.replace('[id]', '[pengikut]'); // Dapatkan nama radio button yang sesuai
-                const radioToCheck = newRow.querySelector(`input[name="${radioName}"][value="${pegawaiData.is_pengikut}"]`);
-
-                // Set pegawai yang dipilih dan radio button yang sesuai
-                newSelect.value = pegawaiData.pegawai_id;
-                if (radioToCheck) radioToCheck.checked = true;
-            });
+            spt.pegawai.forEach(pegawaiData => addPegawaiRow(pegawaiData));
 
         } catch (error) {
             alert(error.message);
@@ -213,8 +203,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- Fungsi untuk menambah baris pegawai ---
-    tambahPegawaiBtn.addEventListener('click', () => {
+    /**
+     * Menambah baris pegawai baru ke dalam form.
+     * Jika data disediakan, baris akan diisi dengan data tersebut (untuk mode edit).
+     * @param {object} [data={}] - Data pegawai yang akan diisikan.
+     */
+    const addPegawaiRow = (data = {}) => {
         const newIndex = pegawaiCounter++;
         const newPegawaiRow = document.createElement('div');
         newPegawaiRow.className = 'flex items-center gap-x-4';
@@ -240,7 +234,20 @@ document.addEventListener('DOMContentLoaded', function () {
             </button>
         `;
         pegawaiContainer.appendChild(newPegawaiRow);
-    });
+
+        // Jika ada data (mode edit), isi nilainya
+        if (data.pegawai_id) {
+            const newSelect = newPegawaiRow.querySelector('select');
+            const radioName = newSelect.name.replace('[id]', '[pengikut]');
+            const radioToCheck = newPegawaiRow.querySelector(`input[name="${radioName}"][value="${data.is_pengikut}"]`);
+
+            newSelect.value = data.pegawai_id;
+            if (radioToCheck) radioToCheck.checked = true;
+        }
+    };
+
+    // --- Fungsi untuk menambah baris pegawai ---
+    tambahPegawaiBtn.addEventListener('click', () => addPegawaiRow());
 
     // --- Logika submit form ---
     form.addEventListener('submit', async (e) => {

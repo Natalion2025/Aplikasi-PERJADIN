@@ -7,6 +7,7 @@ const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
 const ExcelJS = require('exceljs');
+const { spawn } = require('child_process');
 
 // Impor rute
 const authRoutes = require('./routes/authRoutes');
@@ -148,6 +149,19 @@ db.all("PRAGMA table_info(spt_pegawai)", (err, cols) => {
     }
 });
 
+// Cek dan perbaiki struktur tabel 'laporan_perjadin' jika kolom 'penandatangan_ids' belum ada.
+db.all("PRAGMA table_info(laporan_perjadin)", (err, cols) => {
+    if (err) return;
+    const hasPenandatangan = cols.some(col => col.name === 'penandatangan_ids');
+    if (!hasPenandatangan) {
+        console.warn("[DB MIGRATION] Kolom 'penandatangan_ids' tidak ditemukan. Menambahkan kolom ke tabel 'laporan_perjadin'...");
+        db.run("ALTER TABLE laporan_perjadin ADD COLUMN penandatangan_ids TEXT", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'penandatangan_ids':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'penandatangan_ids' berhasil ditambahkan.");
+        });
+    }
+});
+
 // Pastikan tabel 'sppd' (Surat Perjalanan Dinas) ada
 db.run(`CREATE TABLE IF NOT EXISTS sppd (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,15 +191,20 @@ db.all("PRAGMA table_info(sppd)", async (err, cols) => {
             await runQuery(`CREATE TABLE sppd (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 spt_id INTEGER NOT NULL,
+                pegawai_id INTEGER NOT NULL,
                 nomor_sppd TEXT UNIQUE NOT NULL,
                 tanggal_sppd DATE NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE
+                FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE,
+                FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
             )`);
             console.log("[DB MIGRATION] Tabel 'sppd' baru dengan struktur yang benar telah dibuat.");
 
             // 3. Salin data yang relevan dari tabel lama ke tabel baru
-            await runQuery("INSERT INTO sppd (id, spt_id, nomor_sppd, tanggal_sppd) SELECT id, spt_id, nomor_sppd, tanggal_sppd FROM sppd_old WHERE spt_id IS NOT NULL AND nomor_sppd IS NOT NULL AND tanggal_sppd IS NOT NULL");
+            // Karena data pegawai tidak ada di tabel lama, kita tidak bisa memigrasikannya secara otomatis.
+            // Data SPPD lama mungkin perlu dibuat ulang.
+            console.warn("[DB MIGRATION] Data dari 'sppd_old' tidak dapat dimigrasikan sepenuhnya karena tidak ada 'pegawai_id'. SPPD lama mungkin perlu dibuat ulang.");
+            // await runQuery("INSERT INTO sppd (id, spt_id, nomor_sppd, tanggal_sppd) SELECT id, spt_id, nomor_sppd, tanggal_sppd FROM sppd_old WHERE spt_id IS NOT NULL AND nomor_sppd IS NOT NULL AND tanggal_sppd IS NOT NULL");
             console.log("[DB MIGRATION] Data yang relevan telah disalin ke tabel baru.");
 
             await runQuery('COMMIT');
@@ -194,6 +213,19 @@ db.all("PRAGMA table_info(sppd)", async (err, cols) => {
             console.error("[DB MIGRATION FAILED] Gagal memigrasi tabel 'sppd':", migrationErr.message);
             await runQuery('ROLLBACK').catch(rbErr => console.error('[DB MIGRATION] Gagal rollback:', rbErr));
         }
+    }
+});
+
+// Cek dan perbaiki struktur tabel 'sppd' jika kolom 'pegawai_id' belum ada.
+db.all("PRAGMA table_info(sppd)", (err, cols) => {
+    if (err) return;
+    const hasPegawaiId = cols.some(col => col.name === 'pegawai_id');
+    if (!hasPegawaiId) {
+        console.warn("[DB MIGRATION] Kolom 'pegawai_id' tidak ditemukan. Menambahkan kolom ke tabel 'sppd'...");
+        db.run("ALTER TABLE sppd ADD COLUMN pegawai_id INTEGER", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'pegawai_id':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'pegawai_id' berhasil ditambahkan.");
+        });
     }
 });
 
@@ -839,6 +871,7 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
             FROM spt_pegawai sp
             JOIN pegawai p ON sp.pegawai_id = p.id
             WHERE sp.spt_id = ?
+            ORDER BY sp.urutan ASC
         `;
         const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
         spt.pegawai = pegawaiRows;
@@ -883,15 +916,19 @@ app.post('/api/spt', isApiAuthenticated, async (req, res) => {
 
         const newSptId = sptResult.lastID;
 
-        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
-        for (const pegawaiItem of pegawai) {
-            await runQuery(sptPegawaiSql, [newSptId, pegawaiItem.id, pegawaiItem.pengikut]);
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut, urutan) VALUES (?, ?, ?, ?)';
+        for (const [index, pegawaiItem] of pegawai.entries()) {
+            await runQuery(sptPegawaiSql, [newSptId, pegawaiItem.id, pegawaiItem.pengikut, index]);
         }
 
-        // Buat SPPD otomatis
-        const nomorSppd = `090/${newSptId}/SPD/${new Date(tanggal_surat).getFullYear()}`;
-        const sppdSql = `INSERT INTO sppd (spt_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?)`;
-        await runQuery(sppdSql, [newSptId, nomorSppd, tanggal_surat]);
+        // Buat SPPD otomatis untuk setiap pegawai yang BUKAN pengikut
+        const pelaksanaTugas = pegawai.filter(p => p.pengikut === '0' || p.pengikut === 0);
+        const sppdSql = `INSERT INTO sppd (spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?, ?)`;
+        let sppdCounter = 1;
+        for (const pelaksana of pelaksanaTugas) {
+            const nomorSppd = `090/${newSptId}.${sppdCounter++}/SPD/${new Date(tanggal_surat).getFullYear()}`;
+            await runQuery(sppdSql, [newSptId, pelaksana.id, nomorSppd, tanggal_surat]);
+        }
 
         await runQuery('COMMIT');
         res.status(201).json({ message: 'SPT dan SPPD berhasil dibuat!', sptId: newSptId });
@@ -946,13 +983,21 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
 
         await runQuery('DELETE FROM spt_pegawai WHERE spt_id = ?', [id]);
 
-        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut) VALUES (?, ?, ?)';
-        for (const pegawaiItem of pegawai) {
-            await runQuery(sptPegawaiSql, [id, pegawaiItem.id, pegawaiItem.pengikut]);
+        const sptPegawaiSql = 'INSERT INTO spt_pegawai (spt_id, pegawai_id, is_pengikut, urutan) VALUES (?, ?, ?, ?)';
+        for (const [index, pegawaiItem] of pegawai.entries()) {
+            await runQuery(sptPegawaiSql, [id, pegawaiItem.id, pegawaiItem.pengikut, index]);
         }
 
-        const sppdUpdateSql = 'UPDATE sppd SET tanggal_sppd = ? WHERE spt_id = ?';
-        await runQuery(sppdUpdateSql, [tanggal_surat, id]);
+        // Hapus SPPD lama dan buat ulang sesuai daftar pelaksana yang baru
+        await runQuery('DELETE FROM sppd WHERE spt_id = ?', [id]);
+
+        const pelaksanaTugas = pegawai.filter(p => p.pengikut === '0' || p.pengikut === 0);
+        const sppdSql = `INSERT INTO sppd (spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?, ?)`;
+        let sppdCounter = 1;
+        for (const pelaksana of pelaksanaTugas) {
+            const nomorSppd = `090/${id}.${sppdCounter++}/SPD/${new Date(tanggal_surat).getFullYear()}`;
+            await runQuery(sppdSql, [id, pelaksana.id, nomorSppd, tanggal_surat]);
+        }
 
         await runQuery('COMMIT');
         res.json({ message: 'Surat Perintah Tugas berhasil diperbarui!', sptId: id });
@@ -1158,28 +1203,17 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             return res.status(404).json({ message: 'Data SPT terkait tidak ditemukan.' });
         }
 
-        let sppd = await dbGet("SELECT * FROM sppd WHERE spt_id = ?", [spt_id]);
-        if (!sppd) {
-            // Jika SPPD tidak ada (untuk data lama), buat secara on-the-fly
-            console.log(`[INFO] SPPD untuk SPT ID ${spt_id} tidak ditemukan, membuat data baru...`);
-            const nomorSppd = `090/${spt.id}/SPD/${new Date(spt.tanggal_surat).getFullYear()}`;
-            const sppdSqlInsert = `INSERT INTO sppd (spt_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?)`;
-            const result = await runQuery(sppdSqlInsert, [spt.id, nomorSppd, spt.tanggal_surat]);
-
-            // Ambil kembali data SPPD yang baru dibuat
-            sppd = await dbGet("SELECT * FROM sppd WHERE id = ?", [result.lastID]);
+        // Ambil SEMUA SPPD yang terkait dengan SPT ini
+        const sppdList = await dbAll("SELECT * FROM sppd WHERE spt_id = ?", [spt_id]);
+        if (!sppdList || sppdList.length === 0) {
+            return res.status(404).json({ message: `Tidak ada data SPPD yang ditemukan untuk SPT ID ${spt_id}.` });
         }
 
-        const pegawaiSql = `
-            SELECT p.* FROM pegawai p
-            JOIN spt_pegawai sp ON p.id = sp.pegawai_id
-            WHERE sp.spt_id = ? AND sp.is_pengikut = 0 
-            LIMIT 1 
-        `;
-        let pegawaiUtama = await dbGet(pegawaiSql, [spt_id]);
-        if (!pegawaiUtama) {
-            console.warn(`[WARN] Pegawai utama (bukan pengikut) tidak ditemukan untuk SPT ID ${spt.id}.`);
-            pegawaiUtama = { nama_lengkap: 'Data Pegawai Tidak Ditemukan', nip: '-', pangkat: '-', golongan: '-', jabatan: '-' };
+        // Untuk setiap SPPD, ambil detail pegawai yang bersangkutan
+        for (const sppd of sppdList) {
+            const pegawaiSql = `SELECT * FROM pegawai WHERE id = ?`;
+            const pegawai = await dbGet(pegawaiSql, [sppd.pegawai_id]);
+            sppd.pegawai = pegawai || { nama_lengkap: 'Data Pegawai Tidak Ditemukan' };
         }
 
         let pejabat = await dbGet("SELECT id, nama, jabatan, nip FROM pejabat WHERE id = ?", [spt.pejabat_pemberi_tugas_id]);
@@ -1214,7 +1248,7 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         `;
         const pengikut = await dbAll(pengikutSql, [spt_id]);
 
-        res.json({ sppd, spt, pegawai: pegawaiUtama, pejabat, pengikut, anggaran, penggunaAnggaran });
+        res.json({ sppdList, spt, pejabat, pengikut, anggaran, penggunaAnggaran });
 
     } catch (err) {
         console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}:`, err);
@@ -1808,11 +1842,11 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
         // Ambil semua pegawai (pelaksana dan pengikut) dari SPT terkait
         if (laporan.spt_id) {
             const pegawaiSql = `
-                SELECT p.nama_lengkap, p.nip, sp.is_pengikut
+                SELECT p.id as pegawai_id, p.nama_lengkap, p.nip, sp.is_pengikut
                 FROM spt_pegawai sp
                 JOIN pegawai p ON sp.pegawai_id = p.id
                 WHERE sp.spt_id = ?
-                ORDER BY sp.is_pengikut ASC, p.nama_lengkap ASC
+                ORDER BY sp.urutan ASC
             `;
             laporan.pegawai = await dbAll(pegawaiSql, [laporan.spt_id]);
         }
@@ -1824,10 +1858,7 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
     }
 });
 
-// POST: Membuat laporan baru
-// ... (kode sebelumnya tetap sama)
-
-// POST: Membuat laporan baru
+// Konfigurasi Multer untuk laporan (berbeda dari upload Excel)
 const laporanUpload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {
@@ -1840,172 +1871,153 @@ const laporanUpload = multer({
             cb(null, `lampiran-${uniqueSuffix}${path.extname(file.originalname)}`);
         }
     })
-}).array('lampiran', 10);
-
-app.post('/api/laporan', isApiAuthenticated, (req, res) => {
-    laporanUpload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: 'Gagal mengunggah file.', error: err.message });
-        }
-
-        const data = req.body;
-        try {
-            await runQuery('BEGIN TRANSACTION');
-
-            // Perbaikan: Hapus koma tambahan di akhir query
-            const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, identitas_pelapor, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal, kesimpulan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-            const result = await runQuery(laporanSql, [
-                data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul,
-                data.identitas_pelapor, data.dasar_perjalanan, data.tujuan_perjalanan,
-                data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
-                data.hasil_dicapai, data.transportasi_jenis, data.transportasi_perusahaan,
-                data.transportasi_nominal, data.akomodasi_jenis, data.akomodasi_nama,
-                data.akomodasi_harga_satuan, data.akomodasi_malam, data.akomodasi_nominal,
-                data.kontribusi_jenis, data.kontribusi_nominal, data.lain_lain_uraian,
-                data.lain_lain_nominal, data.kesimpulan
-            ]);
-
-            const laporanId = result.lastID;
-
-            if (req.files && req.files.length > 0) {
-                const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
-                for (const file of req.files) {
-                    const filePath = file.path.replace(/\\/g, "/").replace('public/', '');
-                    await runQuery(lampiranSql, [laporanId, filePath, file.originalname, file.mimetype]);
-                }
-            }
-
-            await runQuery('COMMIT');
-            res.status(201).json({ message: 'Laporan berhasil disimpan!', laporanId: laporanId });
-        } catch (error) {
-            await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
-            console.error('[API ERROR] Gagal menyimpan laporan:', error);
-            res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
-        }
-    });
 });
 
-// ... (kode sebelumnya tetap sama)
+// POST: Membuat laporan baru
+app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
+    const data = req.body;
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal, kesimpulan, penandatangan_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const result = await runQuery(laporanSql, [
+            data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.dasar_perjalanan, data.tujuan_perjalanan,
+            data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
+            data.hasil_dicapai, data.transportasi_jenis, data.transportasi_perusahaan,
+            data.transportasi_nominal, data.akomodasi_jenis, data.akomodasi_nama,
+            data.akomodasi_harga_satuan, data.akomodasi_malam, data.akomodasi_nominal,
+            data.kontribusi_jenis, data.kontribusi_nominal, data.lain_lain_uraian,
+            data.lain_lain_nominal, data.kesimpulan, data.penandatangan_ids
+        ]);
+
+        const laporanId = result.lastID;
+
+        if (req.files && req.files.length > 0) {
+            const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
+            for (const file of req.files) {
+                const filePath = file.path.replace(/\\/g, "/").replace('public/', '');
+                await runQuery(lampiranSql, [laporanId, filePath, file.originalname, file.mimetype]);
+            }
+        }
+
+        await runQuery('COMMIT');
+        res.status(201).json({ message: 'Laporan berhasil disimpan!', laporanId: laporanId });
+    } catch (error) {
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                fs.unlinkSync(file.path);
+            });
+        }
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error('[API ERROR] Gagal menyimpan laporan:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
+});
+
 
 // PUT: Memperbarui laporan yang ada
-app.put('/api/laporan/:id', isApiAuthenticated, (req, res) => {
+app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
     const { id } = req.params;
-    laporanUpload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: 'Gagal mengunggah file baru.', error: err.message });
-        }
+    const data = req.body;
+    const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
 
-        const data = req.body;
-        const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
+    try {
+        await runQuery('BEGIN TRANSACTION');
 
-        try {
-            await runQuery('BEGIN TRANSACTION');
+        // 1. Hapus file lama yang diminta untuk dihapus
+        if (deletedFiles.length > 0) {
+            const placeholders = deletedFiles.map(() => '?').join(',');
+            const filesToDelete = await dbAll(`SELECT file_path FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
 
-            // 1. Hapus file lama yang diminta untuk dihapus
-            if (deletedFiles.length > 0) {
-                const placeholders = deletedFiles.map(() => '?').join(',');
-                const filesToDelete = await dbAll(`SELECT file_path FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
-
-                for (const file of filesToDelete) {
-                    const oldFilePath = path.join(__dirname, 'public', file.file_path);
-                    if (fs.existsSync(oldFilePath)) {
-                        fs.unlinkSync(oldFilePath);
-                    }
-                }
-                await runQuery(`DELETE FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
-            }
-
-            // 2. Proses file baru yang diunggah
-            const newLampiran = [];
-            if (req.files && req.files.lampiran) {
-                const files = Array.isArray(req.files.lampiran) ? req.files.lampiran : [req.files.lampiran];
-                for (const file of files) {
-                    const fileName = `${Date.now()}_${file.name}`;
-                    const filePath = `uploads/laporan/${fileName}`;
-                    const fullPath = path.join(__dirname, 'public', filePath);
-                    await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
-                    await file.mv(fullPath);
-                    newLampiran.push({
-                        file_name: file.name,
-                        file_path: filePath
-                    });
+            for (const file of filesToDelete) {
+                const oldFilePath = path.join(__dirname, 'public', file.file_path);
+                if (fs.existsSync(oldFilePath)) {
+                    fs.unlinkSync(oldFilePath);
                 }
             }
-
-            // 3. Update data laporan utama
-            const updateFields = [
-                'tanggal_laporan = ?',
-                'tempat_laporan = ?',
-                'judul = ?',
-                'identitas_pelapor = ?',
-                'dasar_perjalanan = ?',
-                'tujuan_perjalanan = ?',
-                'lama_dan_tanggal_perjalanan = ?',
-                'deskripsi_kronologis = ?',
-                'tempat_dikunjungi = ?',
-                'hasil_dicapai = ?',
-                'transportasi_jenis = ?',
-                'transportasi_perusahaan = ?',
-                'transportasi_nominal = ?',
-                'akomodasi_jenis = ?',
-                'akomodasi_nama = ?',
-                'akomodasi_harga_satuan = ?',
-                'akomodasi_malam = ?',
-                'akomodasi_nominal = ?',
-                'kontribusi_jenis = ?',
-                'kontribusi_nominal = ?',
-                'lain_lain_uraian = ?',
-                'lain_lain_nominal = ?',
-                'kesimpulan = ?'
-            ];
-
-            const updateValues = [
-                data.tanggal_laporan,
-                data.tempat_laporan,
-                data.judul,
-                data.identitas_pelapor,
-                data.dasar_perjalanan,
-                data.tujuan_perjalanan,
-                data.lama_dan_tanggal_perjalanan,
-                data.deskripsi_kronologis,
-                data.tempat_dikunjungi,
-                data.hasil_dicapai,
-                data.transportasi_jenis,
-                data.transportasi_perusahaan,
-                data.transportasi_nominal,
-                data.akomodasi_jenis,
-                data.akomodasi_nama,
-                data.akomodasi_harga_satuan,
-                data.akomodasi_malam,
-                data.akomodasi_nominal,
-                data.kontribusi_jenis,
-                data.kontribusi_nominal,
-                data.lain_lain_uraian,
-                data.lain_lain_nominal,
-                data.kesimpulan,
-                id
-            ];
-
-            await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
-
-            // 4. Simpan lampiran baru
-            if (newLampiran.length > 0) {
-                const lampiranValues = newLampiran.map(lampiran => [id, lampiran.file_name, lampiran.file_path]);
-                await runQuery(`INSERT INTO laporan_lampiran (laporan_id, file_name, file_path) VALUES ${lampiranValues.map(() => '(?, ?, ?)').join(',')}`, lampiranValues.flat());
-            }
-
-            await runQuery('COMMIT');
-            res.json({ message: 'Laporan berhasil diperbarui.' });
-        } catch (error) {
-            await runQuery('ROLLBACK');
-            console.error('Error updating laporan:', error);
-            res.status(500).json({ message: 'Gagal memperbarui laporan.', error: error.message });
+            await runQuery(`DELETE FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
         }
-    });
+
+        // 2. Update data laporan utama
+        const updateFields = [
+            'tanggal_laporan = ?',
+            'tempat_laporan = ?',
+            'judul = ?',
+            'dasar_perjalanan = ?',
+            'tujuan_perjalanan = ?',
+            'lama_dan_tanggal_perjalanan = ?',
+            'deskripsi_kronologis = ?',
+            'tempat_dikunjungi = ?',
+            'hasil_dicapai = ?',
+            'transportasi_jenis = ?',
+            'transportasi_perusahaan = ?',
+            'transportasi_nominal = ?',
+            'akomodasi_jenis = ?',
+            'akomodasi_nama = ?',
+            'akomodasi_harga_satuan = ?',
+            'akomodasi_malam = ?',
+            'akomodasi_nominal = ?',
+            'kontribusi_jenis = ?',
+            'kontribusi_nominal = ?',
+            'lain_lain_uraian = ?',
+            'lain_lain_nominal = ?',
+            'kesimpulan = ?',
+            'penandatangan_ids = ?'
+        ];
+
+        const updateValues = [
+            data.tanggal_laporan,
+            data.tempat_laporan,
+            data.judul,
+            data.dasar_perjalanan,
+            data.tujuan_perjalanan,
+            data.lama_dan_tanggal_perjalanan,
+            data.deskripsi_kronologis,
+            data.tempat_dikunjungi,
+            data.hasil_dicapai,
+            data.transportasi_jenis,
+            data.transportasi_perusahaan,
+            data.transportasi_nominal,
+            data.akomodasi_jenis,
+            data.akomodasi_nama,
+            data.akomodasi_harga_satuan,
+            data.akomodasi_malam,
+            data.akomodasi_nominal,
+            data.kontribusi_jenis,
+            data.kontribusi_nominal,
+            data.lain_lain_uraian,
+            data.lain_lain_nominal,
+            data.kesimpulan,
+            data.penandatangan_ids,
+            id
+        ];
+
+        await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+
+        // 3. Simpan lampiran baru
+        if (req.files && req.files.length > 0) {
+            const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
+            for (const file of req.files) {
+                const filePath = file.path.replace(/\\/g, "/").replace('public/', '');
+                await runQuery(lampiranSql, [id, filePath, file.originalname, file.mimetype]);
+            }
+        }
+
+        await runQuery('COMMIT');
+        res.json({ message: 'Laporan berhasil diperbarui.' });
+    } catch (error) {
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                fs.unlinkSync(file.path);
+            });
+        }
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error('Error updating laporan:', error);
+        res.status(500).json({ message: 'Gagal memperbarui laporan.', error: error.message });
+    }
 });
-
-// ... (kode setelahnya tetap sama)
 
 
 // DELETE: Menghapus laporan

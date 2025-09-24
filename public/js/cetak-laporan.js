@@ -33,21 +33,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const nl2br = (str) => (str || '').replace(/(\r\n|\n\r|\r|\n)/g, '<br>');
 
-        // Buat daftar penandatangan dari semua pegawai yang terkait dengan SPT
-        const allSigners = [];
-        if (laporan.pegawai && laporan.pegawai.length > 0) {
-            laporan.pegawai.forEach(p => {
-                allSigners.push({
-                    nama: p.nama_lengkap,
-                    nip: `NIP. ${p.nip}`
-                });
-            });
-        } else if (laporan.identitas_pelapor) {
-            // Fallback ke data lama jika data pegawai tidak ada
-            const [nama, nip] = laporan.identitas_pelapor.split('\n');
-            allSigners.push({ nama: nama, nip: nip });
+        // Parsing penandatangan_ids dengan penanganan error
+        let signerIds = [];
+        try {
+            if (laporan.penandatangan_ids) {
+                signerIds = JSON.parse(laporan.penandatangan_ids);
+                if (!Array.isArray(signerIds)) {
+                    signerIds = [];
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse penandatangan_ids:", e);
+            alert("Error: Data penandatangan tidak valid. Laporan mungkin tidak dapat dicetak dengan benar.");
         }
 
+        const allSigners = [];
+        if (laporan.pegawai) {
+            signerIds.forEach(id => {
+                const signerData = laporan.pegawai.find(p => p.pegawai_id == id);
+                if (signerData) {
+                    allSigners.push({
+                        nama: signerData.nama_lengkap,
+                        nip: `NIP. ${signerData.nip}`
+                    });
+                }
+            });
+        }
 
         const signatureBlocksHtml = allSigners.map(signer => `
             <div class="signature-block">

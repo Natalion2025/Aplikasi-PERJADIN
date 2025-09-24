@@ -130,10 +130,12 @@
                             <input type="text" id="judul" name="judul"
                                 placeholder="Judul laporan yang mencerminkan isi perjalanan dinas" required
                                 class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                            <textarea id="identitas_pelapor" name="identitas_pelapor" rows="3"
-                                placeholder="Identitas Pelapor: Nama, NIP, Jabatan, Unit Kerja (otomatis dari SPT)"
-                                readonly
-                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed"></textarea>
+                            <!-- Kontainer untuk checkbox penandatangan -->
+                            <div id="penandatangan-container"
+                                class="p-4 border border-slate-300 dark:border-gray-600 rounded-md space-y-3">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Pilih penandatangan laporan
+                                    (otomatis dari SPT):</p>
+                            </div>
                             <textarea id="dasar_perjalanan" name="dasar_perjalanan" rows="2"
                                 placeholder="Dasar Perjalanan Dinas (otomatis dari SPT)" readonly
                                 class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-600 dark:text-gray-400 rounded-md shadow-sm cursor-not-allowed"></textarea>
