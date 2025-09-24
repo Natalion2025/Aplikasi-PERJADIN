@@ -399,6 +399,29 @@ db.run(`CREATE TABLE IF NOT EXISTS pembayaran (
     if (err) console.error("Error creating 'pembayaran' table:", err.message);
 });
 
+// Pastikan tabel 'laporan_pengeluaran' ada untuk menyimpan biaya per pegawai
+db.run(`CREATE TABLE IF NOT EXISTS laporan_pengeluaran (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    laporan_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    transportasi_jenis TEXT,
+    transportasi_perusahaan TEXT,
+    transportasi_nominal REAL,
+    akomodasi_jenis TEXT,
+    akomodasi_nama TEXT,
+    akomodasi_harga_satuan REAL,
+    akomodasi_malam INTEGER,
+    akomodasi_nominal REAL,
+    kontribusi_jenis TEXT,
+    kontribusi_nominal REAL,
+    lain_lain_uraian TEXT,
+    lain_lain_nominal REAL,
+    FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_pengeluaran' table:", err.message);
+});
+
 // Promisify fungsi database untuk digunakan dengan async/await
 const dbGet = util.promisify(db.get.bind(db));
 const dbAll = util.promisify(db.all.bind(db));
@@ -1851,6 +1874,10 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
             laporan.pegawai = await dbAll(pegawaiSql, [laporan.spt_id]);
         }
 
+        // Ambil data pengeluaran per pegawai
+        const pengeluaranSql = `SELECT * FROM laporan_pengeluaran WHERE laporan_id = ?`;
+        laporan.pengeluaran = await dbAll(pengeluaranSql, [req.params.id]);
+
         res.json(laporan);
     } catch (error) {
         console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}:`, error);
@@ -1875,24 +1902,30 @@ const laporanUpload = multer({
 
 // POST: Membuat laporan baru
 app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
-    const data = req.body;
+    const { pegawai, ...data } = req.body;
 
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal, kesimpulan, penandatangan_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        // Hapus kolom biaya lama dari tabel utama
+        const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, kesimpulan, penandatangan_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const result = await runQuery(laporanSql, [
             data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.dasar_perjalanan, data.tujuan_perjalanan,
             data.lama_dan_tanggal_perjalanan, data.deskripsi_kronologis, data.tempat_dikunjungi,
-            data.hasil_dicapai, data.transportasi_jenis, data.transportasi_perusahaan,
-            data.transportasi_nominal, data.akomodasi_jenis, data.akomodasi_nama,
-            data.akomodasi_harga_satuan, data.akomodasi_malam, data.akomodasi_nominal,
-            data.kontribusi_jenis, data.kontribusi_nominal, data.lain_lain_uraian,
-            data.lain_lain_nominal, data.kesimpulan, data.penandatangan_ids
+            data.hasil_dicapai, data.kesimpulan, data.penandatangan_ids
         ]);
 
         const laporanId = result.lastID;
+
+        // Simpan data pengeluaran per pegawai
+        if (pegawai) {
+            const pengeluaranSql = `INSERT INTO laporan_pengeluaran (laporan_id, pegawai_id, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            for (const pegawaiId in pegawai) {
+                const pData = pegawai[pegawaiId];
+                await runQuery(pengeluaranSql, [laporanId, pegawaiId, pData.transportasi_jenis, pData.transportasi_perusahaan, pData.transportasi_nominal, pData.akomodasi_jenis, pData.akomodasi_nama, pData.akomodasi_harga_satuan, pData.akomodasi_malam, pData.akomodasi_nominal, pData.kontribusi_jenis, pData.kontribusi_nominal, pData.lain_lain_uraian, pData.lain_lain_nominal]);
+            }
+        }
 
         if (req.files && req.files.length > 0) {
             const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
@@ -1920,7 +1953,7 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
 // PUT: Memperbarui laporan yang ada
 app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
     const { id } = req.params;
-    const data = req.body;
+    const { pegawai, ...data } = req.body;
     const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
 
     try {
@@ -1941,30 +1974,12 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
         }
 
         // 2. Update data laporan utama
+        // Hapus kolom biaya lama dari query update
         const updateFields = [
-            'tanggal_laporan = ?',
-            'tempat_laporan = ?',
-            'judul = ?',
-            'dasar_perjalanan = ?',
-            'tujuan_perjalanan = ?',
-            'lama_dan_tanggal_perjalanan = ?',
-            'deskripsi_kronologis = ?',
-            'tempat_dikunjungi = ?',
-            'hasil_dicapai = ?',
-            'transportasi_jenis = ?',
-            'transportasi_perusahaan = ?',
-            'transportasi_nominal = ?',
-            'akomodasi_jenis = ?',
-            'akomodasi_nama = ?',
-            'akomodasi_harga_satuan = ?',
-            'akomodasi_malam = ?',
-            'akomodasi_nominal = ?',
-            'kontribusi_jenis = ?',
-            'kontribusi_nominal = ?',
-            'lain_lain_uraian = ?',
-            'lain_lain_nominal = ?',
-            'kesimpulan = ?',
-            'penandatangan_ids = ?'
+            'tanggal_laporan = ?', 'tempat_laporan = ?', 'judul = ?',
+            'dasar_perjalanan = ?', 'tujuan_perjalanan = ?', 'lama_dan_tanggal_perjalanan = ?',
+            'deskripsi_kronologis = ?', 'tempat_dikunjungi = ?', 'hasil_dicapai = ?',
+            'kesimpulan = ?', 'penandatangan_ids = ?'
         ];
 
         const updateValues = [
@@ -1977,18 +1992,6 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
             data.deskripsi_kronologis,
             data.tempat_dikunjungi,
             data.hasil_dicapai,
-            data.transportasi_jenis,
-            data.transportasi_perusahaan,
-            data.transportasi_nominal,
-            data.akomodasi_jenis,
-            data.akomodasi_nama,
-            data.akomodasi_harga_satuan,
-            data.akomodasi_malam,
-            data.akomodasi_nominal,
-            data.kontribusi_jenis,
-            data.kontribusi_nominal,
-            data.lain_lain_uraian,
-            data.lain_lain_nominal,
             data.kesimpulan,
             data.penandatangan_ids,
             id
@@ -1996,7 +1999,17 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
 
         await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
 
-        // 3. Simpan lampiran baru
+        // 3. Hapus data pengeluaran lama dan masukkan yang baru
+        await runQuery('DELETE FROM laporan_pengeluaran WHERE laporan_id = ?', [id]);
+        if (pegawai) {
+            const pengeluaranSql = `INSERT INTO laporan_pengeluaran (laporan_id, pegawai_id, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            for (const pegawaiId in pegawai) {
+                const pData = pegawai[pegawaiId];
+                await runQuery(pengeluaranSql, [id, pegawaiId, pData.transportasi_jenis, pData.transportasi_perusahaan, pData.transportasi_nominal, pData.akomodasi_jenis, pData.akomodasi_nama, pData.akomodasi_harga_satuan, pData.akomodasi_malam, pData.akomodasi_nominal, pData.kontribusi_jenis, pData.kontribusi_nominal, pData.lain_lain_uraian, pData.lain_lain_nominal]);
+            }
+        }
+
+        // 4. Simpan lampiran baru
         if (req.files && req.files.length > 0) {
             const lampiranSql = 'INSERT INTO laporan_lampiran (laporan_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?)';
             for (const file of req.files) {

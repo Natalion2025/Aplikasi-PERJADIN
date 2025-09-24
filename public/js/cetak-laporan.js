@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
+    const formatAccounting = (number) => {
+        if (number === null || number === undefined) return '-';
+        return number.toLocaleString('id-ID', {
+            style: 'decimal',
+            minimumFractionDigits: 0,
+        });
+    };
+
     const fetchLaporanData = async () => {
         try {
             const response = await fetch(`/api/laporan/${laporanId}`);
@@ -59,6 +67,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+
+        // Ambil total biaya dari laporan pengeluaran
+        const totalTransportasi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.transportasi_nominal || 0), 0);
+        const totalAkomodasi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.akomodasi_nominal || 0), 0);
+        const totalKontribusi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.kontribusi_nominal || 0), 0);
+        const totalLainLain = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.lain_lain_nominal || 0), 0);
+        const totalBiayaLaporan = totalTransportasi + totalAkomodasi + totalKontribusi + totalLainLain;
+
+        let pengeluaranHtml = '';
+        if (laporan.pengeluaran && laporan.pengeluaran.length > 0) {
+            pengeluaranHtml = `
+                <div class="section-title">V. PENGELUARAN</div>
+                <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Nama Pegawai</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Transportasi</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Akomodasi</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Kontribusi</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Lain-lain</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${laporan.pegawai.map(pegawai => {
+                const pengeluaran = laporan.pengeluaran.find(p => p.pegawai_id === pegawai.pegawai_id) || {};
+                return `
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${pegawai.nama_lengkap}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.transportasi_nominal ? formatAccounting(pengeluaran.transportasi_nominal) : '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.akomodasi_nominal ? formatAccounting(pengeluaran.akomodasi_nominal) : '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.kontribusi_nominal ? formatAccounting(pengeluaran.kontribusi_nominal) : '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.lain_lain_nominal ? formatAccounting(pengeluaran.lain_lain_nominal) : '-'}</td>
+                                </tr>
+                            `;
+            }).join('')}
+                    <tr><td style="padding: 8px; border: 1px solid #ddd;font-weight: bold;" colspan="5">Total Biaya Keseluruhan : <span style="float:right;">Rp ${formatAccounting(totalBiayaLaporan)}</span></td></tr>
+                </tbody>
+                </table>
+            `;
+        }
+
 
         const signatureBlocksHtml = allSigners.map(signer => `
             <div class="signature-block">
@@ -107,7 +156,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="section-title">IV. KESIMPULAN DAN SARAN</div>
             <div class="content-block">${nl2br(laporan.kesimpulan)}</div>
 
-            <div class="section-title">V. PENUTUP</div>
+            <!-- Sisipkan tabel pengeluaran di sini -->
+            ${pengeluaranHtml}
+
+            <div class="section-title">VI. PENUTUP</div>
             <div class="content-block">Demikian laporan ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</div>
 
             <div style="margin-top: 4rem;">

@@ -15,22 +15,13 @@
     const fileInput = document.getElementById('lampiran-input');
     const filePreviewList = document.getElementById('file-preview-list');
 
-    // Elemen untuk Rincian Pengeluaran Dinamis
-    const transportasiContainer = document.getElementById('transportasi-container');
-    const tambahTransportasiBtn = document.getElementById('tambah-transportasi-btn');
+    // Elemen Template
     const transportasiTemplate = document.getElementById('transportasi-template');
-
-    const akomodasiContainer = document.getElementById('akomodasi-container');
-    const tambahAkomodasiBtn = document.getElementById('tambah-akomodasi-btn');
     const akomodasiTemplate = document.getElementById('akomodasi-template');
-
-    const kontribusiContainer = document.getElementById('kontribusi-container');
-    const tambahKontribusiBtn = document.getElementById('tambah-kontribusi-btn');
     const kontribusiTemplate = document.getElementById('kontribusi-template');
-
-    const lainLainContainer = document.getElementById('lain-lain-container');
-    const tambahLainLainBtn = document.getElementById('tambah-lain-lain-btn');
     const lainLainTemplate = document.getElementById('lain-lain-template');
+    const pengeluaranPegawaiTemplate = document.getElementById('pengeluaran-pegawai-template');
+    const pengeluaranPerPegawaiContainer = document.getElementById('pengeluaran-per-pegawai-container');
 
     let newFiles = []; // Menyimpan file baru yang akan diupload
     let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
@@ -98,6 +89,9 @@
 
         if (!sptId) {
             form.reset();
+            // Sembunyikan dan kosongkan rincian pengeluaran jika tidak ada SPT dipilih
+            document.getElementById('rincian-pengeluaran-section').classList.add('hidden');
+            pengeluaranPerPegawaiContainer.innerHTML = '';
             return;
         }
 
@@ -132,6 +126,30 @@
             } else {
                 penandatanganContainer.innerHTML += '<p class="text-sm text-red-500">Tidak ada data pegawai ditemukan pada SPT ini.</p>';
             }
+
+            // Tampilkan section rincian pengeluaran dan buat form untuk setiap pegawai
+            document.getElementById('rincian-pengeluaran-section').classList.remove('hidden');
+            pengeluaranPerPegawaiContainer.innerHTML = ''; // Kosongkan dulu
+
+            semuaPelaksana.forEach(pegawai => {
+                const templateContent = pengeluaranPegawaiTemplate.content.cloneNode(true);
+                const pegawaiItem = templateContent.querySelector('.pengeluaran-pegawai-item');
+
+                // Set judul dan ID unik untuk setiap blok pegawai
+                pegawaiItem.querySelector('.pegawai-name-title').textContent = `Rincian untuk ${pegawai.nama_lengkap}`;
+                pegawaiItem.dataset.pegawaiId = pegawai.pegawai_id;
+
+                // Tambahkan satu baris default untuk setiap jenis biaya
+                addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
+                addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
+                addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
+                addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
+
+                // Tambahkan event listener untuk tombol "Tambah" di dalam blok ini
+                setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
+
+                pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
+            });
 
             dasarPerjalananEl.value = sptDetail.dasar_surat;
             tujuanPerjalananEl.value = sptDetail.maksud_perjalanan;
@@ -193,41 +211,40 @@
             document.getElementById('hasil_dicapai').value = laporan.hasil_dicapai;
 
             // Isi data transportasi dinamis
-            if (laporan.transportasi_jenis) {
-                addTransportasiItem({
-                    jenis: laporan.transportasi_jenis,
-                    perusahaan: laporan.transportasi_perusahaan,
-                    nominal: laporan.transportasi_nominal
-                });
-            }
+            // Tampilkan section rincian pengeluaran dan buat form untuk setiap pegawai
+            document.getElementById('rincian-pengeluaran-section').classList.remove('hidden');
+            pengeluaranPerPegawaiContainer.innerHTML = ''; // Kosongkan dulu
 
-            // Isi data akomodasi dinamis
-            if (laporan.akomodasi_jenis) {
-                addAkomodasiItem({
-                    jenis: laporan.akomodasi_jenis,
-                    nama: laporan.akomodasi_nama,
-                    harga_satuan: laporan.akomodasi_harga_satuan,
-                    malam: laporan.akomodasi_malam,
-                    nominal: laporan.akomodasi_nominal
-                });
-            }
+            laporan.pegawai.forEach(pegawai => {
+                const templateContent = pengeluaranPegawaiTemplate.content.cloneNode(true);
+                const pegawaiItem = templateContent.querySelector('.pengeluaran-pegawai-item');
+                pegawaiItem.querySelector('.pegawai-name-title').textContent = `Rincian untuk ${pegawai.nama_lengkap}`;
+                pegawaiItem.dataset.pegawaiId = pegawai.pegawai_id;
 
-            // Isi data kontribusi dinamis
-            if (laporan.kontribusi_jenis) {
-                addKontribusiItem({
-                    jenis: laporan.kontribusi_jenis,
-                    nominal: laporan.kontribusi_nominal
-                });
-            }
+                // Cari data pengeluaran untuk pegawai ini dari array 'laporan.pengeluaran'
+                const pengeluaranData = laporan.pengeluaran.find(p => p.pegawai_id == pegawai.pegawai_id);
 
-            // Isi data biaya lain-lain dinamis
-            if (laporan.lain_lain_uraian) {
-                addLainLainItem({
-                    uraian: laporan.lain_lain_uraian,
-                    nominal: laporan.lain_lain_nominal
-                });
-            }
-            checkRemoveButtons();
+                if (pengeluaranData) {
+                    // Jika data ditemukan, isi form dengan data tersebut
+                    addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id, pengeluaranData);
+                    addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id, pengeluaranData);
+                    addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id, pengeluaranData);
+                    addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id, pengeluaranData);
+                }
+                else {
+                    // Untuk pegawai lain, tampilkan form kosong
+                    addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
+                    addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
+                    addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
+                    addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
+                }
+
+                setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
+                pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
+            });
+
+            // Jalankan checkRemoveButtons untuk setiap blok pegawai
+            document.querySelectorAll('.pengeluaran-pegawai-item').forEach(checkRemoveButtons);
 
             document.getElementById('kesimpulan').value = laporan.kesimpulan;
 
@@ -346,63 +363,78 @@
 
     // --- FUNGSI UNTUK RINCIAN PENGELUARAN DINAMIS ---
 
-    const addTransportasiItem = (data = {}) => {
+    const addTransportasiItem = (container, pegawaiId, data = {}) => {
         const templateContent = transportasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.transport-item');
-        newItem.querySelector('[name="transportasi_jenis"]').value = data.jenis || 'Bus';
-        newItem.querySelector('[name="transportasi_perusahaan"]').value = data.perusahaan || '';
-        newItem.querySelector('[name="transportasi_nominal"]').value = formatCurrency(data.nominal);
-        transportasiContainer.appendChild(newItem);
-        checkRemoveButtons();
+        // Ambil nilai dan set value SEBELUM mengubah atribut 'name'
+        newItem.querySelector('[name="transportasi_jenis"]').value = data.transportasi_jenis || 'Bus';
+        newItem.querySelector('[name="transportasi_perusahaan"]').value = data.transportasi_perusahaan || '';
+        newItem.querySelector('[name="transportasi_nominal"]').value = formatCurrency(data.transportasi_nominal);
+        // Update name attributes to be unique per employee
+        newItem.querySelectorAll('[name]').forEach(el => {
+            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+        });
+        container.appendChild(newItem);
+        checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
     };
 
-    const addAkomodasiItem = (data = {}) => {
+    const addAkomodasiItem = (container, pegawaiId, data = {}) => {
         const templateContent = akomodasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.akomodasi-item');
-        newItem.querySelector('[name="akomodasi_jenis"]').value = data.jenis || 'Hotel';
-        newItem.querySelector('[name="akomodasi_nama"]').value = data.nama || '';
-        newItem.querySelector('[name="akomodasi_harga_satuan"]').value = formatCurrency(data.harga_satuan) || '';
-        newItem.querySelector('[name="akomodasi_malam"]').value = data.malam || '';
-        akomodasiContainer.appendChild(newItem);
-        updateAkomodasiTotal(newItem); // Hitung total jika ada data awal
-        checkRemoveButtons();
+        newItem.querySelector('[name="akomodasi_jenis"]').value = data.akomodasi_jenis || 'Hotel';
+        newItem.querySelector('[name="akomodasi_nama"]').value = data.akomodasi_nama || '';
+        newItem.querySelector('[name="akomodasi_harga_satuan"]').value = formatCurrency(data.akomodasi_harga_satuan) || '';
+        newItem.querySelector('[name="akomodasi_malam"]').value = data.akomodasi_malam || '';
+        updateAkomodasiTotal(newItem); // Pindahkan ke sini: Hitung total SEBELUM nama diubah
+        newItem.querySelectorAll('[name]').forEach(el => {
+            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+        });
+        container.appendChild(newItem);
+        checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
     };
 
-    const addKontribusiItem = (data = {}) => {
+    const addKontribusiItem = (container, pegawaiId, data = {}) => {
         const templateContent = kontribusiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.kontribusi-item');
-        newItem.querySelector('[name="kontribusi_jenis"]').value = data.jenis || 'Bimbingan Teknis';
-        newItem.querySelector('[name="kontribusi_nominal"]').value = formatCurrency(data.nominal);
-        kontribusiContainer.appendChild(newItem);
-        checkRemoveButtons();
+        newItem.querySelector('[name="kontribusi_jenis"]').value = data.kontribusi_jenis || 'Bimbingan Teknis';
+        newItem.querySelector('[name="kontribusi_nominal"]').value = formatCurrency(data.kontribusi_nominal);
+        newItem.querySelectorAll('[name]').forEach(el => {
+            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+        });
+        container.appendChild(newItem);
+        checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
     }
 
-    const addLainLainItem = (data = {}) => {
+    const addLainLainItem = (container, pegawaiId, data = {}) => {
         const templateContent = lainLainTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.lain-lain-item');
-        newItem.querySelector('[name="lain_lain_uraian"]').value = data.uraian || '';
-        newItem.querySelector('[name="lain_lain_nominal"]').value = formatCurrency(data.nominal);
-        lainLainContainer.appendChild(newItem);
-        checkRemoveButtons();
+        newItem.querySelector('[name="lain_lain_uraian"]').value = data.lain_lain_uraian || '';
+        newItem.querySelector('[name="lain_lain_nominal"]').value = formatCurrency(data.lain_lain_nominal);
+        newItem.querySelectorAll('[name]').forEach(el => {
+            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+        });
+        container.appendChild(newItem);
+        checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
     }
 
-    const checkRemoveButtons = () => {
-        const transportItems = transportasiContainer.querySelectorAll('.transport-item');
+    const checkRemoveButtons = (pegawaiItem) => {
+        if (!pegawaiItem) return;
+        const transportItems = pegawaiItem.querySelectorAll('.transport-item');
         transportItems.forEach((item, index) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', transportItems.length <= 1);
         });
-        const akomodasiItems = akomodasiContainer.querySelectorAll('.akomodasi-item');
+        const akomodasiItems = pegawaiItem.querySelectorAll('.akomodasi-item');
         akomodasiItems.forEach((item, index) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', akomodasiItems.length <= 1);
         });
-        const kontribusiItems = kontribusiContainer.querySelectorAll('.kontribusi-item');
+        const kontribusiItems = pegawaiItem.querySelectorAll('.kontribusi-item');
         kontribusiItems.forEach((item, index) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', kontribusiItems.length <= 1);
         });
-        const lainLainItems = lainLainContainer.querySelectorAll('.lain-lain-item');
+        const lainLainItems = pegawaiItem.querySelectorAll('.lain-lain-item');
         lainLainItems.forEach((item, index) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', lainLainItems.length <= 1);
@@ -410,9 +442,11 @@
     };
 
     const updateAkomodasiTotal = (itemElement) => {
-        const hargaSatuanEl = itemElement.querySelector('[name="akomodasi_harga_satuan"]');
-        const jumlahMalamEl = itemElement.querySelector('[name="akomodasi_malam"]');
-        const totalNominalEl = itemElement.querySelector('[name="akomodasi_nominal"]');
+        // Perbaikan: Gunakan selector yang lebih fleksibel yang mencari atribut 'name' yang BERAKHIRAN dengan string yang diberikan.
+        // Ini akan berfungsi baik sebelum maupun sesudah nama diubah secara dinamis.
+        const hargaSatuanEl = itemElement.querySelector('[name$="[akomodasi_harga_satuan]"], [name="akomodasi_harga_satuan"]');
+        const jumlahMalamEl = itemElement.querySelector('[name$="[akomodasi_malam]"], [name="akomodasi_malam"]');
+        const totalNominalEl = itemElement.querySelector('[name$="[akomodasi_nominal]"], [name="akomodasi_nominal"]');
 
         const harga = parseCurrency(hargaSatuanEl.value);
         const malam = parseInt(jumlahMalamEl.value) || 0;
@@ -454,62 +488,37 @@
         // Simpan penandatangan_ids sebagai string JSON
         formData.append('penandatangan_ids', JSON.stringify(selectedSignerIds));
 
-        // Kumpulkan dan tambahkan data dinamis ke FormData
-        const transportasiData = [];
-        transportasiContainer.querySelectorAll('.transport-item').forEach(item => {
-            transportasiData.push({
-                jenis: item.querySelector('[name="transportasi_jenis"]').value,
-                perusahaan: item.querySelector('[name="transportasi_perusahaan"]').value,
-                nominal: parseCurrency(item.querySelector('[name="transportasi_nominal"]').value)
-            });
-        });
-        if (transportasiData.length > 0) {
-            formData.append('transportasi_jenis', transportasiData[0].jenis);
-            formData.append('transportasi_perusahaan', transportasiData[0].perusahaan);
-            formData.append('transportasi_nominal', transportasiData[0].nominal);
-        }
+        // Kumpulkan data pengeluaran dari setiap pegawai
+        document.querySelectorAll('.pengeluaran-pegawai-item').forEach(pegawaiItem => {
+            const pegawaiId = pegawaiItem.dataset.pegawaiId;
 
-        const akomodasiData = [];
-        akomodasiContainer.querySelectorAll('.akomodasi-item').forEach(item => {
-            akomodasiData.push({
-                jenis: item.querySelector('[name="akomodasi_jenis"]').value,
-                nama: item.querySelector('[name="akomodasi_nama"]').value,
-                harga_satuan: parseCurrency(item.querySelector('[name="akomodasi_harga_satuan"]').value),
-                malam: item.querySelector('[name="akomodasi_malam"]').value,
-                nominal: parseCurrency(item.querySelector('[name="akomodasi_nominal"]').value)
-            });
-        });
-        if (akomodasiData.length > 0) {
-            formData.append('akomodasi_jenis', akomodasiData[0].jenis);
-            formData.append('akomodasi_nama', akomodasiData[0].nama);
-            formData.append('akomodasi_harga_satuan', akomodasiData[0].harga_satuan);
-            formData.append('akomodasi_malam', akomodasiData[0].malam);
-            formData.append('akomodasi_nominal', akomodasiData[0].nominal);
-        }
+            // Helper untuk mengambil nilai dari input
+            const getValue = (name, isCurrency = false) => {
+                const el = pegawaiItem.querySelector(`[name="pegawai[${pegawaiId}][${name}]"]`);
+                if (!el) return isCurrency ? 0 : '';
+                return isCurrency ? parseCurrency(el.value) : el.value;
+            };
 
-        const kontribusiData = [];
-        kontribusiContainer.querySelectorAll('.kontribusi-item').forEach(item => {
-            kontribusiData.push({
-                jenis: item.querySelector('[name="kontribusi_jenis"]').value,
-                nominal: parseCurrency(item.querySelector('[name="kontribusi_nominal"]').value)
-            });
-        });
-        if (kontribusiData.length > 0) {
-            formData.append('kontribusi_jenis', kontribusiData[0].jenis);
-            formData.append('kontribusi_nominal', kontribusiData[0].nominal);
-        }
+            // Transportasi
+            formData.append(`pegawai[${pegawaiId}][transportasi_jenis]`, getValue('transportasi_jenis'));
+            formData.append(`pegawai[${pegawaiId}][transportasi_perusahaan]`, getValue('transportasi_perusahaan'));
+            formData.append(`pegawai[${pegawaiId}][transportasi_nominal]`, getValue('transportasi_nominal', true));
 
-        const lainLainData = [];
-        lainLainContainer.querySelectorAll('.lain-lain-item').forEach(item => {
-            lainLainData.push({
-                uraian: item.querySelector('[name="lain_lain_uraian"]').value,
-                nominal: parseCurrency(item.querySelector('[name="lain_lain_nominal"]').value)
-            });
+            // Akomodasi
+            formData.append(`pegawai[${pegawaiId}][akomodasi_jenis]`, getValue('akomodasi_jenis'));
+            formData.append(`pegawai[${pegawaiId}][akomodasi_nama]`, getValue('akomodasi_nama'));
+            formData.append(`pegawai[${pegawaiId}][akomodasi_harga_satuan]`, getValue('akomodasi_harga_satuan', true));
+            formData.append(`pegawai[${pegawaiId}][akomodasi_malam]`, getValue('akomodasi_malam'));
+            formData.append(`pegawai[${pegawaiId}][akomodasi_nominal]`, getValue('akomodasi_nominal', true));
+
+            // Kontribusi
+            formData.append(`pegawai[${pegawaiId}][kontribusi_jenis]`, getValue('kontribusi_jenis'));
+            formData.append(`pegawai[${pegawaiId}][kontribusi_nominal]`, getValue('kontribusi_nominal', true));
+
+            // Lain-lain
+            formData.append(`pegawai[${pegawaiId}][lain_lain_uraian]`, getValue('lain_lain_uraian'));
+            formData.append(`pegawai[${pegawaiId}][lain_lain_nominal]`, getValue('lain_lain_nominal', true));
         });
-        if (lainLainData.length > 0) {
-            formData.append('lain_lain_uraian', lainLainData[0].uraian);
-            formData.append('lain_lain_nominal', lainLainData[0].nominal);
-        }
 
         if (isEditMode) {
             formData.append('deleted_files', JSON.stringify(deletedFiles));
@@ -547,42 +556,34 @@
     // Event listener untuk perubahan SPT
     sptSelect.addEventListener('change', populateFormFromSpt);
 
-    // --- LOGIKA UNTUK TAMBAH/HAPUS RINCIAN PENGELUARAN ---
-    tambahTransportasiBtn.addEventListener('click', () => addTransportasiItem());
-    tambahAkomodasiBtn.addEventListener('click', () => addAkomodasiItem());
-    tambahKontribusiBtn.addEventListener('click', () => addKontribusiItem());
-    tambahLainLainBtn.addEventListener('click', () => addLainLainItem());
+    const setupAddButtonListeners = (pegawaiItem, pegawaiId) => {
+        pegawaiItem.querySelector('.tambah-transportasi-btn').addEventListener('click', () => {
+            addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawaiId);
+        });
+        pegawaiItem.querySelector('.tambah-akomodasi-btn').addEventListener('click', () => {
+            addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawaiId);
+        });
+        pegawaiItem.querySelector('.tambah-kontribusi-btn').addEventListener('click', () => {
+            addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawaiId);
+        });
+        pegawaiItem.querySelector('.tambah-lain-lain-btn').addEventListener('click', () => {
+            addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawaiId);
+        });
+    };
 
-    transportasiContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.transport-item').remove();
-            checkRemoveButtons();
-        }
-    });
-
-    akomodasiContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.akomodasi-item').remove();
-            checkRemoveButtons();
-        }
-    });
-
-    kontribusiContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.kontribusi-item').remove();
-            checkRemoveButtons();
-        }
-    });
-
-    lainLainContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-item-btn')) {
-            e.target.closest('.lain-lain-item').remove();
-            checkRemoveButtons();
+    // --- LOGIKA UNTUK TAMBAH/HAPUS/KALKULASI RINCIAN PENGELUARAN (EVENT DELEGATION) ---
+    pengeluaranPerPegawaiContainer.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-item-btn');
+        if (removeBtn) {
+            const itemToRemove = removeBtn.parentElement.closest('div[class*="-item"]');
+            const pegawaiItem = itemToRemove.closest('.pengeluaran-pegawai-item');
+            itemToRemove.remove();
+            checkRemoveButtons(pegawaiItem);
         }
     });
 
     // Event listener untuk kalkulasi otomatis total akomodasi
-    akomodasiContainer.addEventListener('input', (e) => {
+    pengeluaranPerPegawaiContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('akomodasi-calc')) {
             const itemElement = e.target.closest('.akomodasi-item');
             updateAkomodasiTotal(itemElement);
@@ -604,8 +605,6 @@
         }
     });
 
-    // --- AKHIR LOGIKA TRANSPORTASI ---
-
     // Inisialisasi
     const initializePage = async () => {
         const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
@@ -617,10 +616,6 @@
             if (submitButton) submitButton.textContent = 'Simpan Perubahan';
             await loadLaporanForEdit(laporanId);
         } else {
-            addTransportasiItem(); // Tambah satu baris default
-            addAkomodasiItem(); // Tambah satu baris default
-            addKontribusiItem(); // Tambah satu baris default
-            addLainLainItem(); // Tambah satu baris default
             await loadSptOptions();
         }
     };
