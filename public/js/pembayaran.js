@@ -13,25 +13,84 @@
     const anggaranSelect = document.getElementById('anggaran_id');
     const sptSelect = document.getElementById('spt_id');
     const namaPenerimaTextarea = document.getElementById('nama_penerima');
+    const uraianPembayaranTextarea = document.getElementById('uraian_pembayaran');
+    const nominalBayarInput = document.getElementById('nominal_bayar');
+    const uangHarianInfoContainer = document.getElementById('uang-harian-info-container');
+    const uangHarianDetails = document.getElementById('uang-harian-details');
+    const uangHarianAnalysisContainer = document.getElementById('uang-harian-analysis');
+
+    // Elemen Tabel Rincian
+    const rincianContainer = document.getElementById('rincian-pengeluaran-container');
+    const rincianTableBody = document.getElementById('rincian-pengeluaran-body');
 
     // Elemen List/Tabel
     const pembayaranTableBody = document.getElementById('pembayaran-table-body');
 
-    const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value);
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+    };
 
     // Function to open the modal
     const openModal = () => {
         pembayaranForm.reset();
         pembayaranIdInput.value = '';
         modalTitle.textContent = 'Buat Bukti Pembayaran Baru';
-        namaPenerimaTextarea.readOnly = false; // Pastikan bisa diedit jika manual
+        sptTomSelect.enable(); // Pastikan dropdown SPT bisa dipilih
+        sptTomSelect.clear(); // Hapus pilihan yang mungkin tersangkut
+        clearRincian();
+        uangHarianInfoContainer.classList.add('hidden');
+        uangHarianAnalysisContainer.innerHTML = ''; // Kosongkan pesan analisis
         modal.classList.remove('hidden');
+    };
+
+    // Fungsi untuk membuka modal dalam mode edit
+    const openModalForEdit = async (id) => {
+        try {
+            const response = await fetch(`/api/pembayaran/${id}`);
+            if (!response.ok) throw new Error('Gagal memuat data pembayaran untuk diedit.');
+            const data = await response.json();
+
+            pembayaranForm.reset();
+            pembayaranIdInput.value = data.id;
+            modalTitle.textContent = 'Edit Bukti Pembayaran';
+
+            // Isi form dengan data yang ada
+            anggaranTomSelect.setValue(data.anggaran_id);
+            sptTomSelect.setValue(data.spt_id);
+            sptTomSelect.disable(); // Nonaktifkan pilihan SPT saat edit
+
+            // Trigger event 'change' secara manual untuk memuat rincian
+            sptSelect.dispatchEvent(new Event('change'));
+
+            // Isi field lain setelah rincian dimuat (untuk menghindari tertimpa)
+            setTimeout(() => {
+                namaPenerimaTextarea.value = data.nama_penerima;
+                uraianPembayaranTextarea.value = data.uraian_pembayaran;
+                // nominalBayarInput akan diisi oleh recalculateGrandTotal, tapi kita set sebagai fallback
+                if (!rincianContainer.classList.contains('hidden')) {
+                    // Biarkan recalculateGrandTotal yang mengatur
+                } else {
+                    nominalBayarInput.value = data.nominal_bayar;
+                }
+            }, 500); // Beri jeda agar fetch rincian selesai
+
+            modal.classList.remove('hidden');
+        } catch (error) {
+            alert(error.message);
+        }
     };
 
     // Function to close the modal
     const closeModal = () => {
         modal.classList.add('hidden');
         pembayaranForm.reset();
+        // Reset TomSelect secara eksplisit untuk menghindari nilai tersangkut
+        if (anggaranTomSelect) anggaranTomSelect.clear();
+        if (sptTomSelect) sptTomSelect.clear();
+        clearRincian();
+        uangHarianInfoContainer.classList.add('hidden');
+        uangHarianAnalysisContainer.innerHTML = ''; // Kosongkan pesan analisis
     };
 
     // Variabel untuk menyimpan data SPT lengkap
@@ -83,20 +142,298 @@
         }
     };
 
-    // Event listener untuk perubahan pada dropdown SPT
-    sptSelect.addEventListener('change', (event) => {
-        const selectedSptId = event.target.value;
-        const selectedSpt = sptDataMap.get(selectedSptId);
+    // Fungsi untuk merender rincian pengeluaran ke tabel
+    const renderRincianPengeluaran = (pengeluaranList, penerimaList, spt_id) => {
+        rincianTableBody.innerHTML = '';
+        if (!pengeluaranList || pengeluaranList.length === 0) {
+            rincianContainer.classList.add('hidden');
+            uangHarianInfoContainer.classList.add('hidden');
+            return;
+        }
 
-        if (selectedSpt && selectedSpt.pegawai && selectedSpt.pegawai.length > 0) {
-            // Format daftar pegawai menjadi string (nama - nip) per baris
-            const penerimaText = selectedSpt.pegawai
+        // Kelompokkan pengeluaran berdasarkan pegawai_id
+        const pengeluaranByPegawai = pengeluaranList.reduce((acc, item) => {
+            if (!acc[item.pegawai_id]) {
+                acc[item.pegawai_id] = {
+                    nama_lengkap: item.nama_lengkap,
+                    jabatan: item.jabatan,
+                    items: []
+                };
+            }
+            acc[item.pegawai_id].items.push(item);
+            return acc;
+        }, {});
+
+        let grandTotalDibayar = 0;
+        let counter = 1;
+
+        uangHarianAnalysisContainer.innerHTML = ''; // Kosongkan pesan analisis setiap kali render ulang        
+        // Tampilkan informasi uang harian
+        uangHarianInfoContainer.classList.remove('hidden');
+        uangHarianDetails.textContent = `Perhitungan uang harian berdasarkan standar biaya yang berlaku.`;
+
+        for (const pegawaiId in pengeluaranByPegawai) {
+            const pegawaiData = pengeluaranByPegawai[pegawaiId];
+            const pengeluaran = pegawaiData.items[0];
+
+            const rowsData = [];
+
+            // Cari data uang harian untuk pegawai ini dari `penerimaList`
+            const penerimaInfo = penerimaList.find(p => p.id == pegawaiId);
+
+            let uangHarianInfo = { harga_satuan: 0, satuan: 'OH', golongan: 'N/A' };
+            let notifMessage = `<b>${pegawaiData.nama_lengkap}</b> (Jabatan: ${pegawaiData.jabatan || 'N/A'}): `;
+            let isSuccess = false;
+
+            if (penerimaInfo && penerimaInfo.uang_harian) {
+                uangHarianInfo = penerimaInfo.uang_harian;
+                if (uangHarianInfo.harga_satuan > 0) {
+                    notifMessage += `Berhasil menemukan standar biaya untuk ${uangHarianInfo.golongan} dengan tarif ${formatCurrency(uangHarianInfo.harga_satuan)}.`;
+                    isSuccess = true;
+                } else {
+                    notifMessage += `GAGAL menemukan standar biaya yang cocok untuk ${uangHarianInfo.golongan}. Tarif diatur ke 0. Periksa data di menu Standar Biaya.`;
+                }
+            } else {
+                notifMessage += `GAGAL menemukan data uang harian. Pastikan pegawai ini dipilih sebagai penandatangan di laporan perjalanan dinas.`;
+            }
+
+            // Debug info tambahan
+            if (penerimaInfo && penerimaInfo.uang_harian) {
+                notifMessage += ` [Debug: ${penerimaInfo.uang_harian.golongan} - ${formatCurrency(penerimaInfo.uang_harian.harga_satuan)}]`;
+            }
+
+            // Tampilkan pesan analisis di UI
+            const notifElement = document.createElement('p');
+            notifElement.innerHTML = notifMessage;
+            notifElement.className = isSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+            uangHarianAnalysisContainer.appendChild(notifElement);
+
+            const uangHarianTotal = 0; // Default ke 0, akan dihitung ulang saat input diubah
+
+            // Tambahkan baris Uang Harian di awal
+            rowsData.push({
+                uraian: `Uang Harian (${uangHarianInfo.golongan})`,
+                harga: uangHarianInfo.harga_satuan,
+                satuan: uangHarianInfo.satuan,
+                hari: `<input type="number" class="jml-hari-harian w-16 text-center border-gray-300 rounded-md shadow-sm text-sm dark:bg-slate-600 dark:border-gray-500" placeholder="0" value="" data-pegawai-id="${pegawaiId}">`,
+                jumlah: uangHarianTotal,
+                isUangHarian: true
+            });
+
+            if (pengeluaran.transportasi_nominal > 0) rowsData.push({ uraian: `Biaya Transportasi (${pengeluaran.transportasi_jenis || 'N/A'})`, harga: pengeluaran.transportasi_nominal, satuan: 'PP', hari: '-', jumlah: pengeluaran.transportasi_nominal });
+            if (pengeluaran.akomodasi_nominal > 0) rowsData.push({ uraian: `Biaya Akomodasi (${pengeluaran.akomodasi_jenis || 'N/A'})`, harga: pengeluaran.akomodasi_harga_satuan, satuan: 'Malam', hari: pengeluaran.akomodasi_malam, jumlah: pengeluaran.akomodasi_nominal });
+            if (pengeluaran.kontribusi_nominal > 0) rowsData.push({ uraian: `Biaya Kontribusi (${pengeluaran.kontribusi_jenis || 'N/A'})`, harga: pengeluaran.kontribusi_nominal, satuan: 'OK', hari: '-', jumlah: pengeluaran.kontribusi_nominal });
+            if (pengeluaran.lain_lain_nominal > 0) rowsData.push({ uraian: `Biaya Lain-lain (${pengeluaran.lain_lain_uraian || 'N/A'})`, harga: pengeluaran.lain_lain_nominal, satuan: 'OK', hari: '-', jumlah: pengeluaran.lain_lain_nominal });
+
+            const rowCount = rowsData.length + 2;
+
+            rowsData.forEach((rowData, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('rincian-row');
+                row.dataset.pegawaiId = pegawaiId;
+
+                let namaTd = '';
+                let noTd = '';
+                if (index === 0) {
+                    noTd = `<td class="px-2 py-2 text-sm text-gray-500 dark:text-gray-400 text-center align-top" rowspan="${rowCount}">${counter++}</td>`;
+                    namaTd = `<td class="px-4 py-2 text-sm text-gray-800 dark:text-white align-top" rowspan="${rowCount}">${pegawaiData.nama_lengkap}</td>`;
+                }
+
+                row.innerHTML = `
+                    ${noTd}
+                    ${namaTd}
+                    <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">${rowData.uraian}</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-800 dark:text-white">${formatCurrency(rowData.harga)}</td>
+                    <td class="px-2 py-2 text-sm text-center text-gray-500 dark:text-gray-400">${rowData.satuan}</td>
+                    <td class="px-2 py-2 text-sm text-center text-gray-500 dark:text-gray-400">${rowData.hari}</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-800 dark:text-white jumlah-biaya">${formatCurrency(rowData.jumlah)}</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-800 dark:text-white nilai-panjar">Rp 0</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-800 dark:text-white font-medium jumlah-dibayar">${formatCurrency(rowData.jumlah)}</td>
+                `;
+                rincianTableBody.appendChild(row);
+            });
+
+            // Tambah baris untuk Nilai Panjar
+            const panjarRow = document.createElement('tr');
+            panjarRow.classList.add('panjar-row');
+            panjarRow.dataset.pegawaiId = pegawaiId;
+            panjarRow.innerHTML = `
+                <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 font-bold">Nilai Panjar</td>
+                <td class="px-4 py-2 text-sm text-right" colspan="4">
+                    <div class="flex items-center justify-end">
+                        <input type="number" class="panjar-input w-32 text-right border-gray-300 rounded-md shadow-sm text-sm dark:bg-slate-600 dark:border-gray-500" placeholder="0" data-pegawai-id="${pegawaiId}">
+                        <button type="button" class="terapkan-panjar-btn ml-2 px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600" data-pegawai-id="${pegawaiId}">Terapkan</button>
+                    </div>
+                </td>
+                <td class="px-4 py-2 text-sm text-right text-red-500 font-bold total-panjar-pegawai" data-pegawai-id="${pegawaiId}">-</td>
+                <td class="px-4 py-2 text-sm text-right"></td>
+            `;
+            rincianTableBody.appendChild(panjarRow);
+
+            // Tambah baris untuk Total Dibayar per Pegawai
+            const totalPegawaiRow = document.createElement('tr');
+            totalPegawaiRow.classList.add('total-pegawai-row', 'bg-slate-50', 'dark:bg-slate-700');
+            totalPegawaiRow.dataset.pegawaiId = pegawaiId;
+            totalPegawaiRow.innerHTML = `<td colspan="6" class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white">Total Dibayar</td><td class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white total-dibayar-pegawai" data-pegawai-id="${pegawaiId}">Rp 0</td>`;
+            rincianTableBody.appendChild(totalPegawaiRow);
+        }
+
+        // Hitung ulang total keseluruhan
+        recalculateGrandTotal();
+
+        // Tampilkan kontainer tabel
+        rincianContainer.classList.remove('hidden');
+    };
+
+    // Fungsi untuk menghitung ulang semua total
+    const recalculateGrandTotal = () => {
+        let grandTotal = 0;
+
+        // Hitung per baris rincian
+        document.querySelectorAll('tr.rincian-row').forEach(row => {
+            const jumlahBiayaEl = row.querySelector('.jumlah-biaya');
+            const nilaiPanjarEl = row.querySelector('.nilai-panjar');
+            const jumlahDibayarEl = row.querySelector('.jumlah-dibayar');
+
+            const jumlahBiaya = parseFloat(jumlahBiayaEl.textContent.replace(/[^0-9,-]+/g, '')) || 0;
+            const nilaiPanjar = parseFloat(nilaiPanjarEl.textContent.replace(/[^0-9,-]+/g, '')) || 0;
+
+            const jumlahDibayar = jumlahBiaya - nilaiPanjar;
+            jumlahDibayarEl.textContent = formatCurrency(jumlahDibayar);
+            grandTotal += jumlahDibayar;
+        });
+
+        // Hitung total per pegawai
+        document.querySelectorAll('.total-dibayar-pegawai').forEach(totalEl => {
+            const pegawaiId = totalEl.dataset.pegawaiId;
+            let totalPegawai = 0;
+            document.querySelectorAll(`tr.rincian-row[data-pegawai-id="${pegawaiId}"] .jumlah-dibayar`).forEach(jumlahDibayarEl => {
+                totalPegawai += parseFloat(jumlahDibayarEl.textContent.replace(/[^0-9,-]+/g, '')) || 0;
+            });
+            totalEl.textContent = formatCurrency(totalPegawai);
+        });
+
+        // Update grand total di footer
+        document.getElementById('total-dibayar').textContent = formatCurrency(grandTotal);
+        nominalBayarInput.value = grandTotal;
+    };
+
+    const clearRincian = () => {
+        rincianTableBody.innerHTML = '';
+        rincianContainer.classList.add('hidden');
+        uangHarianInfoContainer.classList.add('hidden');
+        document.getElementById('total-dibayar').textContent = formatCurrency(0);
+        nominalBayarInput.value = '';
+    };
+
+    // Event listener untuk perubahan pada dropdown SPT
+    sptSelect.addEventListener('change', async (event) => {
+        const selectedSptId = event.target.value;
+        if (!selectedSptId) {
+            namaPenerimaTextarea.value = '';
+            uraianPembayaranTextarea.value = '';
+            clearRincian();
+            uangHarianInfoContainer.classList.add('hidden');
+            return;
+        }
+
+        // Mengisi Uraian Pembayaran dari data SPT yang tersimpan di map
+        const selectedSpt = sptDataMap.get(selectedSptId.toString());
+        if (selectedSpt && selectedSpt.maksud_perjalanan) {
+            uraianPembayaranTextarea.value = `Pembayaran Perjalanan Dinas dalam rangka ${selectedSpt.maksud_perjalanan}`;
+        } else {
+            uraianPembayaranTextarea.value = '';
+        }
+
+        try {
+            // Gunakan endpoint baru yang lebih efisien
+            const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);
+            const result = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // Jika laporan tidak ditemukan (status 404), beri tahu pengguna.
+                    alert(result.message || 'Belum ada laporan yang dibuat untuk SPT ini. Nama penerima tidak dapat diisi otomatis.');
+                    namaPenerimaTextarea.value = '';
+                    clearRincian();
+                    uangHarianInfoContainer.classList.add('hidden');
+                    // Uraian tetap terisi, hanya nama penerima yang dikosongkan.
+                    return;
+                }
+                // Untuk error server lainnya
+                throw new Error(result.message || 'Gagal mengambil data penerima.');
+            }
+
+            // Format nama penerima dari data yang diterima
+            const penerimaText = result.penerima
                 .map(p => `${p.nama_lengkap} - NIP. ${p.nip}`)
                 .join('\n');
+
             namaPenerimaTextarea.value = penerimaText;
-        } else {
-            // Kosongkan jika tidak ada SPT yang dipilih atau tidak ada pegawai
+
+            // Render rincian pengeluaran
+            renderRincianPengeluaran(result.pengeluaran, result.penerima, selectedSptId);
+
+        } catch (error) {
+            console.error("Gagal mengisi nama penerima:", error);
+            alert(error.message);
             namaPenerimaTextarea.value = '';
+            uraianPembayaranTextarea.value = ''; // Kosongkan juga jika ada error
+            clearRincian();
+            uangHarianInfoContainer.classList.add('hidden');
+        }
+    });
+
+    // Event delegation untuk input jumlah hari uang harian
+    rincianContainer.addEventListener('input', (e) => {
+        if (e.target.classList.contains('jml-hari-harian')) {
+            const row = e.target.closest('tr.rincian-row');
+            const hargaSatuan = parseFloat(row.cells[3].textContent.replace(/[^0-9,-]+/g, '')) || 0;
+            const jumlahHari = parseInt(e.target.value) || 0;
+            const totalBiaya = hargaSatuan * jumlahHari;
+
+            // Update kolom Jumlah Biaya di baris yang sama
+            const jumlahBiayaEl = row.querySelector('.jumlah-biaya');
+            jumlahBiayaEl.textContent = formatCurrency(totalBiaya);
+
+            // Hitung ulang semua total
+            recalculateGrandTotal();
+        }
+    });
+
+    // Event delegation untuk tombol "Terapkan" panjar
+    rincianContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('terapkan-panjar-btn')) {
+            const pegawaiId = e.target.dataset.pegawaiId;
+            const panjarInput = rincianContainer.querySelector(`.panjar-input[data-pegawai-id="${pegawaiId}"]`);
+            const totalPanjarPegawaiEl = rincianContainer.querySelector(`.total-panjar-pegawai[data-pegawai-id="${pegawaiId}"]`);
+
+            const panjarValue = parseFloat(panjarInput.value) || 0;
+
+            // Distribusikan nilai panjar ke setiap baris rincian milik pegawai tersebut
+            const rincianRows = rincianTableBody.querySelectorAll(`tr.rincian-row[data-pegawai-id="${pegawaiId}"]`);
+            const panjarRows = rincianTableBody.querySelectorAll(`tr.panjar-row[data-pegawai-id="${pegawaiId}"] .total-panjar-pegawai`);
+
+            if (rincianRows.length > 0) {
+                // Algoritma pembulatan cerdas untuk menghindari nilai desimal
+                const itemCount = rincianRows.length;
+                const baseAmount = Math.floor(panjarValue / itemCount);
+                let remainder = panjarValue % itemCount;
+
+                rincianRows.forEach((row, index) => {
+                    let amountForItem = baseAmount;
+                    if (remainder > 0) {
+                        amountForItem += 1;
+                        remainder--;
+                    }
+                    row.querySelector('.nilai-panjar').textContent = formatCurrency(amountForItem);
+                });
+            }
+
+            // Update tampilan total panjar di baris panjar
+            panjarRows.forEach(el => el.textContent = `(${formatCurrency(panjarValue)})`);
+
+            recalculateGrandTotal();
         }
     });
 
@@ -118,7 +455,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                     ${new Date(p.tanggal_bukti).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-6 py-4 w-2/5">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${p.nama_penerima}</div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">${p.uraian_pembayaran}</div>
                 </td>
@@ -128,6 +465,9 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${p.id}" class="print-btn text-blue-600 hover:text-blue-900" title="Cetak Bukti">
                         <i class="fas fa-print"></i>
+                    </button>
+                    <button data-id="${p.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit">
+                        <i class="fas fa-edit"></i>
                     </button>
                     <button data-id="${p.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus">
                         <i class="fas fa-trash"></i>
@@ -157,9 +497,10 @@
         const formData = new FormData(pembayaranForm);
         const data = Object.fromEntries(formData.entries());
 
-        // Untuk saat ini, kita hanya handle pembuatan baru
-        const url = '/api/pembayaran';
-        const method = 'POST';
+        const id = pembayaranIdInput.value;
+        const isEditMode = !!id;
+        const url = isEditMode ? `/api/pembayaran/${id}` : '/api/pembayaran';
+        const method = isEditMode ? 'PUT' : 'POST';
 
         try {
             const response = await fetch(url, {
@@ -170,7 +511,7 @@
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data.');
 
-            alert('Bukti pembayaran berhasil disimpan!');
+            alert(result.message || 'Data berhasil disimpan!');
             closeModal();
             loadPembayaran(); // Muat ulang daftar setelah berhasil
         } catch (error) {
@@ -184,6 +525,11 @@
         if (!target) return;
 
         const id = target.dataset.id;
+
+        // Handle Edit
+        if (target.classList.contains('edit-btn')) {
+            openModalForEdit(id);
+        }
 
         // Handle Delete
         if (target.classList.contains('delete-btn')) {

@@ -94,6 +94,33 @@
         .ts-dropdown .ts-option {
             padding: 0.5rem 0.75rem;
         }
+
+        /* Styling untuk tabel rincian yang lebih baik */
+        .rincian-table {
+            font-size: 0.875rem;
+        }
+
+        .rincian-table th {
+            white-space: nowrap;
+        }
+
+        .rincian-table td {
+            vertical-align: top;
+        }
+
+        .uang-harian-info {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .dark .uang-harian-info {
+            background-color: #1e3a5f;
+            border-left-color: #3b82f6;
+        }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
@@ -134,7 +161,7 @@
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Tanggal</th>
                                 <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    class="w-2/5 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Penerima & Uraian</th>
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -154,7 +181,7 @@
 
     <!-- Modal Buat Bukti Bayar -->
     <div id="pembayaran-modal" class="modal-overlay hidden">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto relative flex flex-col">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto relative flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
                 <h3 id="pembayaran-modal-title" class="text-xl font-semibold text-white">Buat Bukti Pembayaran Baru</h3>
@@ -198,14 +225,77 @@
                             placeholder="Contoh: Pembayaran biaya perjalanan dinas ke..."
                             class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
                     </div>
-                    <div>
-                        <label for="nominal_bayar"
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nominal Bayar
-                            (Rp)</label>
-                        <input type="number" id="nominal_bayar" name="nominal_bayar" required
-                            placeholder="Masukkan hanya angka, contoh: 500000"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+
+                    <!-- Informasi Uang Harian -->
+                    <div id="uang-harian-info-container" class="hidden">
+                        <div class="uang-harian-info">
+                            <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                            <span class="font-medium">Informasi Uang Harian:</span>
+                            <span id="uang-harian-details" class="ml-2"></span>
+                        </div>
+                        <!-- Area untuk menampilkan pesan analisis -->
+                        <div id="uang-harian-analysis" class="mt-2 space-y-1 text-xs">
+                            <!-- Pesan analisis akan disisipkan di sini oleh JavaScript -->
+                        </div>
                     </div>
+
+                    <!-- Rincian Pengeluaran (Disisipkan di sini) -->
+                    <div id="rincian-pengeluaran-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rincian
+                            Pengeluaran</label>
+                        <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 rincian-table">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th
+                                            class="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            No</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Nama</th>
+                                        <th
+                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Uraian</th>
+                                        <th
+                                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Harga Satuan</th>
+                                        <th
+                                            class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Satuan</th>
+                                        <th
+                                            class="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Jml Hari</th>
+                                        <th
+                                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Jumlah Biaya</th>
+                                        <th
+                                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Nilai Panjar</th>
+                                        <th
+                                            class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            Jumlah Dibayar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rincian-pengeluaran-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-600">
+                                    <!-- Baris rincian akan diisi oleh JS -->
+                                </tbody>
+                                <tfoot class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <td colspan="8"
+                                            class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">Total
+                                        </td>
+                                        <td id="total-dibayar"
+                                            class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">Rp 0
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Nominal bayar sekarang tersembunyi dan diisi otomatis oleh JavaScript -->
+                    <input type="hidden" id="nominal_bayar" name="nominal_bayar" required>
                 </form>
             </div>
             <!-- Modal Footer -->

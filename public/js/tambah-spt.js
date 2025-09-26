@@ -56,18 +56,37 @@ document.addEventListener('DOMContentLoaded', function () {
             locationGroups.forEach(group => {
                 optgroups.push({ id: group.group, name: group.group });
                 group.locations.forEach(location => {
-                    options.push({ value: location, text: location, optgroup: group.group });
+                    // FINAL FIX: Differentiate value based on group type.
+                    // If the group is a province (doesn't contain 'Kecamatan'), the value is the province name.
+                    // If the group is a kecamatan, the value is the specific village/location name.
+                    const isProvinsiGroup = !group.group.toLowerCase().includes('kecamatan');
+                    // PERBAIKAN: Nilai yang disimpan adalah teks yang ditampilkan. Ini membuat data konsisten.
+                    // Backend akan menangani pemisahan nama provinsi dari format "Kota, Provinsi".
+                    const text = `${location}, ${group.group}`;
+                    const value = text;
+
+
+                    options.push({ value: value, text: text, optgroup: group.group });
                 });
             });
 
             new TomSelect('#lokasi_tujuan', {
-                create: true, // Izinkan pengguna membuat opsi baru (mengetik lokasi yang tidak ada di daftar)
+                create: true,
                 sortField: {
                     field: "text",
                     direction: "asc"
                 },
                 options: options,
-                optgroups: optgroups
+                optgroups: optgroups,
+                // PERBAIKAN: Gunakan render.item untuk memastikan tampilan yang benar
+                render: {
+                    item: function (item, escape) {
+                        return '<div>' + escape(item.text) + '</div>';
+                    },
+                    option: function (item, escape) {
+                        return '<div>' + escape(item.text) + '</div>';
+                    }
+                }
             });
         } catch (error) {
             console.error("Error initializing location select:", error);
@@ -157,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Fungsi untuk mengisi form dalam mode edit ---
     async function populateFormForEdit(id) {
         try {
-            const response = await fetch(`/api/spt/${id}`);
+            const response = await fetch(`/api/spt/${id}`); // This API returns the saved `lokasi_tujuan`
             if (!response.ok) throw new Error('Gagal memuat data SPT untuk diedit.');
             const spt = await response.json();
 
@@ -179,9 +198,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.querySelector(`input[name="sumber_dana"][value="${spt.sumber_dana}"]`).checked = true;
             }
 
-            // Set lokasi tujuan (TomSelect)
+            // PERBAIKAN: Mengisi TomSelect lokasi tujuan
             const lokasiSelect = document.getElementById('lokasi_tujuan').tomselect;
-            if (lokasiSelect) {
+            if (lokasiSelect && spt.lokasi_tujuan) {
+                // PERBAIKAN MODE EDIT: Tambahkan opsi yang tersimpan di database ke dalam daftar
+                // TomSelect, lalu atur nilainya. Ini memastikan data lama tidak hilang
+                // dan ditampilkan dengan benar.
                 lokasiSelect.addOption({ value: spt.lokasi_tujuan, text: spt.lokasi_tujuan });
                 lokasiSelect.setValue(spt.lokasi_tujuan);
             }
@@ -288,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dasar_surat: document.getElementById('dasar_surat').value,
                 pejabat_pemberi_tugas_id: document.getElementById('pejabat_pemberi_tugas').value,
                 maksud_perjalanan: document.getElementById('maksud_perjalanan').value,
-                lokasi_tujuan: document.getElementById('lokasi_tujuan').value,
+                lokasi_tujuan: document.getElementById('lokasi_tujuan').value, // Ambil nilai yang sudah diperbaiki
                 tanggal_berangkat: document.getElementById('tanggal_berangkat').value,
                 tanggal_kembali: document.getElementById('tanggal_kembali').value,
                 lama_perjalanan: document.getElementById('lama_perjalanan').value,
