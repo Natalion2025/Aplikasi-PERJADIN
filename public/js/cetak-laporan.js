@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <table style="width: 100%; vertical-align: top;">
                 <tr><td style="width: 25%;">a. Dasar Perjalanan</td><td style="width: 2%;">:</td><td>${nl2br(laporan.dasar_perjalanan)}</td></tr>
                 <tr><td>b. Maksud dan Tujuan</td><td>:</td><td>${nl2br(laporan.tujuan_perjalanan)}</td></tr>
-                <tr><td>c. Waktu dan Tempat</td><td>:</td><td>${laporan.lama_dan_tanggal_perjalanan} di ${laporan.tempat_dikunjungi}</td></tr>
+                <tr><td>c. Waktu dan Tempat</td><td>:</td><td>${laporan.lama_dan_tanggal_perjalanan} di ${laporan.tempat_dikunjungi || laporan.tujuan_perjalanan}</td></tr>
             </table>
 
             <div class="section-title">II. KEGIATAN YANG DILAKSANAKAN</div>

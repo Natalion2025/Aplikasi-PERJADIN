@@ -14,6 +14,20 @@
 
     let currentUserRole = 'user'; // Default role
 
+    // --- Fungsi Helper untuk Format Angka ---
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined || value === '') return '';
+        // Hapus semua karakter non-digit kecuali koma untuk desimal
+        const number = parseFloat(String(value).replace(/[^0-9]/g, ''));
+        if (isNaN(number)) return '';
+        return new Intl.NumberFormat('id-ID').format(number);
+    };
+
+    const parseCurrency = (value) => {
+        // Hapus semua karakter non-digit
+        return parseFloat(String(value || '').replace(/[^0-9]/g, '')) || 0;
+    };
+
     // Function to open the modal
     const openModal = (anggaran = null) => {
         anggaranForm.reset();
@@ -29,12 +43,17 @@
             document.getElementById('sub_kegiatan').value = anggaran.sub_kegiatan;
             // Gabungkan kode dan nama untuk mencocokkan value di <option>
             document.getElementById('mata_anggaran').value = `${anggaran.mata_anggaran_kode} - ${anggaran.mata_anggaran_nama}`;
-            document.getElementById('nilai_anggaran').value = anggaran.nilai_anggaran;
+            document.getElementById('nilai_anggaran').value = formatCurrency(anggaran.nilai_anggaran);
         } else {
             // Mode Tambah
             modalTitle.textContent = 'Tambah Anggaran Baru';
         }
         modal.classList.remove('hidden');
+
+        // Pastikan input nominal memiliki atribut yang benar untuk formatting
+        const nilaiAnggaranInput = document.getElementById('nilai_anggaran');
+        nilaiAnggaranInput.setAttribute('inputmode', 'numeric');
+        nilaiAnggaranInput.setAttribute('pattern', '[0-9.,]*');
     };
 
     // Function to close the modal
@@ -76,7 +95,7 @@
                     <div class="text-sm text-gray-500 dark:text-white">${anggaran.mata_anggaran_nama}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(anggaran.nilai_anggaran)}
+                    Rp ${formatCurrency(anggaran.nilai_anggaran)}
                 </td>
                 ${actionButtons}
             `;
@@ -121,6 +140,9 @@
         const id = anggaranIdInput.value;
         const formData = new FormData(anggaranForm);
         const data = Object.fromEntries(formData.entries());
+
+        // Parse nilai anggaran dari format mata uang ke angka sebelum dikirim
+        data.nilai_anggaran = parseCurrency(data.nilai_anggaran);
 
         // Pisahkan kode dan nama mata anggaran
         const mataAnggaranValue = data.mata_anggaran;
@@ -180,6 +202,23 @@
     cancelBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (event) => {
         if (event.target === modal) closeModal();
+    });
+
+    // Event listener untuk memformat input mata uang secara otomatis
+    anggaranForm.addEventListener('input', (e) => {
+        if (e.target.id === 'nilai_anggaran') {
+            // Simpan posisi kursor
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            const oldValue = e.target.value;
+
+            e.target.value = formatCurrency(e.target.value);
+
+            // Kembalikan posisi kursor dengan memperhitungkan penambahan/pengurangan titik
+            const newLength = e.target.value.length;
+            const oldLength = oldValue.length;
+            e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
+        }
     });
 
     // Inisialisasi halaman

@@ -1050,6 +1050,22 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
             await runQuery(sppdSql, [id, pelaksana.id, nomorSppd, tanggal_surat]);
         }
 
+        // PERBAIKAN: Sinkronkan data ke laporan yang sudah ada
+        const laporanTerkait = await dbGet('SELECT id FROM laporan_perjadin WHERE spt_id = ?', [id]);
+        if (laporanTerkait) {
+            console.log(`[SYNC] Laporan ID ${laporanTerkait.id} ditemukan untuk SPT ID ${id}. Melakukan sinkronisasi...`);
+            const lamaDanTanggal = `${lama_perjalanan} hari, dari ${new Date(tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} s/d ${new Date(tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+            const syncSql = `UPDATE laporan_perjadin SET
+                dasar_perjalanan = ?,
+                tujuan_perjalanan = ?,
+                lama_dan_tanggal_perjalanan = ?,
+                tempat_dikunjungi = ?
+                WHERE id = ?`;
+            await runQuery(syncSql, [dasar_surat, maksud_perjalanan, lamaDanTanggal, lokasi_tujuan, laporanTerkait.id]);
+            console.log(`[SYNC] Laporan ID ${laporanTerkait.id} berhasil disinkronkan.`);
+        }
+
         await runQuery('COMMIT');
         res.json({ message: 'Surat Perintah Tugas berhasil diperbarui!', sptId: id });
     } catch (err) {
@@ -1071,14 +1087,24 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
 
 // DELETE: Menghapus SPT
 app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
+    const { id } = req.params;
     try {
-        const result = await runQuery('DELETE FROM spt WHERE id = ?', [req.params.id]);
+        await runQuery('BEGIN TRANSACTION');
+
+        // PERBAIKAN: Hapus laporan terkait terlebih dahulu
+        console.log(`[DELETE] Mencari dan menghapus laporan terkait untuk SPT ID: ${id}`);
+        await runQuery('DELETE FROM laporan_perjadin WHERE spt_id = ?', [id]);
+
+        // Hapus SPT (ini akan otomatis menghapus data di spt_pegawai dan sppd karena ON DELETE CASCADE)
+        const result = await runQuery('DELETE FROM spt WHERE id = ?', [id]);
         if (result.changes === 0) {
             return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
         }
+        await runQuery('COMMIT');
         res.json({ message: 'Data SPT berhasil dihapus.' });
     } catch (err) {
-        console.error(`[API ERROR] Gagal menghapus SPT id ${req.params.id}:`, err);
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback saat hapus SPT:', rbErr));
+        console.error(`[API ERROR] Gagal menghapus SPT id ${id}:`, err);
         res.status(500).json({ message: 'Gagal menghapus SPT.', error: err.message });
     }
 });
@@ -2142,9 +2168,16 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 
             if (!standarBiayaHarian) {
                 console.error(`[ERROR] Standar biaya fallback juga tidak ditemukan!`);
+                // PERBAIKAN: Pastikan objek fallback memiliki semua properti yang mungkin diakses
+                // untuk menghindari nilai 'undefined' yang menyebabkan NaN di frontend.
                 standarBiayaHarian = {
                     satuan: 'OH',
-                    besaran: 0
+                    besaran: 0,
+                    gol_a: 0,
+                    gol_b: 0,
+                    gol_c: 0,
+                    gol_d: 0,
+                    biaya_kontribusi: 0
                 };
             }
         }

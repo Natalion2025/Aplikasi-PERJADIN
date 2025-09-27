@@ -27,8 +27,19 @@
     const pembayaranTableBody = document.getElementById('pembayaran-table-body');
 
     const formatCurrency = (value) => {
-        if (value === null || value === undefined) return 'Rp 0';
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+        // PERBAIKAN: Bersihkan input dari karakter non-numerik sebelum memformat.
+        // Ini memungkinkan fungsi menangani string yang sudah diformat (misal: "1.000") dengan benar.
+        const numberString = String(value || '').replace(/[^0-9-]/g, '');
+        const number = parseFloat(numberString);
+        if (isNaN(number)) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+    };
+
+    const parseCurrency = (value) => {
+        // PERBAIKAN: Sederhanakan parser untuk hanya mengambil angka dan tanda minus.
+        const numberString = String(value || '').replace(/[^0-9-]/g, '');
+        const number = parseFloat(numberString);
+        return isNaN(number) ? 0 : number;
     };
 
     // Function to open the modal
@@ -215,7 +226,7 @@
                 uraian: `Uang Harian (${uangHarianInfo.golongan})`,
                 harga: uangHarianInfo.harga_satuan,
                 satuan: uangHarianInfo.satuan,
-                hari: `<input type="number" class="jml-hari-harian w-16 text-center border-gray-300 rounded-md shadow-sm text-sm dark:bg-slate-600 dark:border-gray-500" placeholder="0" value="" data-pegawai-id="${pegawaiId}">`,
+                hari: `<input type="number" class="jml-hari-harian w-16 text-center border-gray-300 rounded-md shadow-sm text-sm dark:bg-slate-600 dark:border-gray-500 dark:text-white bg-gray-200 text-black" placeholder="edit" value="" data-pegawai-id="${pegawaiId}">`,
                 jumlah: uangHarianTotal,
                 isUangHarian: true
             });
@@ -225,7 +236,7 @@
             if (pengeluaran.kontribusi_nominal > 0) rowsData.push({ uraian: `Biaya Kontribusi (${pengeluaran.kontribusi_jenis || 'N/A'})`, harga: pengeluaran.kontribusi_nominal, satuan: 'OK', hari: '-', jumlah: pengeluaran.kontribusi_nominal });
             if (pengeluaran.lain_lain_nominal > 0) rowsData.push({ uraian: `Biaya Lain-lain (${pengeluaran.lain_lain_uraian || 'N/A'})`, harga: pengeluaran.lain_lain_nominal, satuan: 'OK', hari: '-', jumlah: pengeluaran.lain_lain_nominal });
 
-            const rowCount = rowsData.length + 2;
+            const rowCount = rowsData.length + 1;
 
             rowsData.forEach((rowData, index) => {
                 const row = document.createElement('tr');
@@ -258,15 +269,15 @@
             panjarRow.classList.add('panjar-row');
             panjarRow.dataset.pegawaiId = pegawaiId;
             panjarRow.innerHTML = `
-                <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400 font-bold">Nilai Panjar</td>
-                <td class="px-4 py-2 text-sm text-right" colspan="4">
+                <td colspan="2" class="px-4 py-2 text-sm text-right text-gray-500 dark:text-gray-400 font-bold">Nilai Panjar</td>
+                <td class="px-4 py-2 text-sm text-right" colspan="3">
                     <div class="flex items-center justify-end">
-                        <input type="number" class="panjar-input w-32 text-right border-gray-300 rounded-md shadow-sm text-sm dark:bg-slate-600 dark:border-gray-500" placeholder="0" data-pegawai-id="${pegawaiId}">
+                        <input type="text" class="panjar-input w-32 text-center  rounded-md shadow-sm text-sm bg-gray-200 dark:bg-slate-600 dark:border-gray-500 dark:text-white" placeholder="edit" data-pegawai-id="${pegawaiId}" inputmode="numeric">
                         <button type="button" class="terapkan-panjar-btn ml-2 px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600" data-pegawai-id="${pegawaiId}">Terapkan</button>
                     </div>
                 </td>
-                <td class="px-4 py-2 text-sm text-right text-red-500 font-bold total-panjar-pegawai" data-pegawai-id="${pegawaiId}">-</td>
-                <td class="px-4 py-2 text-sm text-right"></td>
+                <td class="px-4 py-2 text-sm text-right text-red-500 font-bold total-panjar-pegawai" data-pegawai-id="${pegawaiId}"></td>
+                
             `;
             rincianTableBody.appendChild(panjarRow);
 
@@ -274,7 +285,11 @@
             const totalPegawaiRow = document.createElement('tr');
             totalPegawaiRow.classList.add('total-pegawai-row', 'bg-slate-50', 'dark:bg-slate-700');
             totalPegawaiRow.dataset.pegawaiId = pegawaiId;
-            totalPegawaiRow.innerHTML = `<td colspan="6" class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white">Total Dibayar</td><td class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white total-dibayar-pegawai" data-pegawai-id="${pegawaiId}">Rp 0</td>`;
+            // PERBAIKAN: Sesuaikan colspan dan terapkan background ke sel yang benar
+            totalPegawaiRow.innerHTML = `
+                <td colspan="8" class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white bg-green-100 dark:bg-green-800">Total Dibayar</td>
+                <td class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white total-dibayar-pegawai bg-green-100 dark:bg-green-800" data-pegawai-id="${pegawaiId}">Rp 0</td>
+            `;
             rincianTableBody.appendChild(totalPegawaiRow);
         }
 
@@ -289,7 +304,7 @@
     const recalculateGrandTotal = () => {
         let grandTotal = 0;
 
-        // Hitung per baris rincian
+        // Hitung per baris rincian dan update jumlah dibayar
         document.querySelectorAll('tr.rincian-row').forEach(row => {
             const jumlahBiayaEl = row.querySelector('.jumlah-biaya');
             const nilaiPanjarEl = row.querySelector('.nilai-panjar');
@@ -300,7 +315,6 @@
 
             const jumlahDibayar = jumlahBiaya - nilaiPanjar;
             jumlahDibayarEl.textContent = formatCurrency(jumlahDibayar);
-            grandTotal += jumlahDibayar;
         });
 
         // Hitung total per pegawai
@@ -311,11 +325,13 @@
                 totalPegawai += parseFloat(jumlahDibayarEl.textContent.replace(/[^0-9,-]+/g, '')) || 0;
             });
             totalEl.textContent = formatCurrency(totalPegawai);
+            grandTotal += totalPegawai; // Tambahkan total pegawai ke grand total
         });
 
         // Update grand total di footer
         document.getElementById('total-dibayar').textContent = formatCurrency(grandTotal);
-        nominalBayarInput.value = grandTotal;
+        // PERBAIKAN: Gunakan parseCurrency untuk mengirim nilai angka mentah
+        nominalBayarInput.value = parseCurrency(formatCurrency(grandTotal));
     };
 
     const clearRincian = () => {
@@ -399,6 +415,21 @@
             // Hitung ulang semua total
             recalculateGrandTotal();
         }
+
+        // PERBAIKAN: Format input panjar saat diketik
+        if (e.target.classList.contains('panjar-input')) {
+            // Simpan posisi kursor
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            const oldValue = e.target.value;
+
+            e.target.value = formatCurrency(e.target.value).replace('Rp\u00A0', ''); // Hapus 'Rp '
+
+            // Kembalikan posisi kursor dengan memperhitungkan penambahan/pengurangan titik
+            const newLength = e.target.value.length;
+            const oldLength = oldValue.length;
+            e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
+        }
     });
 
     // Event delegation untuk tombol "Terapkan" panjar
@@ -408,7 +439,7 @@
             const panjarInput = rincianContainer.querySelector(`.panjar-input[data-pegawai-id="${pegawaiId}"]`);
             const totalPanjarPegawaiEl = rincianContainer.querySelector(`.total-panjar-pegawai[data-pegawai-id="${pegawaiId}"]`);
 
-            const panjarValue = parseFloat(panjarInput.value) || 0;
+            const panjarValue = parseCurrency(panjarInput.value);
 
             // Distribusikan nilai panjar ke setiap baris rincian milik pegawai tersebut
             const rincianRows = rincianTableBody.querySelectorAll(`tr.rincian-row[data-pegawai-id="${pegawaiId}"]`);
@@ -431,7 +462,7 @@
             }
 
             // Update tampilan total panjar di baris panjar
-            panjarRows.forEach(el => el.textContent = `(${formatCurrency(panjarValue)})`);
+            panjarRows.forEach(el => el.textContent = `${formatCurrency(panjarValue)}`);
 
             recalculateGrandTotal();
         }
