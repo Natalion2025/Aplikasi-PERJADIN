@@ -234,7 +234,7 @@
                     <!-- Template untuk Transportasi -->
                     <template id="transportasi-template">
                         <div class="transport-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <select name="transportasi_jenis"
+                            <select name="jenis"
                                 class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                                 <option>Bus</option>
                                 <option>Taksi</option>
@@ -242,10 +242,10 @@
                                 <option>Kapal</option>
                                 <option>Pesawat</option>
                             </select>
-                            <input type="text" name="transportasi_perusahaan" placeholder="Nama Maskapai/Perusahaan"
+                            <input type="text" name="perusahaan" placeholder="Nama Maskapai/Perusahaan"
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                             <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="transportasi_nominal" placeholder="Nominal (Rp)"
+                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
                                     class="flex-grow block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
                                 <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
                                         class="fas fa-minus-circle"></i></button>
@@ -256,20 +256,20 @@
                     <!-- Template untuk Akomodasi -->
                     <template id="akomodasi-template">
                         <div class="akomodasi-item grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                            <select name="akomodasi_jenis"
+                            <select name="jenis"
                                 class="md:col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                                 <option>Hotel</option>
                                 <option>Ditanggung Panitia</option>
                                 <option>Rumah Warga (30%)</option>
                             </select>
-                            <input type="text" name="akomodasi_nama" placeholder="Nama Hotel"
+                            <input type="text" name="nama" placeholder="Nama Hotel"
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                            <input type="text" name="akomodasi_harga_satuan" placeholder="Harga Satuan (Rp)"
+                            <input type="text" name="harga_satuan" placeholder="Harga Satuan (Rp)"
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc currency-input">
-                            <input type="number" name="akomodasi_malam" placeholder="Qty"
+                            <input type="number" name="malam" placeholder="Qty"
                                 class="md:col-span-1 block w-full text-center px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc">
                             <span class="text-gray-600 dark:text-gray-400 text-center md:col-span-1">malam</span>
-                            <input type="text" name="akomodasi_nominal" placeholder="Total (Rp)" readonly
+                            <input type="text" name="nominal" placeholder="Total (Rp)" readonly
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed">
                             <button type="button"
                                 class="remove-item-btn text-red-500 hover:text-red-700 hidden justify-self-start"><i
@@ -280,14 +280,14 @@
                     <!-- Template untuk Biaya Kontribusi -->
                     <template id="kontribusi-template">
                         <div class="kontribusi-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <select name="kontribusi_jenis" placeholder="Biaya Kontribusi"
+                            <select name="jenis" placeholder="Biaya Kontribusi"
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                                 <option>Bimbingan Teknis</option>
                                 <option>Kursus</option>
                                 <option>Pelatihan/Diklat</option>
                             </select>
                             <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="kontribusi_nominal" placeholder="Nominal (Rp)"
+                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
                                     class="flex-grow block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
                                 <span class="text-gray-600 dark:text-gray-400 text-center">/kegiatan</span>
                                 <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
@@ -299,10 +299,10 @@
                     <!-- Template untuk Biaya Lain-lain -->
                     <template id="lain-lain-template">
                         <div class="lain-lain-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <input type="text" name="lain_lain_uraian" placeholder="Uraian Biaya"
+                            <input type="text" name="uraian" placeholder="Uraian Biaya"
                                 class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                             <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="lain_lain_nominal" placeholder="Nominal (Rp)"
+                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
                                     class="block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
                                 <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
                                         class="fas fa-minus-circle"></i></button>

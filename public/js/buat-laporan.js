@@ -26,6 +26,7 @@
     let newFiles = []; // Menyimpan file baru yang akan diupload
     let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
     let deletedFiles = []; // Menyimpan ID file yang akan dihapus (mode edit)
+    let accommodationStandards = {}; // Menyimpan standar biaya akomodasi per pegawai
 
     // --- Fungsi Helper untuk Format Angka ---
     const formatCurrency = (value) => {
@@ -91,6 +92,7 @@
             form.reset();
             // Sembunyikan dan kosongkan rincian pengeluaran jika tidak ada SPT dipilih
             document.getElementById('rincian-pengeluaran-section').classList.add('hidden');
+            accommodationStandards = {}; // Reset standar biaya
             pengeluaranPerPegawaiContainer.innerHTML = '';
             return;
         }
@@ -100,6 +102,15 @@
             const response = await fetch(`/api/spt/${sptId}`);
             if (!response.ok) throw new Error('Gagal memuat detail SPT.');
             const sptDetail = await response.json();
+
+            // Ambil standar biaya akomodasi untuk SPT ini
+            try {
+                const standardsRes = await fetch(`/api/spt/${sptId}/accommodation-standards`);
+                if (standardsRes.ok) {
+                    accommodationStandards = await standardsRes.json();
+                } else accommodationStandards = {};
+            } catch (e) { accommodationStandards = {}; }
+
 
             // Ambil semua pegawai yang terlibat (pelaksana dan pengikut)
             // Urutkan agar pelaksana utama (bukan pengikut) selalu di atas.
@@ -139,12 +150,7 @@
                 pegawaiItem.querySelector('.pegawai-name-title').textContent = `Rincian untuk ${pegawai.nama_lengkap}`;
                 pegawaiItem.dataset.pegawaiId = pegawai.pegawai_id;
 
-                // Tambahkan satu baris default untuk setiap jenis biaya
-                addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
-                addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
-                addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
-                addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
-
+                // PERUBAHAN: Tidak menambahkan baris biaya secara default. Pengguna akan menambahkannya secara manual.
                 // Tambahkan event listener untuk tombol "Tambah" di dalam blok ini
                 setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
 
@@ -221,24 +227,23 @@
                 pegawaiItem.querySelector('.pegawai-name-title').textContent = `Rincian untuk ${pegawai.nama_lengkap}`;
                 pegawaiItem.dataset.pegawaiId = pegawai.pegawai_id;
 
-                // Cari data pengeluaran untuk pegawai ini dari array 'laporan.pengeluaran'
-                const pengeluaranData = laporan.pengeluaran.find(p => p.pegawai_id == pegawai.pegawai_id);
+                // PERUBAHAN: Isi item berdasarkan data array dari tabel baru
+                const transportasiData = laporan.transportasi.filter(t => t.pegawai_id == pegawai.pegawai_id);
+                const akomodasiData = laporan.akomodasi.filter(a => a.pegawai_id == pegawai.pegawai_id);
+                const kontribusiData = laporan.kontribusi.filter(k => k.pegawai_id == pegawai.pegawai_id);
+                const lainLainData = laporan.lain_lain.filter(l => l.pegawai_id == pegawai.pegawai_id);
 
-                if (pengeluaranData) {
-                    // Jika data ditemukan, isi form dengan data tersebut
-                    addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id, pengeluaranData);
-                    addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id, pengeluaranData);
-                    addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id, pengeluaranData);
-                    addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id, pengeluaranData);
-                }
-                else {
-                    // Untuk pegawai lain, tampilkan form kosong
-                    addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
-                    addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
-                    addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
-                    addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
-                }
+                if (transportasiData.length > 0) transportasiData.forEach(item => addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id, item));
+                else addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
 
+                if (akomodasiData.length > 0) akomodasiData.forEach(item => addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id, item));
+                else addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
+
+                if (kontribusiData.length > 0) kontribusiData.forEach(item => addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id, item));
+                else addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
+
+                if (lainLainData.length > 0) lainLainData.forEach(item => addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id, item));
+                else addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
                 setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
                 pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
             });
@@ -366,13 +371,14 @@
     const addTransportasiItem = (container, pegawaiId, data = {}) => {
         const templateContent = transportasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.transport-item');
+        const itemIndex = container.querySelectorAll('.transport-item').length;
         // Ambil nilai dan set value SEBELUM mengubah atribut 'name'
-        newItem.querySelector('[name="transportasi_jenis"]').value = data.transportasi_jenis || 'Bus';
-        newItem.querySelector('[name="transportasi_perusahaan"]').value = data.transportasi_perusahaan || '';
-        newItem.querySelector('[name="transportasi_nominal"]').value = formatCurrency(data.transportasi_nominal);
+        newItem.querySelector('[name="jenis"]').value = data.jenis || 'Bus';
+        newItem.querySelector('[name="perusahaan"]').value = data.perusahaan || '';
+        newItem.querySelector('[name="nominal"]').value = formatCurrency(data.nominal);
         // Update name attributes to be unique per employee
         newItem.querySelectorAll('[name]').forEach(el => {
-            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+            el.name = `pegawai[${pegawaiId}][transportasi][${itemIndex}][${el.name}]`;
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
@@ -381,13 +387,14 @@
     const addAkomodasiItem = (container, pegawaiId, data = {}) => {
         const templateContent = akomodasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.akomodasi-item');
-        newItem.querySelector('[name="akomodasi_jenis"]').value = data.akomodasi_jenis || 'Hotel';
-        newItem.querySelector('[name="akomodasi_nama"]').value = data.akomodasi_nama || '';
-        newItem.querySelector('[name="akomodasi_harga_satuan"]').value = formatCurrency(data.akomodasi_harga_satuan) || '';
-        newItem.querySelector('[name="akomodasi_malam"]').value = data.akomodasi_malam || '';
+        const itemIndex = container.querySelectorAll('.akomodasi-item').length;
+        newItem.querySelector('[name="jenis"]').value = data.jenis || 'Hotel';
+        newItem.querySelector('[name="nama"]').value = data.nama || '';
+        newItem.querySelector('[name="harga_satuan"]').value = formatCurrency(data.harga_satuan) || '';
+        newItem.querySelector('[name="malam"]').value = data.malam || '';
         updateAkomodasiTotal(newItem); // Pindahkan ke sini: Hitung total SEBELUM nama diubah
         newItem.querySelectorAll('[name]').forEach(el => {
-            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+            el.name = `pegawai[${pegawaiId}][akomodasi][${itemIndex}][${el.name}]`;
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
@@ -396,10 +403,11 @@
     const addKontribusiItem = (container, pegawaiId, data = {}) => {
         const templateContent = kontribusiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.kontribusi-item');
-        newItem.querySelector('[name="kontribusi_jenis"]').value = data.kontribusi_jenis || 'Bimbingan Teknis';
-        newItem.querySelector('[name="kontribusi_nominal"]').value = formatCurrency(data.kontribusi_nominal);
+        const itemIndex = container.querySelectorAll('.kontribusi-item').length;
+        newItem.querySelector('[name="jenis"]').value = data.jenis || 'Bimbingan Teknis';
+        newItem.querySelector('[name="nominal"]').value = formatCurrency(data.nominal);
         newItem.querySelectorAll('[name]').forEach(el => {
-            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+            el.name = `pegawai[${pegawaiId}][kontribusi][${itemIndex}][${el.name}]`;
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
@@ -408,10 +416,11 @@
     const addLainLainItem = (container, pegawaiId, data = {}) => {
         const templateContent = lainLainTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.lain-lain-item');
-        newItem.querySelector('[name="lain_lain_uraian"]').value = data.lain_lain_uraian || '';
-        newItem.querySelector('[name="lain_lain_nominal"]').value = formatCurrency(data.lain_lain_nominal);
+        const itemIndex = container.querySelectorAll('.lain-lain-item').length;
+        newItem.querySelector('[name="uraian"]').value = data.uraian || '';
+        newItem.querySelector('[name="nominal"]').value = formatCurrency(data.nominal);
         newItem.querySelectorAll('[name]').forEach(el => {
-            el.name = `pegawai[${pegawaiId}][${el.name}]`;
+            el.name = `pegawai[${pegawaiId}][lain_lain][${itemIndex}][${el.name}]`;
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
@@ -444,9 +453,9 @@
     const updateAkomodasiTotal = (itemElement) => {
         // Perbaikan: Gunakan selector yang lebih fleksibel yang mencari atribut 'name' yang BERAKHIRAN dengan string yang diberikan.
         // Ini akan berfungsi baik sebelum maupun sesudah nama diubah secara dinamis.
-        const hargaSatuanEl = itemElement.querySelector('[name$="[akomodasi_harga_satuan]"], [name="akomodasi_harga_satuan"]');
-        const jumlahMalamEl = itemElement.querySelector('[name$="[akomodasi_malam]"], [name="akomodasi_malam"]');
-        const totalNominalEl = itemElement.querySelector('[name$="[akomodasi_nominal]"], [name="akomodasi_nominal"]');
+        const hargaSatuanEl = itemElement.querySelector('[name$="[harga_satuan]"], [name="harga_satuan"]');
+        const jumlahMalamEl = itemElement.querySelector('[name$="[malam]"], [name="malam"]');
+        const totalNominalEl = itemElement.querySelector('[name$="[nominal]"], [name="nominal"]');
 
         const harga = parseCurrency(hargaSatuanEl.value);
         const malam = parseInt(jumlahMalamEl.value) || 0;
@@ -492,32 +501,30 @@
         document.querySelectorAll('.pengeluaran-pegawai-item').forEach(pegawaiItem => {
             const pegawaiId = pegawaiItem.dataset.pegawaiId;
 
-            // Helper untuk mengambil nilai dari input
-            const getValue = (name, isCurrency = false) => {
-                const el = pegawaiItem.querySelector(`[name="pegawai[${pegawaiId}][${name}]"]`);
-                if (!el) return isCurrency ? 0 : '';
-                return isCurrency ? parseCurrency(el.value) : el.value;
-            };
+            // PERUBAHAN: Kumpulkan data sebagai array
+            pegawaiItem.querySelectorAll('.transport-item').forEach((item, index) => {
+                formData.append(`pegawai[${pegawaiId}][transportasi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
+                formData.append(`pegawai[${pegawaiId}][transportasi][${index}][perusahaan]`, item.querySelector('[name$="[perusahaan]"]').value);
+                formData.append(`pegawai[${pegawaiId}][transportasi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
+            });
 
-            // Transportasi
-            formData.append(`pegawai[${pegawaiId}][transportasi_jenis]`, getValue('transportasi_jenis'));
-            formData.append(`pegawai[${pegawaiId}][transportasi_perusahaan]`, getValue('transportasi_perusahaan'));
-            formData.append(`pegawai[${pegawaiId}][transportasi_nominal]`, getValue('transportasi_nominal', true));
+            pegawaiItem.querySelectorAll('.akomodasi-item').forEach((item, index) => {
+                formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
+                formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][nama]`, item.querySelector('[name$="[nama]"]').value);
+                formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][harga_satuan]`, parseCurrency(item.querySelector('[name$="[harga_satuan]"]').value));
+                formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][malam]`, item.querySelector('[name$="[malam]"]').value);
+                formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
+            });
 
-            // Akomodasi
-            formData.append(`pegawai[${pegawaiId}][akomodasi_jenis]`, getValue('akomodasi_jenis'));
-            formData.append(`pegawai[${pegawaiId}][akomodasi_nama]`, getValue('akomodasi_nama'));
-            formData.append(`pegawai[${pegawaiId}][akomodasi_harga_satuan]`, getValue('akomodasi_harga_satuan', true));
-            formData.append(`pegawai[${pegawaiId}][akomodasi_malam]`, getValue('akomodasi_malam'));
-            formData.append(`pegawai[${pegawaiId}][akomodasi_nominal]`, getValue('akomodasi_nominal', true));
+            pegawaiItem.querySelectorAll('.kontribusi-item').forEach((item, index) => {
+                formData.append(`pegawai[${pegawaiId}][kontribusi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
+                formData.append(`pegawai[${pegawaiId}][kontribusi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
+            });
 
-            // Kontribusi
-            formData.append(`pegawai[${pegawaiId}][kontribusi_jenis]`, getValue('kontribusi_jenis'));
-            formData.append(`pegawai[${pegawaiId}][kontribusi_nominal]`, getValue('kontribusi_nominal', true));
-
-            // Lain-lain
-            formData.append(`pegawai[${pegawaiId}][lain_lain_uraian]`, getValue('lain_lain_uraian'));
-            formData.append(`pegawai[${pegawaiId}][lain_lain_nominal]`, getValue('lain_lain_nominal', true));
+            pegawaiItem.querySelectorAll('.lain-lain-item').forEach((item, index) => {
+                formData.append(`pegawai[${pegawaiId}][lain_lain][${index}][uraian]`, item.querySelector('[name$="[uraian]"]').value);
+                formData.append(`pegawai[${pegawaiId}][lain_lain][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
+            });
         });
 
         if (isEditMode) {
@@ -586,6 +593,28 @@
     pengeluaranPerPegawaiContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('akomodasi-calc')) {
             const itemElement = e.target.closest('.akomodasi-item');
+            updateAkomodasiTotal(itemElement);
+        }
+
+        // PERUBAHAN: Logika untuk perhitungan otomatis biaya "Rumah Warga"
+        if (e.target.name && e.target.name.endsWith('[jenis]')) {
+            const selectedValue = e.target.value;
+            const itemElement = e.target.closest('.akomodasi-item');
+            const pegawaiItem = e.target.closest('.pengeluaran-pegawai-item');
+            const pegawaiId = pegawaiItem.dataset.pegawaiId;
+            const hargaSatuanEl = itemElement.querySelector('[name$="[harga_satuan]"]');
+
+            if (selectedValue === 'Rumah Warga (30%)') {
+                const standardCost = accommodationStandards[pegawaiId] || 0;
+                const calculatedCost = standardCost * 0.30;
+                hargaSatuanEl.value = formatCurrency(calculatedCost);
+                hargaSatuanEl.readOnly = true;
+                hargaSatuanEl.classList.add('bg-slate-100', 'dark:bg-slate-600', 'cursor-not-allowed');
+            } else {
+                hargaSatuanEl.readOnly = false;
+                hargaSatuanEl.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'cursor-not-allowed');
+            }
+            // Hitung ulang total setelah mengubah harga satuan
             updateAkomodasiTotal(itemElement);
         }
     });

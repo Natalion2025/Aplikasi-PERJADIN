@@ -19,8 +19,9 @@
         sptList.forEach(spt => {
             const row = document.createElement('tr');
 
-            const pegawaiListHtml = spt.pegawai_ditugaskan.length > 0
-                ? `<ul>${spt.pegawai_ditugaskan.map(nama => `<li class="list-disc ml-4 dark:text-gray-400">${nama}</li>`).join('')}</ul>`
+            // PERBAIKAN: Gunakan properti 'spt.pegawai' yang baru dan map 'nama_lengkap'.
+            const pegawaiListHtml = (spt.pegawai && spt.pegawai.length > 0)
+                ? `<ul>${spt.pegawai.map(p => `<li class="list-disc ml-4 dark:text-gray-400">${p.nama_lengkap}</li>`).join('')}</ul>`
                 : '<span class="text-gray-400">Tidak ada</span>';
 
             const isCancelled = spt.status === 'dibatalkan';

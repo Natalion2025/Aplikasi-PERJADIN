@@ -392,6 +392,7 @@ db.run(`CREATE TABLE IF NOT EXISTS pembayaran (
     nama_penerima TEXT NOT NULL,
     uraian_pembayaran TEXT NOT NULL,
     nominal_bayar REAL NOT NULL,
+    panjar_data TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (anggaran_id) REFERENCES anggaran(id),
     FOREIGN KEY (spt_id) REFERENCES spt(id)
@@ -399,27 +400,64 @@ db.run(`CREATE TABLE IF NOT EXISTS pembayaran (
     if (err) console.error("Error creating 'pembayaran' table:", err.message);
 });
 
-// Pastikan tabel 'laporan_pengeluaran' ada untuk menyimpan biaya per pegawai
-db.run(`CREATE TABLE IF NOT EXISTS laporan_pengeluaran (
+// --- PERUBAHAN: Normalisasi Tabel Pengeluaran ---
+// Hapus tabel lama jika ada (hanya untuk pengembangan, hati-hati di produksi)
+db.run(`DROP TABLE IF EXISTS laporan_pengeluaran`);
+
+// Buat tabel baru untuk Transportasi
+db.run(`CREATE TABLE IF NOT EXISTS laporan_transportasi (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     laporan_id INTEGER NOT NULL,
     pegawai_id INTEGER NOT NULL,
-    transportasi_jenis TEXT,
-    transportasi_perusahaan TEXT,
-    transportasi_nominal REAL,
-    akomodasi_jenis TEXT,
-    akomodasi_nama TEXT,
-    akomodasi_harga_satuan REAL,
-    akomodasi_malam INTEGER,
-    akomodasi_nominal REAL,
-    kontribusi_jenis TEXT,
-    kontribusi_nominal REAL,
-    lain_lain_uraian TEXT,
-    lain_lain_nominal REAL,
+    jenis TEXT,
+    perusahaan TEXT,
+    nominal REAL,
     FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
     FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
 )`, (err) => {
-    if (err) console.error("Error creating 'laporan_pengeluaran' table:", err.message);
+    if (err) console.error("Error creating 'laporan_transportasi' table:", err.message);
+});
+
+// Buat tabel baru untuk Akomodasi
+db.run(`CREATE TABLE IF NOT EXISTS laporan_akomodasi (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    laporan_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    jenis TEXT,
+    nama TEXT,
+    harga_satuan REAL,
+    malam INTEGER,
+    nominal REAL,
+    FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_akomodasi' table:", err.message);
+});
+
+// Buat tabel baru untuk Kontribusi
+db.run(`CREATE TABLE IF NOT EXISTS laporan_kontribusi (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    laporan_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    jenis TEXT,
+    nominal REAL,
+    FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_kontribusi' table:", err.message);
+});
+
+// Buat tabel baru untuk Biaya Lain-lain
+db.run(`CREATE TABLE IF NOT EXISTS laporan_lain_lain (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    laporan_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    uraian TEXT,
+    nominal REAL,
+    FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'laporan_lain_lain' table:", err.message);
 });
 
 // Promisify fungsi database untuk digunakan dengan async/await
@@ -534,13 +572,13 @@ const isApiAdminOrSuperAdmin = (req, res, next) => {
     }
 };
 
-// Helper untuk menentukan tingkat biaya perjalanan dinas
+// --- PERBAIKAN: Fungsi getTingkatBiaya dan getKolomGolongan ---
 const getTingkatBiaya = (pegawai) => {
     const jabatan = (pegawai.jabatan || '').toLowerCase().trim();
 
     // Aturan berdasarkan permintaan:
     // Golongan B: Jabatan Kepala Dinas
-    if (jabatan === 'kepala dinas') {
+    if (jabatan.includes('kepala dinas')) {
         return 'Golongan B';
     }
 
@@ -1692,6 +1730,25 @@ app.get('/api/standar-biaya/:tipe', isApiAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Menjalankan query dengan penanganan retry jika database terkunci.
+ * @param {string} sql - Perintah SQL.
+ * @param {Array} params - Parameter untuk SQL.
+ * @returns {Promise<object>}
+ */
+const runQueryWithRetry = (sql, params = []) => new Promise((resolve, reject) => {
+    const tryQuery = (retries = 5) => {
+        db.run(sql, params, function (err) {
+            if (err && err.code === 'SQLITE_BUSY' && retries > 0) {
+                console.warn(`[DB WARN] Database sibuk, mencoba lagi... Sisa percobaan: ${retries - 1}`);
+                setTimeout(() => tryQuery(retries - 1), 100); // Tunggu 100ms sebelum mencoba lagi
+            } else if (err) reject(err);
+            else resolve(this);
+        });
+    };
+    tryQuery();
+});
+
 // POST: Upload data standar biaya dari Excel
 app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
     if (!req.file) {
@@ -1712,7 +1769,14 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
             const headerRowsToSkip = (['A', 'B', 'E', 'F', 'G', 'H', 'I', 'J'].includes(tipeBiaya)) ? 2 : 1;
 
             if (rowNumber > headerRowsToSkip) {
-                const rowData = row.values;
+                // PERBAIKAN: Paksa pembacaan setiap sel sebagai string untuk menghindari
+                // masalah tipe data (misal: "Eselon II" dibaca sebagai angka).
+                const rowData = [];
+                // PERBAIKAN FINAL: Buat pembacaan sel lebih aman dengan memeriksa nilai null.
+                // Ini mencegah error "Cannot read properties of null" pada sel kosong atau sel gabungan.
+                row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    rowData[colNumber] = (cell.value !== null && cell.value !== undefined) ? cell.text : '';
+                });
 
                 let data = {};
                 if (tipeBiaya === 'A' || tipeBiaya === 'B') {
@@ -1851,10 +1915,12 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
             }
         });
 
-        await runQuery('DELETE FROM standar_biaya WHERE tipe_biaya = ?', [tipeBiaya]);
+        // PERBAIKAN: Gunakan transaksi untuk memastikan operasi atomik
+        await runQueryWithRetry('BEGIN TRANSACTION');
+        await runQueryWithRetry('DELETE FROM standar_biaya WHERE tipe_biaya = ?', [tipeBiaya]);
 
         for (const data of standarBiayaData) {
-            const sql = `INSERT INTO standar_biaya 
+            const sql = `INSERT INTO standar_biaya
                 (tipe_biaya, uraian, provinsi, satuan, gol_a, gol_b, gol_c, gol_d, besaran, biaya_kontribusi) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
@@ -1871,16 +1937,143 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
                 data.biaya_kontribusi
             ]);
         }
+        await runQueryWithRetry('COMMIT');
 
         fs.unlinkSync(filePath);
 
         res.json({ message: 'Data standar biaya berhasil diupload dan disimpan.' });
     } catch (error) {
         console.error('[API ERROR] Gagal memproses file Excel:', error);
+        // Rollback transaksi jika terjadi error
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
         }
         res.status(500).json({ message: 'Terjadi kesalahan saat memproses file Excel.' });
+    }
+});
+
+// --- API BARU: Mendapatkan Standar Biaya Akomodasi per Pegawai untuk SPT ---
+app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const spt = await dbGet(`SELECT lokasi_tujuan, tempat_berangkat FROM spt WHERE id = ?`, [spt_id]);
+        if (!spt) {
+            return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
+        }
+
+        const pegawaiSql = `
+            SELECT p.id, p.jabatan, p.golongan
+            FROM spt_pegawai sp
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            WHERE sp.spt_id = ?
+        `;
+        const pegawaiList = await dbAll(pegawaiSql, [spt_id]);
+
+        const locationsData = require('./public/data/locations.json');
+
+        const cariJenisLokasi = (lokasi) => {
+            const lokasiLower = lokasi.toLowerCase().trim();
+            for (const group of locationsData) {
+                if (group.group.toLowerCase().includes('kecamatan')) {
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) {
+                            return { jenis: 'desa', nama: location, group: group.group };
+                        }
+                    }
+                    if (group.group.toLowerCase().includes(lokasiLower) || lokasiLower.includes(group.group.toLowerCase().replace('kecamatan', '').trim())) {
+                        return { jenis: 'kecamatan', nama: group.group };
+                    }
+                }
+            }
+            for (const group of locationsData) {
+                if (!group.group.toLowerCase().includes('kecamatan')) { // Provinsi
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) {
+                            return { jenis: 'kabupaten', nama: location, provinsi: group.group };
+                        }
+                    }
+                    if (group.group.toLowerCase() === lokasiLower) {
+                        return { jenis: 'provinsi', nama: group.group };
+                    }
+                }
+            }
+            return { jenis: 'tidak_diketahui', nama: lokasi };
+        };
+
+        const infoLokasi = cariJenisLokasi(spt.lokasi_tujuan || '');
+
+        // PERBAIKAN: Membuat fungsi pencarian standar biaya lebih tangguh
+        const cariStandarAkomodasi = async (tipeBiaya, lokasiQuery) => {
+            let query = '';
+            // Bersihkan query dari kata-kata umum dan spasi berlebih
+            const cleanLokasiQuery = lokasiQuery.replace(/kabupaten|kota|kab\.?/gi, '').trim();
+            let params = [`%${cleanLokasiQuery}%`];
+
+            if (tipeBiaya === 'B') { // Dalam kota
+                // Cari kecocokan pada uraian yang sudah dibersihkan juga
+                query = `SELECT * FROM standar_biaya WHERE tipe_biaya = 'B' AND REPLACE(REPLACE(REPLACE(TRIM(UPPER(uraian)), 'KABUPATEN', ''), 'KOTA', ''), 'KAB.', '') LIKE TRIM(UPPER(?))`;
+            } else if (tipeBiaya === 'E') { // Luar kota
+                query = `SELECT * FROM standar_biaya WHERE tipe_biaya = 'E' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
+                // PERBAIKAN: Tangani kasus khusus untuk Jakarta
+                const lokasiLower = cleanLokasiQuery.toLowerCase();
+                if (lokasiLower.includes('dki') || lokasiLower.includes('jakarta')) {
+                    console.log(`[DEBUG] Kueri Jakarta terdeteksi. Mengubah pencarian menjadi '%JAKARTA%'`);
+                    params = ['%JAKARTA%'];
+                }
+            } else return null; // Tipe biaya tidak valid untuk akomodasi
+
+            let result = await dbGet(query, params);
+            if (!result) {
+                // Jika tidak ketemu, coba cari dengan query yang lebih umum tanpa pembersihan
+                const fallbackQuery = tipeBiaya === 'B' ? `SELECT * FROM standar_biaya WHERE tipe_biaya = 'B' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))` : `SELECT * FROM standar_biaya WHERE tipe_biaya = 'E' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
+                result = await dbGet(fallbackQuery, [`%${lokasiQuery}%`]);
+            }
+
+            return result;
+        };
+
+        let standarAkomodasi;
+        if (infoLokasi.jenis === 'desa' || infoLokasi.jenis === 'kecamatan') {
+            const namaKecamatan = (infoLokasi.jenis === 'desa' ? infoLokasi.group : infoLokasi.nama).replace('Kecamatan', '').trim();
+            standarAkomodasi = await cariStandarAkomodasi('B', namaKecamatan);
+        } else if (infoLokasi.jenis === 'kabupaten') {
+            const tempatBerangkat = spt.tempat_berangkat || 'Nanga Pinoh';
+            const isSameRegion = infoLokasi.nama.toLowerCase().includes(tempatBerangkat.toLowerCase());
+            if (isSameRegion) {
+                standarAkomodasi = await cariStandarAkomodasi('B', infoLokasi.nama);
+            } else {
+                standarAkomodasi = await cariStandarAkomodasi('E', infoLokasi.provinsi);
+            }
+        } else if (infoLokasi.jenis === 'provinsi') {
+            standarAkomodasi = await cariStandarAkomodasi('E', infoLokasi.nama);
+        } else {
+            // Fallback: Asumsikan perjalanan luar negeri jika lokasi tidak terdefinisi dengan jelas
+            standarAkomodasi = await cariStandarAkomodasi('E', spt.lokasi_tujuan.split(',').pop().trim());
+        }
+
+        if (!standarAkomodasi) {
+            // PERBAIKAN: Jika masih tidak ditemukan, berikan fallback ke standar biaya pertama yang ada daripada 404
+            console.warn(`[WARN] Standar biaya akomodasi untuk "${spt.lokasi_tujuan}" tidak ditemukan. Menggunakan fallback...`);
+            standarAkomodasi = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'E' OR tipe_biaya = 'B' ORDER BY id LIMIT 1`);
+            if (!standarAkomodasi) {
+                return res.status(404).json({ message: `Standar biaya akomodasi untuk lokasi "${spt.lokasi_tujuan}" tidak ditemukan, dan tidak ada data standar biaya fallback yang tersedia.` });
+            }
+        }
+
+        const accommodationStandards = {};
+        pegawaiList.forEach(pegawai => {
+            const tingkatBiaya = getTingkatBiaya(pegawai);
+            const kolomGolongan = getKolomGolongan(tingkatBiaya);
+            const harga = standarAkomodasi[kolomGolongan] || 0;
+            accommodationStandards[pegawai.id] = harga;
+        });
+
+        res.json(accommodationStandards);
+
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil standar akomodasi untuk SPT ID ${spt_id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
 
@@ -1931,14 +2124,41 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             console.warn(`[API WARN] Gagal parse penandatangan_ids untuk laporan id ${laporan.id}.`);
         }
 
-        const pengeluaranSql = `
-            SELECT lp.*, p.nama_lengkap, p.jabatan
-            FROM laporan_pengeluaran lp
-            JOIN pegawai p ON lp.pegawai_id = p.id
-            WHERE lp.laporan_id = ?
-            ORDER BY p.id
-        `;
-        const pengeluaran = await dbAll(pengeluaranSql, [laporan.id]);
+        // PERBAIKAN: Ambil data dari tabel-tabel baru dan gabungkan
+        const [transportasi, akomodasi, kontribusi, lainLain] = await Promise.all([
+            dbAll('SELECT * FROM laporan_transportasi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_akomodasi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_kontribusi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_lain_lain WHERE laporan_id = ?', [laporan.id])
+        ]);
+
+        const pengeluaranMap = new Map();
+
+        const allItems = [...transportasi, ...akomodasi, ...kontribusi, ...lainLain];
+        allItems.forEach(item => {
+            if (!pengeluaranMap.has(item.pegawai_id)) {
+                pengeluaranMap.set(item.pegawai_id, { pegawai_id: item.pegawai_id });
+            }
+            const pengeluaranPegawai = pengeluaranMap.get(item.pegawai_id);
+
+            if (item.hasOwnProperty('perusahaan')) { // Transportasi
+                pengeluaranPegawai.transportasi_nominal = (pengeluaranPegawai.transportasi_nominal || 0) + item.nominal;
+                pengeluaranPegawai.transportasi_jenis = item.jenis;
+            } else if (item.hasOwnProperty('malam')) { // Akomodasi
+                pengeluaranPegawai.akomodasi_nominal = (pengeluaranPegawai.akomodasi_nominal || 0) + item.nominal;
+                pengeluaranPegawai.akomodasi_harga_satuan = item.harga_satuan;
+                pengeluaranPegawai.akomodasi_malam = item.malam;
+                pengeluaranPegawai.akomodasi_jenis = item.jenis;
+            } else if (item.hasOwnProperty('uraian')) { // Lain-lain
+                pengeluaranPegawai.lain_lain_nominal = (pengeluaranPegawai.lain_lain_nominal || 0) + item.nominal;
+                pengeluaranPegawai.lain_lain_uraian = item.uraian;
+            } else { // Kontribusi
+                pengeluaranPegawai.kontribusi_nominal = (pengeluaranPegawai.kontribusi_nominal || 0) + item.nominal;
+                pengeluaranPegawai.kontribusi_jenis = item.jenis;
+            }
+        });
+
+        const pengeluaran = Array.from(pengeluaranMap.values());
 
         if (penandatanganIds.length === 0) {
             return res.json({ penerima: [], pengeluaran: pengeluaran });
@@ -1953,46 +2173,38 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         const penerimaFromDb = await dbAll(pegawaiSql, penandatanganIds);
 
         // =================================================================
-        // === PERBAIKAN LOGIKA PENCARIAN STANDAR BIAYA ===
+        // === LOGIKA PENCARIAN STANDAR BIAYA ===
         // =================================================================
         const lokasiTujuan = spt.lokasi_tujuan || '';
         let isDalamKota = false;
         let lokasiUntukQuery = lokasiTujuan;
 
-        // Baca data lokasi dari file JSON
         const locationsData = require('./public/data/locations.json');
 
-        // Fungsi untuk mencari jenis lokasi - DIPERBAIKI
         const cariJenisLokasi = (lokasi) => {
             const lokasiLower = lokasi.toLowerCase().trim();
-
             console.log(`[DEBUG LOKASI] Mencari jenis lokasi untuk: "${lokasi}"`);
 
-            // Cek apakah ini desa (prioritas tertinggi)
             for (const group of locationsData) {
                 if (group.group.toLowerCase().includes('kecamatan')) {
                     for (const location of group.locations) {
                         const locationLower = location.toLowerCase();
                         if (locationLower.includes(lokasiLower) || lokasiLower.includes(locationLower)) {
-                            console.log(`[DEBUG LOKASI] Ditemukan desa: ${location} dalam group: ${group.group}`);
                             return { jenis: 'desa', nama: location, group: group.group };
                         }
                     }
                 }
             }
 
-            // Cek apakah ini kecamatan
             for (const group of locationsData) {
                 if (group.group.toLowerCase().includes('kecamatan')) {
                     const groupLower = group.group.toLowerCase();
                     if (groupLower.includes(lokasiLower) || lokasiLower.includes(groupLower.replace('kecamatan', '').trim())) {
-                        console.log(`[DEBUG LOKASI] Ditemukan kecamatan: ${group.group}`);
                         return { jenis: 'kecamatan', nama: group.group };
                     }
                 }
             }
 
-            // Cek apakah ini kabupaten/kota - DIPERBAIKI: handling khusus untuk DKI Jakarta
             for (const group of locationsData) {
                 if (!group.group.toLowerCase().includes('kecamatan')) {
                     for (const location of group.locations) {
@@ -2000,31 +2212,24 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
                         const lokasiClean = lokasiLower.replace(/[.,]/g, '').trim(); // Hapus titik dan koma
                         const locationClean = locationLower.replace(/[.,]/g, '').trim();
 
-                        // Matching yang lebih fleksibel untuk DKI Jakarta
                         if (locationClean.includes(lokasiClean) || lokasiClean.includes(locationClean) ||
                             (lokasiClean.includes('jakarta') && locationClean.includes('jakarta')) ||
                             (lokasiClean.includes('dki') && locationClean.includes('jakarta'))) {
-
-                            console.log(`[DEBUG LOKASI] Ditemukan kabupaten/kota: ${location} dalam provinsi: ${group.group}`);
                             return { jenis: 'kabupaten', nama: location, provinsi: group.group };
                         }
                     }
                 }
             }
 
-            // Cek apakah ini provinsi - DIPERBAIKI: handling khusus untuk DKI Jakarta
             for (const group of locationsData) {
                 if (!group.group.toLowerCase().includes('kecamatan')) {
                     const groupLower = group.group.toLowerCase();
                     const lokasiClean = lokasiLower.replace(/[.,]/g, '').trim();
                     const groupClean = groupLower.replace(/[.,]/g, '').trim();
 
-                    // Matching yang lebih fleksibel untuk DKI Jakarta
                     if (groupClean === lokasiClean ||
                         (lokasiClean.includes('dki') && groupClean.includes('jakarta')) ||
                         (lokasiClean.includes('jakarta') && groupClean.includes('jakarta'))) {
-
-                        console.log(`[DEBUG LOKASI] Ditemukan provinsi: ${group.group}`);
                         return { jenis: 'provinsi', nama: group.group };
                     }
                 }
@@ -2037,101 +2242,76 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         const infoLokasi = cariJenisLokasi(lokasiTujuan);
         console.log(`[LOKASI INFO] Untuk SPT ${spt_id}:`, infoLokasi);
 
-        let standarBiayaHarian;
-
-        // PERBAIKAN: Fungsi pencarian standar biaya yang lebih robust
         const cariStandarBiaya = async (tipeBiaya, lokasiQuery, isDalamKota) => {
-            console.log(`[DEBUG STANDAR BIAYA] Mencari tipe ${tipeBiaya} untuk: "${lokasiQuery}" (dalam kota: ${isDalamKota})`);
-
+            console.log(`[DEBUG STANDAR BIAYA] Mencari tipe ${tipeBiaya} untuk: "${lokasiQuery.trim()}" (dalam kota: ${isDalamKota})`);
             let result = null;
-
             if (tipeBiaya === 'A') {
-                // Untuk dalam kota - pencarian lebih fleksibel
                 const queries = [
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND UPPER(uraian) = UPPER(?)`,
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND UPPER(uraian) LIKE UPPER(?)`,
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND UPPER(uraian) LIKE UPPER(?)`
+                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) = TRIM(UPPER(?))`,
+                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))`
                 ];
-
-                const searchTerms = [
-                    lokasiQuery,
-                    `%${lokasiQuery}%`,
-                    `%${lokasiQuery.replace(/[.]/g, '').trim()}%` // Hapus titik untuk DKI Jakarta
-                ];
-
+                const searchTerms = [lokasiQuery, `%${lokasiQuery}%`];
                 for (let i = 0; i < queries.length; i++) {
                     result = await dbGet(queries[i], [searchTerms[i]]);
-                    if (result) {
-                        console.log(`[DEBUG STANDAR BIAYA] Ditemukan dengan query ${i + 1}: ${searchTerms[i]}`);
-                        break;
-                    }
+                    if (result) break;
                 }
             } else if (tipeBiaya === 'C') {
-                // Untuk luar daerah - handling khusus DKI Jakarta
                 const queries = [
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND UPPER(provinsi) = UPPER(?)`,
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND UPPER(provinsi) LIKE UPPER(?)`,
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND UPPER(provinsi) LIKE UPPER(?)`
+                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) = TRIM(UPPER(?))`
                 ];
-
-                // Handling khusus untuk DKI Jakarta
-                let provinsiQuery = lokasiQuery;
-                if (lokasiQuery.toLowerCase().includes('jakarta') || lokasiQuery.toLowerCase().includes('dki')) {
-                    provinsiQuery = 'DKI Jakarta';
-                }
-
-                const searchTerms = [
-                    provinsiQuery,
-                    `%${provinsiQuery}%`,
-                    `%${provinsiQuery.replace(/[.]/g, '').trim()}%`
-                ];
-
-                for (let i = 0; i < queries.length; i++) {
-                    result = await dbGet(queries[i], [searchTerms[i]]);
-                    if (result) {
-                        console.log(`[DEBUG STANDAR BIAYA] Ditemukan dengan query ${i + 1}: ${searchTerms[i]}`);
-                        break;
+                let provinsiQuery = lokasiQuery.trim();
+                const lokasiLower = provinsiQuery.toLowerCase(); // "dki jakarta"
+                if (lokasiLower.includes('jakarta') || lokasiLower.includes('dki')) {
+                    result = await dbGet(queries[0], ['DKI Jakarta']);
+                    if (!result) {
+                        const jakartaFallbackQuery = `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) LIKE '%JAKARTA%'`;
+                        result = await dbGet(jakartaFallbackQuery, []);
                     }
+                } else {
+                    result = await dbGet(queries[0], [provinsiQuery]);
+                }
+                if (!result && lokasiLower.includes('kepulauan')) {
+                    const provinsiTanpaKepulauan = provinsiQuery.replace(/kepulauan/gi, '').trim();
+                    result = await dbGet(queries[0], [provinsiTanpaKepulauan]);
+                }
+                if (!result) {
+                    const fallbackQuery = `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
+                    result = await dbGet(fallbackQuery, [`%${provinsiQuery}%`]);
                 }
             }
-
             return result;
         };
 
+        let standarBiayaHarian;
         if (infoLokasi.jenis === 'desa' || infoLokasi.jenis === 'kecamatan') {
             const namaKecamatan = infoLokasi.jenis === 'desa' ? infoLokasi.group : infoLokasi.nama;
             const namaKecamatanClean = namaKecamatan.replace('Kecamatan', '').trim();
-
             console.log(`[INFO] Perjalanan Dalam Kota (Desa/Kecamatan) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${namaKecamatanClean}`);
-
             standarBiayaHarian = await cariStandarBiaya('A', namaKecamatanClean, true);
             isDalamKota = true;
             lokasiUntukQuery = namaKecamatanClean;
         } else if (infoLokasi.jenis === 'kabupaten') {
             const tempatBerangkat = spt.tempat_berangkat || 'Nanga Pinoh';
-
-            // PERBAIKAN: Logic deteksi dalam kota/luar kota yang lebih akurat
             const isSameRegion = infoLokasi.nama.toLowerCase().includes(tempatBerangkat.toLowerCase()) ||
                 tempatBerangkat.toLowerCase().includes(infoLokasi.nama.toLowerCase()) ||
                 (infoLokasi.nama.toLowerCase().includes('jakarta') && tempatBerangkat.toLowerCase().includes('jakarta'));
-
+            const provinsiTujuan = (infoLokasi.provinsi || '').trim();
             if (isSameRegion) {
                 console.log(`[INFO] Perjalanan Dalam Kota (Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${infoLokasi.nama}`);
                 standarBiayaHarian = await cariStandarBiaya('A', infoLokasi.nama, true);
                 isDalamKota = true;
             } else {
-                console.log(`[INFO] Perjalanan Luar Daerah (Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${infoLokasi.provinsi}`);
-                standarBiayaHarian = await cariStandarBiaya('C', infoLokasi.provinsi, false);
+                console.log(`[INFO] Perjalanan Luar Daerah (Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${provinsiTujuan}`);
+                standarBiayaHarian = await cariStandarBiaya('C', provinsiTujuan, false);
                 isDalamKota = false;
             }
-            lokasiUntukQuery = isDalamKota ? infoLokasi.nama : infoLokasi.provinsi;
+            lokasiUntukQuery = isDalamKota ? infoLokasi.nama.trim() : provinsiTujuan;
         } else if (infoLokasi.jenis === 'provinsi') {
-            console.log(`[INFO] Perjalanan Luar Daerah (Provinsi) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${infoLokasi.nama}`);
-            standarBiayaHarian = await cariStandarBiaya('C', infoLokasi.nama, false);
+            console.log(`[INFO] Perjalanan Luar Daerah (Provinsi) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${infoLokasi.nama.trim()}`);
+            standarBiayaHarian = await cariStandarBiaya('C', infoLokasi.nama.trim(), false);
             isDalamKota = false;
-            lokasiUntukQuery = infoLokasi.nama;
+            lokasiUntukQuery = infoLokasi.nama.trim();
         } else {
-            // Fallback: gunakan logika lama sebagai cadangan
             console.log(`[WARN] Jenis lokasi tidak dikenali untuk: ${lokasiTujuan}. Menggunakan logika fallback.`);
 
             if (lokasiTujuan.toLowerCase().includes('kecamatan') || lokasiTujuan.toLowerCase().includes('desa')) {
@@ -2149,27 +2329,15 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             }
         }
 
-        // PERBAIKAN: Fallback tambahan jika standar biaya tidak ditemukan
         if (!standarBiayaHarian) {
             console.warn(`[WARN] Standar biaya tidak ditemukan untuk: ${lokasiUntukQuery} (Jenis: ${infoLokasi.jenis}). Mencari fallback...`);
-
-            // Coba mencari dengan logika alternatif
             if (isDalamKota) {
-                // Cari standar biaya dalam kota default
-                standarBiayaHarian = await dbGet(
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' LIMIT 1`
-                );
+                standarBiayaHarian = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' LIMIT 1`);
             } else {
-                // Cari standar biaya luar daerah default
-                standarBiayaHarian = await dbGet(
-                    `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' LIMIT 1`
-                );
+                standarBiayaHarian = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' LIMIT 1`);
             }
-
             if (!standarBiayaHarian) {
                 console.error(`[ERROR] Standar biaya fallback juga tidak ditemukan!`);
-                // PERBAIKAN: Pastikan objek fallback memiliki semua properti yang mungkin diakses
-                // untuk menghindari nilai 'undefined' yang menyebabkan NaN di frontend.
                 standarBiayaHarian = {
                     satuan: 'OH',
                     besaran: 0,
@@ -2183,7 +2351,31 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         }
 
         // =================================================================
-        // === AKHIR DARI BLOK LOGIKA PERBAIKAN ===
+        // === LOGIKA BARU: Ambil Biaya Representasi untuk Kepala Dinas (FINAL) ===
+        // =================================================================
+        const biayaRepresentasiEselonII = await dbGet(
+            `SELECT * FROM standar_biaya WHERE tipe_biaya = 'D' AND (TRIM(UPPER(uraian)) = 'PEJABAT ESELON II' OR TRIM(UPPER(uraian)) LIKE '%ESELON II%')`
+        );
+
+        let representasiInfo = null;
+        if (!biayaRepresentasiEselonII) {
+            console.warn(`[WARN] Standar Biaya Representasi (Tipe D, Eselon II) tidak ditemukan di database. Biaya representasi tidak akan diterapkan.`);
+            representasiInfo = {
+                uraian: 'Biaya Representasi (Eselon II)',
+                harga: 0,
+                satuan: 'OH'
+            };
+        } else {
+            console.log(`[DEBUG REPRESENTASI] Standar biaya representasi ditemukan:`, biayaRepresentasiEselonII);
+            representasiInfo = {
+                uraian: biayaRepresentasiEselonII.uraian || 'Biaya Representasi (Eselon II)',
+                harga: isDalamKota ? (biayaRepresentasiEselonII.biaya_kontribusi || 0) : (biayaRepresentasiEselonII.besaran || 0),
+                satuan: biayaRepresentasiEselonII.satuan || 'OH'
+            };
+        }
+
+        // =================================================================
+        // === AKHIR DARI BLOK LOGIKA ===
         // =================================================================
 
         const penerimaMap = new Map(penerimaFromDb.map(p => [p.id.toString(), p]));
@@ -2198,8 +2390,6 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 
                 let hargaSatuanHarian = 0;
                 if (standarBiayaHarian) {
-                    // Logika ini sekarang cerdas: ia akan mengambil dari kolom golongan (gol_b, gol_d) jika ada nilainya.
-                    // Jika tidak, ia akan beralih ke kolom 'besaran'. Ini menangani Tipe A dan Tipe C dengan benar.
                     hargaSatuanHarian = standarBiayaHarian[kolomGolongan] || standarBiayaHarian.besaran || 0;
                 }
 
@@ -2208,6 +2398,12 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
                     satuan: standarBiayaHarian ? standarBiayaHarian.satuan : 'OH',
                     golongan: tingkatBiaya
                 };
+
+                if (p && p.jabatan && p.jabatan.toLowerCase().includes('kepala dinas')) {
+                    p.biaya_representasi = representasiInfo;
+                    console.log(`[DEBUG REPRESENTASI] Info representasi untuk ${p.nama_lengkap}: Harga = ${representasiInfo.harga}`);
+                }
+
                 return p;
             }).filter(Boolean);
 
@@ -2243,10 +2439,11 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
             laporan.pegawai = await dbAll(pegawaiSql, [laporan.spt_id]);
         }
 
-        // Ambil data pengeluaran per pegawai
-        const pengeluaranSql = `SELECT * FROM laporan_pengeluaran WHERE laporan_id = ?`;
-        laporan.pengeluaran = await dbAll(pengeluaranSql, [req.params.id]);
-
+        // PERBAIKAN: Hapus query ke tabel 'laporan_pengeluaran' yang sudah tidak ada
+        laporan.transportasi = await dbAll('SELECT * FROM laporan_transportasi WHERE laporan_id = ?', [req.params.id]);
+        laporan.akomodasi = await dbAll('SELECT * FROM laporan_akomodasi WHERE laporan_id = ?', [req.params.id]);
+        laporan.kontribusi = await dbAll('SELECT * FROM laporan_kontribusi WHERE laporan_id = ?', [req.params.id]);
+        laporan.lain_lain = await dbAll('SELECT * FROM laporan_lain_lain WHERE laporan_id = ?', [req.params.id]);
         res.json(laporan);
     } catch (error) {
         console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}:`, error);
@@ -2273,7 +2470,7 @@ const laporanUpload = multer({
 app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
     const { pegawai, ...data } = req.body;
 
-    try {
+    try { // PERUBAHAN: Logika penyimpanan ke tabel-tabel baru
         await runQuery('BEGIN TRANSACTION');
 
         // Hapus kolom biaya lama dari tabel utama
@@ -2287,12 +2484,30 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
 
         const laporanId = result.lastID;
 
-        // Simpan data pengeluaran per pegawai
+        // Simpan data pengeluaran ke tabel masing-masing
         if (pegawai) {
-            const pengeluaranSql = `INSERT INTO laporan_pengeluaran (laporan_id, pegawai_id, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             for (const pegawaiId in pegawai) {
-                const pData = pegawai[pegawaiId];
-                await runQuery(pengeluaranSql, [laporanId, pegawaiId, pData.transportasi_jenis, pData.transportasi_perusahaan, pData.transportasi_nominal, pData.akomodasi_jenis, pData.akomodasi_nama, pData.akomodasi_harga_satuan, pData.akomodasi_malam, pData.akomodasi_nominal, pData.kontribusi_jenis, pData.kontribusi_nominal, pData.lain_lain_uraian, pData.lain_lain_nominal]);
+                const pengeluaran = pegawai[pegawaiId];
+                if (pengeluaran.transportasi) {
+                    for (const item of pengeluaran.transportasi) {
+                        await runQuery('INSERT INTO laporan_transportasi (laporan_id, pegawai_id, jenis, perusahaan, nominal) VALUES (?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.jenis, item.perusahaan, item.nominal]);
+                    }
+                }
+                if (pengeluaran.akomodasi) {
+                    for (const item of pengeluaran.akomodasi) {
+                        await runQuery('INSERT INTO laporan_akomodasi (laporan_id, pegawai_id, jenis, nama, harga_satuan, malam, nominal) VALUES (?, ?, ?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.jenis, item.nama, item.harga_satuan, item.malam, item.nominal]);
+                    }
+                }
+                if (pengeluaran.kontribusi) {
+                    for (const item of pengeluaran.kontribusi) {
+                        await runQuery('INSERT INTO laporan_kontribusi (laporan_id, pegawai_id, jenis, nominal) VALUES (?, ?, ?, ?)', [laporanId, pegawaiId, item.jenis, item.nominal]);
+                    }
+                }
+                if (pengeluaran.lain_lain) {
+                    for (const item of pengeluaran.lain_lain) {
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, nominal) VALUES (?, ?, ?, ?)', [laporanId, pegawaiId, item.uraian, item.nominal]);
+                    }
+                }
             }
         }
 
@@ -2325,7 +2540,7 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
     const { pegawai, ...data } = req.body;
     const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
 
-    try {
+    try { // PERUBAHAN: Logika update ke tabel-tabel baru
         await runQuery('BEGIN TRANSACTION');
 
         // 1. Hapus file lama yang diminta untuk dihapus
@@ -2368,13 +2583,35 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
 
         await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
 
-        // 3. Hapus data pengeluaran lama dan masukkan yang baru
-        await runQuery('DELETE FROM laporan_pengeluaran WHERE laporan_id = ?', [id]);
+        // 3. Hapus semua data pengeluaran lama dan masukkan yang baru
+        await runQuery('DELETE FROM laporan_transportasi WHERE laporan_id = ?', [id]);
+        await runQuery('DELETE FROM laporan_akomodasi WHERE laporan_id = ?', [id]);
+        await runQuery('DELETE FROM laporan_kontribusi WHERE laporan_id = ?', [id]);
+        await runQuery('DELETE FROM laporan_lain_lain WHERE laporan_id = ?', [id]);
+
         if (pegawai) {
-            const pengeluaranSql = `INSERT INTO laporan_pengeluaran (laporan_id, pegawai_id, transportasi_jenis, transportasi_perusahaan, transportasi_nominal, akomodasi_jenis, akomodasi_nama, akomodasi_harga_satuan, akomodasi_malam, akomodasi_nominal, kontribusi_jenis, kontribusi_nominal, lain_lain_uraian, lain_lain_nominal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             for (const pegawaiId in pegawai) {
-                const pData = pegawai[pegawaiId];
-                await runQuery(pengeluaranSql, [id, pegawaiId, pData.transportasi_jenis, pData.transportasi_perusahaan, pData.transportasi_nominal, pData.akomodasi_jenis, pData.akomodasi_nama, pData.akomodasi_harga_satuan, pData.akomodasi_malam, pData.akomodasi_nominal, pData.kontribusi_jenis, pData.kontribusi_nominal, pData.lain_lain_uraian, pData.lain_lain_nominal]);
+                const pengeluaran = pegawai[pegawaiId];
+                if (pengeluaran.transportasi) {
+                    for (const item of pengeluaran.transportasi) {
+                        await runQuery('INSERT INTO laporan_transportasi (laporan_id, pegawai_id, jenis, perusahaan, nominal) VALUES (?, ?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.perusahaan, item.nominal]);
+                    }
+                }
+                if (pengeluaran.akomodasi) {
+                    for (const item of pengeluaran.akomodasi) {
+                        await runQuery('INSERT INTO laporan_akomodasi (laporan_id, pegawai_id, jenis, nama, harga_satuan, malam, nominal) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.nama, item.harga_satuan, item.malam, item.nominal]);
+                    }
+                }
+                if (pengeluaran.kontribusi) {
+                    for (const item of pengeluaran.kontribusi) {
+                        await runQuery('INSERT INTO laporan_kontribusi (laporan_id, pegawai_id, jenis, nominal) VALUES (?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.nominal]);
+                    }
+                }
+                if (pengeluaran.lain_lain) {
+                    for (const item of pengeluaran.lain_lain) {
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, nominal) VALUES (?, ?, ?, ?)', [id, pegawaiId, item.uraian, item.nominal]);
+                    }
+                }
             }
         }
 
@@ -2482,9 +2719,9 @@ app.get('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
-        const data = req.body;
-        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ? WHERE id = ?`;
-        await runQuery(sql, [data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, id]);
+        const { panjar_data, ...data } = req.body; // Ambil panjar_data secara terpisah
+        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ? WHERE id = ?`;
+        await runQuery(sql, [data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, panjar_data, id]);
         res.json({ message: 'Bukti pembayaran berhasil diperbarui!' });
     } catch (error) {
         console.error(`[API ERROR] Gagal memperbarui bukti pembayaran id ${req.params.id}:`, error);
@@ -2495,12 +2732,12 @@ app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 // POST: Membuat bukti pembayaran baru
 app.post('/api/pembayaran', isApiAuthenticated, async (req, res) => {
     try {
-        const data = req.body;
+        const { panjar_data, ...data } = req.body; // Ambil panjar_data secara terpisah
         const nomorBukti = await generateNomorBukti();
         const tanggalBukti = new Date().toISOString().split('T')[0]; // Tanggal hari ini
 
-        const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await runQuery(sql, [nomorBukti, tanggalBukti, data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar]);
+        const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+        await runQuery(sql, [nomorBukti, tanggalBukti, data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, panjar_data]);
 
         res.status(201).json({ message: 'Bukti pembayaran berhasil disimpan!' });
     } catch (error) {

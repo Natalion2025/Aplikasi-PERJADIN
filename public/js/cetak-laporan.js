@@ -69,41 +69,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Ambil total biaya dari laporan pengeluaran
-        const totalTransportasi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.transportasi_nominal || 0), 0);
-        const totalAkomodasi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.akomodasi_nominal || 0), 0);
-        const totalKontribusi = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.kontribusi_nominal || 0), 0);
-        const totalLainLain = laporan.pengeluaran.reduce((sum, pengeluaran) => sum + (pengeluaran.lain_lain_nominal || 0), 0);
+        const totalTransportasi = (laporan.transportasi || []).reduce((sum, item) => sum + (item.nominal || 0), 0);
+        const totalAkomodasi = (laporan.akomodasi || []).reduce((sum, item) => sum + (item.nominal || 0), 0);
+        const totalKontribusi = (laporan.kontribusi || []).reduce((sum, item) => sum + (item.nominal || 0), 0);
+        const totalLainLain = (laporan.lain_lain || []).reduce((sum, item) => sum + (item.nominal || 0), 0);
         const totalBiayaLaporan = totalTransportasi + totalAkomodasi + totalKontribusi + totalLainLain;
 
         let pengeluaranHtml = '';
-        if (laporan.pengeluaran && laporan.pengeluaran.length > 0) {
+        // PERBAIKAN: Ubah kondisi untuk memeriksa array biaya yang baru, bukan 'laporan.pengeluaran' yang sudah usang.
+        const hasAnyExpense = (laporan.transportasi && laporan.transportasi.length > 0) ||
+            (laporan.akomodasi && laporan.akomodasi.length > 0) ||
+            (laporan.kontribusi && laporan.kontribusi.length > 0) ||
+            (laporan.lain_lain && laporan.lain_lain.length > 0);
+        if (hasAnyExpense) {
             pengeluaranHtml = `
                 <div class="section-title">V. PENGELUARAN</div>
-                <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Nama Pegawai</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Transportasi</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Akomodasi</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Kontribusi</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Lain-lain</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${laporan.pegawai.map(pegawai => {
-                const pengeluaran = laporan.pengeluaran.find(p => p.pegawai_id === pegawai.pegawai_id) || {};
-                return `
-                                <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">${pegawai.nama_lengkap}</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.transportasi_nominal ? formatAccounting(pengeluaran.transportasi_nominal) : '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.akomodasi_nominal ? formatAccounting(pengeluaran.akomodasi_nominal) : '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.kontribusi_nominal ? formatAccounting(pengeluaran.kontribusi_nominal) : '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${pengeluaran.lain_lain_nominal ? formatAccounting(pengeluaran.lain_lain_nominal) : '-'}</td>
-                                </tr>
-                            `;
+                <table style="width: 100%; border-collapse: collapse; font-size: 11pt;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="padding: 6px; border: 1px solid #ddd; text-align: left;">Uraian</th>
+                            <th style="padding: 6px; border: 1px solid #ddd; text-align: right;">Harga Satuan</th>
+                            <th style="padding: 6px; border: 1px solid #ddd; text-align: center;">Volume</th>
+                            <th style="padding: 6px; border: 1px solid #ddd; text-align: center;">Satuan</th>
+                            <th style="padding: 6px; border: 1px solid #ddd; text-align: right;">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${laporan.pegawai.map(pegawai => {
+                const transportasiItems = (laporan.transportasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                const akomodasiItems = (laporan.akomodasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                const kontribusiItems = (laporan.kontribusi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                const lainLainItems = (laporan.lain_lain || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                let rows = `<tr style="background-color: #fafafa;"><td colspan="5" style="padding: 6px; border: 1px solid #ddd; font-weight: bold;">${pegawai.nama_lengkap}</td></tr>`;
+
+                transportasiItems.forEach(item => {
+                    if (item.nominal > 0) rows += `<tr>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">Biaya Transportasi (${item.jenis || ''} ${item.perusahaan || ''})</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">PP</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                </tr>`;
+                });
+                akomodasiItems.forEach(item => {
+                    if (item.nominal > 0) rows += `<tr>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">Biaya Akomodasi (${item.jenis || ''} ${item.nama || ''})</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.harga_satuan)}</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${item.malam || 1}</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">Malam</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                </tr>`;
+                });
+                kontribusiItems.forEach(item => {
+                    if (item.nominal > 0) rows += `<tr>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">Biaya Kontribusi (${item.jenis || ''}/kegiatan)</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">Kegiatan</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                </tr>`;
+                });
+                lainLainItems.forEach(item => {
+                    if (item.nominal > 0) rows += `<tr>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">Biaya Lain-lain (${item.uraian || ''})</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">-</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
+                                </tr>`;
+                });
+                return rows;
             }).join('')}
-                    <tr><td style="padding: 8px; border: 1px solid #ddd;font-weight: bold;" colspan="5">Total Biaya Keseluruhan : <span style="float:right;">Rp ${formatAccounting(totalBiayaLaporan)}</span></td></tr>
-                </tbody>
+                        <tr style="background-color: #f2f2f2; font-weight: bold;">
+                            <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">Total Biaya Keseluruhan</td>
+                            <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${formatAccounting(totalBiayaLaporan)}</td>
+                        </tr>
+                    </tbody>
                 </table>
             `;
         }
@@ -160,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${pengeluaranHtml}
 
             <div class="section-title">VI. PENUTUP</div>
-            <div class="content-block">Demikian laporan ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</div>
+            <div class="content-block">Demikian laporan ini dibuat dengan sesungguhnya untuk dapat dipergunakan sebagaimana mestinya, dan dapat dipertanggungjawabkan.</div>
 
             <div style="margin-top: 4rem;">
                 <p>${laporan.tempat_laporan}, ${formatDate(laporan.tanggal_laporan)}</p>
