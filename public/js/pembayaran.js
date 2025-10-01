@@ -67,26 +67,14 @@
             sptTomSelect.setValue(data.spt_id);
             sptTomSelect.disable();
 
-            // Trigger change event untuk SPT agar rincian pengeluaran dimuat
-            // Gunakan Promise untuk menunggu renderRincianPengeluaran selesai
-            await new Promise(resolve => {
-                sptSelect.addEventListener('change', () => resolve(), { once: true });
-                sptSelect.dispatchEvent(new Event('change'));
-            });
+            // PERBAIKAN: Trigger change event dan tunggu DOM diperbarui.
+            // Ini memastikan elemen rincian sudah ada sebelum kita mengisi panjar.
+            sptSelect.dispatchEvent(new Event('change'));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Beri jeda singkat untuk render
 
-            // Setelah rincian dimuat, isi form dan terapkan panjar
-            // Beri sedikit jeda untuk memastikan DOM sudah sepenuhnya diperbarui
-            setTimeout(async () => {
-                namaPenerimaTextarea.value = data.nama_penerima;
-                uraianPembayaranTextarea.value = data.uraian_pembayaran;
-                nominalBayarInput.value = formatCurrency(data.nominal_bayar); // Selalu isi nominal_bayar
-                if (!rincianContainer.classList.contains('hidden')) {
-                } else {
-                    nominalBayarInput.value = data.nominal_bayar;
-                }
-            }, 500);
-
-            modal.classList.remove('hidden');
+            // Isi sisa form setelah rincian dimuat
+            namaPenerimaTextarea.value = data.nama_penerima;
+            uraianPembayaranTextarea.value = data.uraian_pembayaran;
 
             // Terapkan nilai panjar yang tersimpan
             if (data.panjar_data) {
@@ -94,8 +82,8 @@
                 savedPanjarData.forEach(panjarItem => {
                     const panjarInput = rincianContainer.querySelector(`.panjar-input[data-pegawai-id="${panjarItem.pegawai_id}"]`);
                     if (panjarInput) {
-                        panjarInput.value = formatCurrency(panjarItem.nilai_panjar);
-                        // Trigger the "Terapkan" logic for this input
+                        panjarInput.value = new Intl.NumberFormat('id-ID').format(panjarItem.nilai_panjar);
+                        // Trigger "Terapkan" secara programatik
                         const terapkanBtn = panjarInput.nextElementSibling;
                         if (terapkanBtn && terapkanBtn.classList.contains('terapkan-panjar-btn')) {
                             terapkanBtn.click(); // Simulate click to apply panjar and recalculate
@@ -103,6 +91,11 @@
                     }
                 });
             }
+
+            // Hitung ulang total di akhir untuk memastikan nominal bayar sesuai
+            recalculateGrandTotal();
+            modal.classList.remove('hidden');
+
         } catch (error) {
             alert(error.message);
         }
@@ -245,9 +238,10 @@
                 // Jika tidak ada akomodasi, defaultnya adalah 1 hari.
                 const jumlahHariRepresentasi = (pengeluaran.akomodasi_malam || 0) + 1;
                 const totalBiayaRepresentasi = penerimaInfo.biaya_representasi.harga * jumlahHariRepresentasi;
+                const uraianRepresentasi = `${penerimaInfo.biaya_representasi.uraian} (Biaya Representasi)`;
 
                 rowsData.push({
-                    uraian: penerimaInfo.biaya_representasi.uraian,
+                    uraian: uraianRepresentasi,
                     harga: penerimaInfo.biaya_representasi.harga,
                     satuan: penerimaInfo.biaya_representasi.satuan,
                     hari: jumlahHariRepresentasi,
@@ -522,6 +516,15 @@
         const formData = new FormData(pembayaranForm);
         const data = Object.fromEntries(formData.entries());
 
+        // PERBAIKAN: Ubah nominal_bayar dari string format ke angka sebelum dikirim
+        data.nominal_bayar = parseCurrency(data.nominal_bayar);
+
+        // PERBAIKAN: Jika dalam mode edit, pastikan spt_id disertakan karena dropdown dinonaktifkan.
+        const id = pembayaranIdInput.value;
+        if (id) {
+            data.spt_id = sptSelect.value;
+        }
+
         // Kumpulkan data panjar dari setiap input
         const panjarData = [];
         document.querySelectorAll('.panjar-input').forEach(input => {
@@ -533,7 +536,6 @@
         });
         data.panjar_data = JSON.stringify(panjarData); // Tambahkan ke objek data
 
-        const id = pembayaranIdInput.value;
         const isEditMode = !!id;
         const url = isEditMode ? `/api/pembayaran/${id}` : '/api/pembayaran';
         const method = isEditMode ? 'PUT' : 'POST';
@@ -551,7 +553,10 @@
             closeModal();
             loadPembayaran();
         } catch (error) {
-            alert(`Error: ${error.message}`);
+            // PERBAIKAN: Notifikasi error yang lebih jelas untuk debugging
+            const debugMessage = `Gagal menyimpan data pembayaran.\n\nError: ${error.message}\n\nData yang dikirim:\n${JSON.stringify(data, null, 2)}`;
+            console.error(debugMessage); // Log ke console untuk detail lengkap
+            alert(`Error: ${error.message}\n\n(Lihat console browser untuk detail data yang gagal disimpan)`);
         }
     });
 
@@ -580,7 +585,8 @@
         }
 
         if (target.classList.contains('print-btn')) {
-            alert(`Fitur cetak untuk bukti ID: ${id} belum diimplementasikan.`);
+            // PERBAIKAN: Buka halaman cetak di tab baru
+            window.open(`/cetak/pembayaran/${id}`, '_blank');
         }
     });
 

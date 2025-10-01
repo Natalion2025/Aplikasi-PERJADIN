@@ -400,6 +400,20 @@ db.run(`CREATE TABLE IF NOT EXISTS pembayaran (
     if (err) console.error("Error creating 'pembayaran' table:", err.message);
 });
 
+// Cek dan perbaiki struktur tabel 'pembayaran' jika kolom 'panjar_data' belum ada.
+db.all("PRAGMA table_info(pembayaran)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+    const hasPanjarData = cols.some(col => col.name === 'panjar_data');
+    if (!hasPanjarData) {
+        console.warn("[DB MIGRATION] Kolom 'panjar_data' tidak ditemukan. Menambahkan kolom ke tabel 'pembayaran'...");
+        db.run("ALTER TABLE pembayaran ADD COLUMN panjar_data TEXT", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'panjar_data':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'panjar_data' berhasil ditambahkan.");
+        });
+    }
+});
+
+
 // --- PERUBAHAN: Normalisasi Tabel Pengeluaran ---
 // Hapus tabel lama jika ada (hanya untuk pengembangan, hati-hati di produksi)
 db.run(`DROP TABLE IF EXISTS laporan_pengeluaran`);
@@ -535,12 +549,16 @@ const isAuthenticated = (req, res, next) => {
 const isApiAuthenticated = (req, res, next) => {
     console.log(`[isApiAuthenticated] Mengecek sesi untuk rute API: ${req.path}`);
     console.log('[isApiAuthenticated] Isi req.session:', req.session);
+    console.log('[isApiAuthenticated] Isi req.headers.cookie:', req.headers.cookie); // Tambahkan log ini
 
     if (req.session && req.session.user) {
         console.log('[isApiAuthenticated] Sesi ditemukan. Mengizinkan akses.');
         next();
     } else {
         console.log('[isApiAuthenticated] Sesi TIDAK ditemukan. Menolak akses dengan 401.');
+        if (!req.session) {
+            console.log('[isApiAuthenticated] req.session is undefined!');
+        }
         res.status(401).json({ message: 'Akses ditolak. Sesi tidak valid atau telah berakhir.' });
     }
 };
@@ -668,6 +686,11 @@ app.get('/laporan', isAuthenticated, (req, res) => {
 // Rute untuk halaman Pembayaran
 app.get('/pembayaran', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pembayaran.html'));
+});
+
+// Rute untuk halaman Cetak Pembayaran
+app.get('/cetak/pembayaran/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-pembayaran.html'));
 });
 
 // Rute untuk halaman Buat Laporan
@@ -2719,9 +2742,17 @@ app.get('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
-        const { panjar_data, ...data } = req.body; // Ambil panjar_data secara terpisah
+        const data = req.body;
+
+        // PERBAIKAN: Pastikan nominal_bayar adalah angka sebelum disimpan
+        const nominalBayarAngka = parseFloat(data.nominal_bayar) || 0;
+
+        // PERBAIKAN: Pastikan ID relasi adalah angka
+        const anggaranIdAngka = parseInt(data.anggaran_id, 10);
+        const sptIdAngka = parseInt(data.spt_id, 10);
+
         const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ? WHERE id = ?`;
-        await runQuery(sql, [data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, panjar_data, id]);
+        await runQuery(sql, [anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, nominalBayarAngka, data.panjar_data, id]);
         res.json({ message: 'Bukti pembayaran berhasil diperbarui!' });
     } catch (error) {
         console.error(`[API ERROR] Gagal memperbarui bukti pembayaran id ${req.params.id}:`, error);
@@ -2732,12 +2763,17 @@ app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 // POST: Membuat bukti pembayaran baru
 app.post('/api/pembayaran', isApiAuthenticated, async (req, res) => {
     try {
-        const { panjar_data, ...data } = req.body; // Ambil panjar_data secara terpisah
+        console.log('[API] Menerima request ke /api/pembayaran:', req.body); // Tambahkan log ini
+        const data = req.body; // Ambil seluruh body
         const nomorBukti = await generateNomorBukti();
         const tanggalBukti = new Date().toISOString().split('T')[0]; // Tanggal hari ini
 
+        // PERBAIKAN: Pastikan ID relasi adalah angka
+        const anggaranIdAngka = parseInt(data.anggaran_id, 10);
+        const sptIdAngka = parseInt(data.spt_id, 10);
+
         const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        await runQuery(sql, [nomorBukti, tanggalBukti, data.anggaran_id, data.spt_id, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, panjar_data]);
+        await runQuery(sql, [nomorBukti, tanggalBukti, anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, data.panjar_data]);
 
         res.status(201).json({ message: 'Bukti pembayaran berhasil disimpan!' });
     } catch (error) {
@@ -2751,6 +2787,117 @@ app.delete('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     runQuery('DELETE FROM pembayaran WHERE id = ?', [req.params.id])
         .then(() => res.json({ message: 'Bukti pembayaran berhasil dihapus.' }))
         .catch(err => res.status(500).json({ message: 'Gagal menghapus data.', error: err.message }));
+});
+
+// =================================================================
+// API ENDPOINT UNTUK CETAK PEMBAYARAN
+// =================================================================
+
+const terbilang = require('angka-menjadi-terbilang');
+
+app.get('/api/cetak/pembayaran/:id', isApiAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    try {
+        // 1. Ambil data utama pembayaran
+        const pembayaran = await dbGet(`SELECT * FROM pembayaran WHERE id = ?`, [id]);
+        if (!pembayaran) {
+            return res.status(404).json({ message: 'Data pembayaran tidak ditemukan.' });
+        }
+
+        // 2. Ambil data anggaran terkait
+        const anggaran = await dbGet(`SELECT * FROM anggaran WHERE id = ?`, [pembayaran.anggaran_id]);
+
+        // 3. Ambil data SPT terkait
+        const spt = await dbGet(`SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ?`, [pembayaran.spt_id]);
+
+        // 4. Ambil data rincian dari laporan (sama seperti di modal)
+        const laporanResponse = await fetch(`http://localhost:${PORT}/api/laporan/by-spt/${pembayaran.spt_id}`, {
+            headers: { 'Cookie': req.headers.cookie } // Teruskan cookie sesi
+        });
+        if (!laporanResponse.ok) {
+            throw new Error('Gagal mengambil rincian pengeluaran dari laporan terkait.');
+        }
+        const laporanData = await laporanResponse.json();
+
+        // 5. Proses rincian pengeluaran dan gabungkan dengan data panjar
+        const panjarData = JSON.parse(pembayaran.panjar_data || '[]');
+        const panjarMap = new Map(panjarData.map(p => [p.pegawai_id.toString(), p.nilai_panjar]));
+
+        const rincianPerPegawai = new Map();
+
+        // Inisialisasi dari daftar penerima di laporan
+        laporanData.penerima.forEach(p => {
+            rincianPerPegawai.set(p.id.toString(), {
+                nama_lengkap: p.nama_lengkap,
+                biaya: [],
+                panjar: panjarMap.get(p.id.toString()) || 0,
+                total_biaya: 0,
+                total_dibayar: 0
+            });
+        });
+
+        // Fungsi untuk menambahkan item biaya
+        const addBiaya = (pegawaiId, uraian, harga, satuan, hari, jumlah) => {
+            const pegawaiData = rincianPerPegawai.get(pegawaiId.toString());
+            if (pegawaiData) {
+                pegawaiData.biaya.push({ uraian, harga, satuan, hari, jumlah });
+                pegawaiData.total_biaya += jumlah;
+            }
+        };
+
+        // Proses pengeluaran dari laporan
+        laporanData.pengeluaran.forEach(pengeluaran => {
+            const pegawaiId = pengeluaran.pegawai_id.toString();
+            const penerimaInfo = laporanData.penerima.find(p => p.id.toString() === pegawaiId);
+            if (!penerimaInfo) return;
+
+            const jumlahHariHarian = (pengeluaran.akomodasi_malam || 0) + 1;
+            const uangHarianTotal = (penerimaInfo.uang_harian.harga_satuan || 0) * jumlahHariHarian;
+            addBiaya(pegawaiId, `Uang Harian (${penerimaInfo.uang_harian.golongan})`, penerimaInfo.uang_harian.harga_satuan, penerimaInfo.uang_harian.satuan, jumlahHariHarian, uangHarianTotal);
+
+            if (penerimaInfo.biaya_representasi && penerimaInfo.biaya_representasi.harga > 0) {
+                const jumlahHariRepresentasi = (pengeluaran.akomodasi_malam || 0) + 1;
+                const totalBiayaRepresentasi = penerimaInfo.biaya_representasi.harga * jumlahHariRepresentasi;
+                const uraianRepresentasi = `${penerimaInfo.biaya_representasi.uraian} (Biaya Representasi)`;
+                addBiaya(pegawaiId, uraianRepresentasi, penerimaInfo.biaya_representasi.harga, penerimaInfo.biaya_representasi.satuan, jumlahHariRepresentasi, totalBiayaRepresentasi);
+            }
+
+            if (pengeluaran.transportasi_nominal > 0) addBiaya(pegawaiId, `Biaya Transportasi (${pengeluaran.transportasi_jenis || 'N/A'})`, pengeluaran.transportasi_nominal, 'PP', '-', pengeluaran.transportasi_nominal);
+            if (pengeluaran.akomodasi_nominal > 0) addBiaya(pegawaiId, `Biaya Akomodasi (${pengeluaran.akomodasi_jenis || 'N/A'})`, pengeluaran.akomodasi_harga_satuan, 'Malam', pengeluaran.akomodasi_malam, pengeluaran.akomodasi_nominal);
+            if (pengeluaran.kontribusi_nominal > 0) addBiaya(pegawaiId, `Biaya Kontribusi (${pengeluaran.kontribusi_jenis || 'N/A'})`, pengeluaran.kontribusi_nominal, 'OK', '-', pengeluaran.kontribusi_nominal);
+            if (pengeluaran.lain_lain_nominal > 0) addBiaya(pegawaiId, `Biaya Lain-lain (${pengeluaran.lain_lain_uraian || 'N/A'})`, pengeluaran.lain_lain_nominal, 'OK', '-', pengeluaran.lain_lain_nominal);
+        });
+
+        // Hitung total dibayar
+        rincianPerPegawai.forEach(pegawai => {
+            pegawai.total_dibayar = pegawai.total_biaya - pegawai.panjar;
+        });
+
+        // 6. Ambil data pejabat
+        const bendahara = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%Bendahara Pengeluaran%' LIMIT 1");
+        const pptk = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%PPTK%' OR jabatan LIKE '%Pejabat Pelaksana Teknis Kegiatan%' LIMIT 1");
+        const penggunaAnggaran = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1");
+
+        // 7. Gabungkan semua data
+        const responseData = {
+            pembayaran,
+            terbilang: terbilang(pembayaran.nominal_bayar) + " Rupiah",
+            anggaran: anggaran || {},
+            spt: spt || {},
+            rincian: Array.from(rincianPerPegawai.values()),
+            pejabat: {
+                bendahara: bendahara || { nama_lengkap: 'Belum Ditetapkan', nip: '-' },
+                pptk: pptk || { nama_lengkap: 'Belum Ditetapkan', nip: '-' },
+                penggunaAnggaran: penggunaAnggaran || { nama_lengkap: 'Belum Ditetapkan', nip: '-' }
+            }
+        };
+
+        res.json(responseData);
+
+    } catch (error) {
+        console.error(`[API ERROR] Gagal membuat data cetak untuk pembayaran id ${id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
 });
 
 // Menjalankan server
