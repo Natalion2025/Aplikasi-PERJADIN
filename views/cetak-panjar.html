@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Bukti Panjar</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            margin: 0;
+            padding: 2cm;
+        }
+
+        .kop-surat {
+            text-align: center;
+            border-bottom: 3px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .kop-surat h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .kop-surat h2 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .kop-surat p {
+            font-size: 11pt;
+            margin: 0;
+        }
+
+        .judul {
+            text-align: center;
+            font-weight: bold;
+            text-decoration: underline;
+            font-size: 14pt;
+            margin: 30px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .no-border td {
+            border: none;
+            padding: 2px 0;
+            vertical-align: top;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="print-area">Memuat data...</div>
+    <script src="/js/cetak-panjar.js"></script>
+</body>
+
+</html>

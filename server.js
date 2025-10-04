@@ -174,6 +174,36 @@ db.run(`CREATE TABLE IF NOT EXISTS sppd (
     if (err) console.error("Error creating 'sppd' table:", err.message);
 });
 
+// Pastikan tabel 'panjar' ada
+db.run(`CREATE TABLE IF NOT EXISTS panjar (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spt_id INTEGER NOT NULL,
+    tanggal_panjar DATE NOT NULL,
+    tempat TEXT NOT NULL,
+    pelaksana_id INTEGER NOT NULL,
+    bendahara_id INTEGER NOT NULL,
+    pejabat_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE,
+    FOREIGN KEY (pelaksana_id) REFERENCES pegawai(id),
+    FOREIGN KEY (bendahara_id) REFERENCES pegawai(id),
+    FOREIGN KEY (pejabat_id) REFERENCES pegawai(id)
+)`, (err) => {
+    if (err) console.error("Error creating 'panjar' table:", err.message);
+});
+
+// Pastikan tabel 'panjar_rincian' ada
+db.run(`CREATE TABLE IF NOT EXISTS panjar_rincian (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    panjar_id INTEGER NOT NULL,
+    uraian TEXT NOT NULL,
+    jumlah REAL NOT NULL,
+    keterangan TEXT,
+    FOREIGN KEY (panjar_id) REFERENCES panjar(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'panjar_rincian' table:", err.message);
+});
+
 // Cek dan migrasikan struktur tabel 'sppd' yang sudah usang
 db.all("PRAGMA table_info(sppd)", async (err, cols) => {
     if (err) return;
@@ -409,6 +439,19 @@ db.all("PRAGMA table_info(pembayaran)", (err, cols) => {
         db.run("ALTER TABLE pembayaran ADD COLUMN panjar_data TEXT", (alterErr) => {
             if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'panjar_data':", alterErr.message);
             else console.log("[DB MIGRATION SUCCESS] Kolom 'panjar_data' berhasil ditambahkan.");
+        });
+    }
+});
+
+// Cek dan perbaiki struktur tabel 'pembayaran' jika kolom 'pptk_id' belum ada.
+db.all("PRAGMA table_info(pembayaran)", (err, cols) => {
+    if (err) return;
+    const hasPptkId = cols.some(col => col.name === 'pptk_id');
+    if (!hasPptkId) {
+        console.warn("[DB MIGRATION] Kolom 'pptk_id' tidak ditemukan. Menambahkan kolom ke tabel 'pembayaran'...");
+        db.run("ALTER TABLE pembayaran ADD COLUMN pptk_id INTEGER", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'pptk_id':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'pptk_id' berhasil ditambahkan.");
         });
     }
 });
@@ -688,9 +731,19 @@ app.get('/pembayaran', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pembayaran.html'));
 });
 
+// Rute untuk halaman Uang Muka
+app.get('/uang-muka', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'uang-muka.html'));
+});
+
 // Rute untuk halaman Cetak Pembayaran
 app.get('/cetak/pembayaran/:id', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'cetak-pembayaran.html'));
+});
+
+// Rute untuk halaman Cetak Panjar/Uang Muka
+app.get('/cetak/panjar/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-panjar.html'));
 });
 
 // Rute untuk halaman Buat Laporan
@@ -853,7 +906,26 @@ app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
 // GET all anggaran
 app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
     try {
-        const rows = await dbAll("SELECT * FROM anggaran ORDER BY id DESC", []);
+        const sql = `
+            SELECT
+                a.*,
+                COALESCE(SUM(p.nominal_bayar), 0) as realisasi
+            FROM
+                anggaran a
+            LEFT JOIN
+                pembayaran p ON a.id = p.anggaran_id
+            GROUP BY
+                a.id
+            ORDER BY
+                a.id DESC
+        `;
+        const rows = await dbAll(sql, []);
+
+        // Hitung sisa anggaran untuk setiap baris
+        rows.forEach(row => {
+            row.sisa = row.nilai_anggaran - row.realisasi;
+        });
+
         res.json(rows);
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data anggaran:', err);
@@ -956,8 +1028,7 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
             `;
             const pegawaiRows = await dbAll(pegawaiSql, [spt.id]);
             // Mengubah nama properti agar konsisten dan menyertakan data lengkap
-            // Frontend (spt-register.js) mengharapkan array of strings (nama) di properti `pegawai_ditugaskan`
-            spt.pegawai_ditugaskan = pegawaiRows.map(p => p.nama_lengkap);
+            spt.pegawai = pegawaiRows.map(p => p.nama_lengkap);
         }
 
         res.json(spts);
@@ -2690,6 +2761,158 @@ app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
 });
 
 // =================================================================
+// API ENDPOINTS UNTUK UANG MUKA (PANJAR)
+// =================================================================
+
+// GET: Mengambil semua data panjar
+app.get('/api/panjar', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                p.id,
+                p.tanggal_panjar,
+                p.spt_id,
+                s.nomor_surat,
+                pelaksana.nama_lengkap as pelaksana_nama,
+                (SELECT SUM(pr.jumlah) FROM panjar_rincian pr WHERE pr.panjar_id = p.id) as total_biaya
+            FROM panjar p
+            JOIN spt s ON p.spt_id = s.id
+            JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
+            ORDER BY p.tanggal_panjar DESC, p.id DESC
+        `;
+        const panjarList = await dbAll(sql);
+        res.json(panjarList);
+    } catch (error) {
+        console.error('[API ERROR] Gagal mengambil data panjar:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// GET: Mengambil satu data panjar untuk edit
+app.get('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const panjar = await dbGet("SELECT * FROM panjar WHERE id = ?", [req.params.id]);
+        if (!panjar) {
+            return res.status(404).json({ message: 'Data uang muka tidak ditemukan.' });
+        }
+        panjar.rincian = await dbAll("SELECT * FROM panjar_rincian WHERE panjar_id = ?", [req.params.id]);
+        res.json(panjar);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil panjar id ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// POST: Membuat panjar baru
+app.post('/api/panjar', isApiAuthenticated, async (req, res) => {
+    const { tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id, rincian } = req.body;
+
+    if (!spt_id || !pelaksana_id || !bendahara_id || !pejabat_id || !rincian || rincian.length === 0) {
+        return res.status(400).json({ message: 'Data tidak lengkap. Harap isi semua field yang diperlukan.' });
+    }
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        const panjarSql = `INSERT INTO panjar (tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id) VALUES (?, ?, ?, ?, ?, ?)`;
+        const panjarResult = await runQuery(panjarSql, [tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id]);
+        const newPanjarId = panjarResult.lastID;
+
+        const rincianSql = `INSERT INTO panjar_rincian (panjar_id, uraian, jumlah, keterangan) VALUES (?, ?, ?, ?)`;
+        for (const item of rincian) {
+            const jumlah = parseFloat(item.jumlah) || 0;
+            if (item.uraian && jumlah > 0) {
+                await runQuery(rincianSql, [newPanjarId, item.uraian, jumlah, item.keterangan]);
+            }
+        }
+
+        await runQuery('COMMIT');
+        res.status(201).json({ message: 'Data uang muka berhasil disimpan!', panjarId: newPanjarId });
+    } catch (err) {
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error('[API ERROR] Gagal menyimpan panjar:', err);
+        res.status(500).json({ message: 'Gagal menyimpan data uang muka.', error: err.message });
+    }
+});
+
+// PUT: Memperbarui panjar
+app.put('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id, rincian } = req.body;
+
+    if (!spt_id || !pelaksana_id || !bendahara_id || !pejabat_id || !rincian || rincian.length === 0) {
+        return res.status(400).json({ message: 'Data tidak lengkap.' });
+    }
+
+    try {
+        await runQuery('BEGIN TRANSACTION');
+
+        const panjarSql = `UPDATE panjar SET tempat = ?, tanggal_panjar = ?, spt_id = ?, bendahara_id = ?, pelaksana_id = ?, pejabat_id = ? WHERE id = ?`;
+        await runQuery(panjarSql, [tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id, id]);
+
+        await runQuery('DELETE FROM panjar_rincian WHERE panjar_id = ?', [id]);
+
+        const rincianSql = `INSERT INTO panjar_rincian (panjar_id, uraian, jumlah, keterangan) VALUES (?, ?, ?, ?)`;
+        for (const item of rincian) {
+            const jumlah = parseFloat(item.jumlah) || 0;
+            if (item.uraian && jumlah > 0) {
+                await runQuery(rincianSql, [id, item.uraian, jumlah, item.keterangan]);
+            }
+        }
+
+        await runQuery('COMMIT');
+        res.json({ message: 'Data uang muka berhasil diperbarui!', panjarId: id });
+    } catch (err) {
+        await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
+        console.error(`[API ERROR] Gagal memperbarui panjar id ${id}:`, err);
+        res.status(500).json({ message: 'Gagal memperbarui data.', error: err.message });
+    }
+});
+
+// DELETE: Menghapus panjar
+app.delete('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const result = await runQuery('DELETE FROM panjar WHERE id = ?', [req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data uang muka tidak ditemukan.' });
+        }
+        res.json({ message: 'Data uang muka berhasil dihapus.' });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal menghapus panjar id ${req.params.id}:`, err);
+        res.status(500).json({ message: 'Gagal menghapus data.', error: err.message });
+    }
+});
+
+// GET: Data untuk cetak panjar
+app.get('/api/cetak/panjar/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT p.*, 
+                   s.nomor_surat, spd.nomor_sppd,
+                   pelaksana.nama_lengkap as pelaksana_nama, pelaksana.nip as pelaksana_nip, pelaksana.jabatan as pelaksana_jabatan,
+                   bendahara.nama_lengkap as bendahara_nama, bendahara.nip as bendahara_nip,
+                   pejabat.nama_lengkap as pejabat_nama, pejabat.nip as pejabat_nip, pejabat.jabatan as pejabat_jabatan
+            FROM panjar p
+            JOIN spt s ON p.spt_id = s.id
+            -- Gabungkan dengan SPPD berdasarkan spt_id dan pelaksana_id untuk mendapatkan nomor SPPD yang benar
+            LEFT JOIN sppd spd ON p.spt_id = spd.spt_id AND p.pelaksana_id = spd.pegawai_id
+            JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
+            JOIN pegawai bendahara ON p.bendahara_id = bendahara.id
+            JOIN pegawai pejabat ON p.pejabat_id = pejabat.id
+            WHERE p.id = ?
+        `;
+        const panjar = await dbGet(sql, [req.params.id]);
+        if (!panjar) return res.status(404).json({ message: 'Data tidak ditemukan.' });
+
+        panjar.rincian = await dbAll("SELECT * FROM panjar_rincian WHERE panjar_id = ?", [req.params.id]);
+        res.json(panjar);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil data cetak panjar id ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// =================================================================
 // API ENDPOINTS UNTUK PEMBAYARAN
 // =================================================================
 
@@ -2751,8 +2974,8 @@ app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
         const anggaranIdAngka = parseInt(data.anggaran_id, 10);
         const sptIdAngka = parseInt(data.spt_id, 10);
 
-        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ? WHERE id = ?`;
-        await runQuery(sql, [anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, nominalBayarAngka, data.panjar_data, id]);
+        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ?, pptk_id = ? WHERE id = ?`;
+        await runQuery(sql, [anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, nominalBayarAngka, data.panjar_data, data.pptk_id, id]);
         res.json({ message: 'Bukti pembayaran berhasil diperbarui!' });
     } catch (error) {
         console.error(`[API ERROR] Gagal memperbarui bukti pembayaran id ${req.params.id}:`, error);
@@ -2772,8 +2995,8 @@ app.post('/api/pembayaran', isApiAuthenticated, async (req, res) => {
         const anggaranIdAngka = parseInt(data.anggaran_id, 10);
         const sptIdAngka = parseInt(data.spt_id, 10);
 
-        const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        await runQuery(sql, [nomorBukti, tanggalBukti, anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, data.panjar_data]);
+        const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data, pptk_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        await runQuery(sql, [nomorBukti, tanggalBukti, anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, data.panjar_data, data.pptk_id]);
 
         res.status(201).json({ message: 'Bukti pembayaran berhasil disimpan!' });
     } catch (error) {
@@ -2875,7 +3098,10 @@ app.get('/api/cetak/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 
         // 6. Ambil data pejabat
         const bendahara = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%Bendahara Pengeluaran%' LIMIT 1");
-        const pptk = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%PPTK%' OR jabatan LIKE '%Pejabat Pelaksana Teknis Kegiatan%' LIMIT 1");
+        // PERBAIKAN: Ambil data PPTK berdasarkan pptk_id yang tersimpan di pembayaran
+        const pptk = pembayaran.pptk_id
+            ? await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE id = ?", [pembayaran.pptk_id])
+            : await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%PPTK%' OR jabatan LIKE '%Pejabat Pelaksana Teknis Kegiatan%' LIMIT 1");
         const penggunaAnggaran = await dbGet("SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1");
 
         // 7. Gabungkan semua data

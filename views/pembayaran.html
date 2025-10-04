@@ -226,6 +226,19 @@
                             class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
                     </div>
 
+                    <!-- Tambahkan ini di dalam <form id="pembayaran-form"> di file pembayaran.html untuk dropdown nama PPTK -->
+                    <div class="sm:col-span-3">
+                        <label for="pptk_id"
+                            class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">PPTK</label>
+                        <div class="mt-2">
+                            <select id="pptk_id" name="pptk_id" required
+                                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-600 dark:text-white">
+                                <option value="">-- Pilih PPTK --</option>
+                            </select>
+                        </div>
+                    </div>
+
+
                     <!-- Informasi Uang Harian -->
                     <div id="uang-harian-info-container" class="hidden">
                         <div class="uang-harian-info">

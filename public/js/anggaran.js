@@ -69,21 +69,22 @@
 
         if (anggaranList.length === 0) {
             const canManage = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+            // Sesuaikan jumlah kolom pada pesan "data kosong" agar sesuai dengan header
+            const colspan = canManage ? 7 : 6;
             const message = canManage ? 'Belum ada data anggaran. Silakan tambahkan anggaran baru.' : 'Data anggaran belum tersedia.';
-            anggaranTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">${message}</td></tr>`;
+            anggaranTableBody.innerHTML = `<tr><td colspan="${colspan}" class="px-6 py-4 text-center text-gray-500">${message}</td></tr>`;
             return;
         }
 
         anggaranList.forEach(anggaran => {
             const row = document.createElement('tr');
 
-            // Tombol Aksi (Edit & Hapus) hanya untuk admin/superadmin
             const actionButtons = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
                 ? `<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                        <button data-id="${anggaran.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
                        <button data-id="${anggaran.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4">Hapus</button>
                    </td>`
-                : '<td class="px-6 py-4"></td>'; // Kolom kosong jika bukan admin
+                : ''; // Jangan render kolom sama sekali jika bukan admin
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -97,10 +98,35 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     Rp ${formatCurrency(anggaran.nilai_anggaran)}
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    Rp ${formatCurrency(anggaran.realisasi)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${anggaran.sisa < 0 ? 'text-red-500' : 'text-green-600'}">
+                    Rp ${formatCurrency(anggaran.sisa)}
+                </td>
                 ${actionButtons}
             `;
             anggaranTableBody.appendChild(row);
         });
+
+        // Setelah merender semua baris, sesuaikan header tabel berdasarkan peran
+        const thead = document.querySelector('#anggaran-list-container thead tr');
+        if (thead) {
+            // Hapus header 'Aksi' yang mungkin ada dari render sebelumnya
+            const existingActionHeader = thead.querySelector('.action-header');
+            if (existingActionHeader) {
+                existingActionHeader.remove();
+            }
+
+            // Tambahkan header 'Aksi' hanya jika pengguna adalah admin atau superadmin
+            if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+                const actionHeader = document.createElement('th');
+                actionHeader.scope = 'col';
+                actionHeader.className = 'relative px-6 py-3 action-header'; // Tambahkan kelas untuk identifikasi
+                actionHeader.innerHTML = '<span class="sr-only">Aksi</span>';
+                thead.appendChild(actionHeader);
+            }
+        }
     };
 
     // Fungsi untuk memuat data anggaran dari server
@@ -130,7 +156,9 @@
 
         } catch (error) {
             console.error('Error:', error);
-            anggaranTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+            // Sesuaikan colspan untuk pesan error
+            const colspan = (currentUserRole === 'admin' || currentUserRole === 'superadmin') ? 7 : 6;
+            anggaranTableBody.innerHTML = `<tr><td colspan="${colspan}" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
 

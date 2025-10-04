@@ -12,6 +12,7 @@
     // Elemen Form
     const anggaranSelect = document.getElementById('anggaran_id');
     const sptSelect = document.getElementById('spt_id');
+    const pptkSelect = document.getElementById('pptk_id');
     const namaPenerimaTextarea = document.getElementById('nama_penerima');
     const uraianPembayaranTextarea = document.getElementById('uraian_pembayaran');
     const nominalBayarInput = document.getElementById('nominal_bayar');
@@ -65,6 +66,7 @@
 
             anggaranTomSelect.setValue(data.anggaran_id);
             sptTomSelect.setValue(data.spt_id);
+            pptkTomSelect.setValue(data.pptk_id);
             sptTomSelect.disable();
 
             // PERBAIKAN: Trigger change event dan tunggu DOM diperbarui.
@@ -107,6 +109,7 @@
         pembayaranForm.reset();
         if (anggaranTomSelect) anggaranTomSelect.clear();
         if (sptTomSelect) sptTomSelect.clear();
+        if (pptkTomSelect) pptkTomSelect.clear();
         clearRincian();
         uangHarianInfoContainer.classList.add('hidden');
         uangHarianAnalysisContainer.innerHTML = '';
@@ -117,18 +120,22 @@
     // Variabel untuk menyimpan instance TomSelect
     let anggaranTomSelect = null;
     let sptTomSelect = null;
+    let pptkTomSelect = null;
 
     // Memuat opsi untuk dropdown
     const loadDropdownOptions = async () => {
         try {
-            // Load Anggaran
-            const anggaranRes = await fetch('/api/anggaran');
-            if (!anggaranRes.ok) throw new Error('Gagal memuat data anggaran.');
-            const anggaranList = await anggaranRes.json();
+            const [anggaranRes, sptRes, pegawaiRes] = await Promise.all([
+                fetch('/api/anggaran'),
+                fetch('/api/spt'),
+                fetch('/api/pegawai')
+            ]);
 
             if (anggaranTomSelect) anggaranTomSelect.destroy();
             if (sptTomSelect) sptTomSelect.destroy();
+            if (pptkTomSelect) pptkTomSelect.destroy();
 
+            const anggaranList = await anggaranRes.json();
             anggaranSelect.innerHTML = '<option value="">-- Pilih Anggaran --</option>';
             anggaranList.forEach(a => {
                 const optionText = `${a.mata_anggaran_kode} - ${a.mata_anggaran_nama} (Sub: ${a.sub_kegiatan})`;
@@ -136,8 +143,6 @@
                 anggaranSelect.appendChild(option);
             });
 
-            // Load SPT
-            const sptRes = await fetch('/api/spt');
             if (!sptRes.ok) throw new Error('Gagal memuat data SPT.');
             const sptList = await sptRes.json();
             sptDataMap.clear();
@@ -148,8 +153,18 @@
                 sptDataMap.set(spt.id.toString(), spt);
             });
 
+            // Load Pegawai untuk PPTK
+            if (!pegawaiRes.ok) throw new Error('Gagal memuat data pegawai.');
+            const pegawaiList = await pegawaiRes.json();
+            pptkSelect.innerHTML = '<option value="">-- Pilih PPTK --</option>';
+            pegawaiList.forEach(p => {
+                const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.id);
+                pptkSelect.appendChild(option);
+            });
+
             anggaranTomSelect = new TomSelect(anggaranSelect, { sortField: { field: "text", direction: "asc" } });
             sptTomSelect = new TomSelect(sptSelect, { sortField: { field: "text", direction: "asc" } });
+            pptkTomSelect = new TomSelect(pptkSelect, { sortField: { field: "text", direction: "asc" } });
 
         } catch (error) {
             console.error('Error loading dropdowns:', error);
