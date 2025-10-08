@@ -1,6 +1,14 @@
 /**
+ * @typedef {object} UserProfile
+ * @property {string} name - Nama lengkap pengguna.
+ * @property {string} role - Peran pengguna (misalnya, 'admin', 'user').
+ * @property {string|null} foto_profil - Path ke file foto profil, atau null.
+ */
+
+/**
  * Memperbarui elemen UI di header dengan data pengguna.
  * @param {object} user - Objek pengguna dengan properti name, role, dan foto_profil.
+ * @param {UserProfile} user - Objek pengguna dengan properti name, role, dan foto_profil.
  */
 function updateHeaderUI(user) {
     console.log('[HEADER] Memperbarui UI dengan data:', user);
@@ -12,8 +20,8 @@ function updateHeaderUI(user) {
     if (userNameEl) userNameEl.textContent = user.name || 'Pengguna';
     if (userRoleEl) userRoleEl.textContent = user.role || 'user';
     if (userAvatarEl) {
-        // Gunakan avatar pengguna atau gambar default jika tidak ada
-        userAvatarEl.src = user.foto_profil ? `/${user.foto_profil}` : '/img/Gambarprofil.png';
+        // PERBAIKAN: Gunakan avatar pengguna atau gambar default yang konsisten jika tidak ada
+        userAvatarEl.src = user.foto_profil ? `/${user.foto_profil}` : '/img/default-avatar.png';
     }
 }
 
@@ -25,13 +33,15 @@ function handleAvatarUpdate(e) {
     const { avatarUrl } = e.detail;
     const userAvatarEl = document.getElementById('user-avatar');
     if (userAvatarEl && avatarUrl) {
-        userAvatarEl.src = `${avatarUrl}?t=${new Date().getTime()}`;
+        // PERBAIKAN: Tambahkan '/' di depan URL agar menjadi path absolut dari root.
+        // Ini untuk menyamakan dengan logika di updateHeaderUI dan mencegah error 404.
+        userAvatarEl.src = `/${avatarUrl}?t=${new Date().getTime()}`;
     }
 }
 
 /**
  * Inisialisasi fungsionalitas header.
- * @param {object} user - Objek pengguna yang didapat dari `main1.js`.
+ * @param {UserProfile} user - Objek pengguna yang didapat dari `main1.js`.
  */
 function initializeHeader(user) {
     console.log('[HEADER] Inisialisasi header...');
@@ -59,7 +69,7 @@ function initializeHeader(user) {
             e.stopPropagation();
         });
     } else {
-        console.warn('[HEADER] Elemen menu user tidak ditemukan');
+        console.warn('[HEADER] Elemen atau ID untuk dropdown menu user tidak ditemukan');
     }
 
     // Perbarui UI header dengan data yang diterima dari `main1.js`

@@ -1,8 +1,10 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const printArea = document.getElementById('print-area');
     const pathParts = window.location.pathname.split('/');
-    // ID dari URL adalah ID SPT, karena kita mengakses dari link /cetak/sppd/{spt_id}
-    const sptId = pathParts[pathParts.length - 1];
+    // PERBAIKAN: ID di URL bisa jadi ID SPT atau ID SPPD.
+    const idFromUrl = pathParts[pathParts.length - 1];
+    // Tentukan jenis halaman berdasarkan URL
+    const isSppdDetail = window.location.pathname.includes('/cetak/sppd-detail/');
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -56,8 +58,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const fetchSppdData = async () => {
         try {
-            // Selalu gunakan API yang mengambil data SPPD berdasarkan ID SPT-nya.
-            const apiUrl = `/api/sppd/by-spt/${sptId}`;
+            // PERBAIKAN: Gunakan endpoint yang tepat berdasarkan jenis ID dari URL.
+            // Endpoint `/api/sppd/by-spt/{id}` sekarang cukup pintar untuk menangani
+            // baik ID SPT maupun ID SPPD.
+            const idType = isSppdDetail ? 'sppd' : 'spt';
+            const apiUrl = `/api/sppd/by-spt/${idFromUrl}?id_type=${idType}`;
 
             const response = await fetch(apiUrl);
             if (!response.ok) {

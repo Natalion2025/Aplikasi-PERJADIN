@@ -306,15 +306,8 @@
             panjarRow.classList.add('panjar-row');
             panjarRow.dataset.pegawaiId = pegawaiId;
             panjarRow.innerHTML = `
-                <td colspan="2" class="px-4 py-2 text-sm text-right text-gray-500 dark:text-gray-400 font-bold">Nilai Panjar</td>
-                <td class="px-4 py-2 text-sm text-right" colspan="3">
-                    <div class="flex items-center justify-end">
-                        <input type="text" class="panjar-input w-32 text-center  rounded-md shadow-sm text-sm bg-gray-200 dark:bg-slate-600 dark:border-gray-500 dark:text-white" placeholder="edit" data-pegawai-id="${pegawaiId}" inputmode="numeric">
-                        <button type="button" class="terapkan-panjar-btn ml-2 px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600" data-pegawai-id="${pegawaiId}">Terapkan</button>
-                    </div>
-                </td>
-                <td class="px-4 py-2 text-sm text-right text-red-500 font-bold total-panjar-pegawai" data-pegawai-id="${pegawaiId}"></td>
-                
+                <td colspan="6" class="px-4 py-2 text-sm text-right text-gray-500 dark:text-gray-400 font-bold">Nilai Panjar</td>
+                <td class="px-4 py-2 text-sm text-right text-red-500 font-bold total-panjar-pegawai" data-pegawai-id="${pegawaiId}">Rp 0</td>
             `;
             rincianTableBody.appendChild(panjarRow);
 
@@ -323,7 +316,7 @@
             totalPegawaiRow.classList.add('total-pegawai-row', 'bg-slate-50', 'dark:bg-slate-700');
             totalPegawaiRow.dataset.pegawaiId = pegawaiId;
             totalPegawaiRow.innerHTML = `
-                <td colspan="8" class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white bg-green-100 dark:bg-green-800">Total Dibayar</td>
+                <td colspan="8" class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white bg-green-100 dark:bg-green-800">Jumlah Dibayar</td>
                 <td class="px-4 py-2 text-right font-bold text-gray-800 dark:text-white total-dibayar-pegawai bg-green-100 dark:bg-green-800" data-pegawai-id="${pegawaiId}">Rp 0</td>
             `;
             rincianTableBody.appendChild(totalPegawaiRow);
@@ -331,6 +324,32 @@
 
         recalculateGrandTotal();
         rincianContainer.classList.remove('hidden');
+    };
+
+    // Fungsi untuk mengambil dan menerapkan data panjar yang sudah ada secara otomatis
+    const applyExistingPanjar = async (sptId) => {
+        try {
+            const response = await fetch(`/api/panjar/by-spt/${sptId}`);
+            if (!response.ok) return; // Gagal secara diam-diam jika tidak ada panjar
+            const panjarMap = await response.json();
+
+            // Iterasi melalui data panjar yang diterima dari API
+            for (const pegawaiId in panjarMap) {
+                const panjarValue = panjarMap[pegawaiId] || 0;
+                if (panjarValue <= 0) continue;
+
+                // Terapkan nilai panjar ke setiap baris rincian untuk pegawai yang sesuai
+                const rincianRows = rincianTableBody.querySelectorAll(`tr.rincian-row[data-pegawai-id="${pegawaiId}"]`);
+                const panjarRows = rincianTableBody.querySelectorAll(`tr.panjar-row[data-pegawai-id="${pegawaiId}"] .total-panjar-pegawai`);
+
+                distributePanjar(panjarValue, rincianRows);
+                panjarRows.forEach(el => el.textContent = `${formatCurrency(panjarValue)}`);
+            }
+            // Hitung ulang total keseluruhan setelah semua panjar diterapkan
+            recalculateGrandTotal();
+        } catch (error) {
+            console.warn('Gagal memuat data panjar otomatis:', error);
+        }
     };
 
     // Fungsi untuk menghitung ulang semua total
@@ -412,6 +431,9 @@
 
             renderRincianPengeluaran(result.pengeluaran, result.penerima, selectedSptId);
 
+            // Setelah rincian dirender, coba terapkan panjar yang ada
+            await applyExistingPanjar(selectedSptId);
+
         } catch (error) {
             console.error("Gagal mengisi nama penerima:", error);
             alert(error.message);
@@ -422,54 +444,31 @@
         }
     });
 
-    // Event delegation untuk input jumlah hari uang harian
-    rincianContainer.addEventListener('input', (e) => {
-        // PERBAIKAN: Format input panjar saat diketik
-        if (e.target.classList.contains('panjar-input')) {
-            const start = e.target.selectionStart;
-            const end = e.target.selectionEnd;
-            const oldValue = e.target.value;
+    /**
+     * Mendistribusikan nilai panjar ke setiap baris rincian biaya untuk seorang pegawai.
+     * @param {number} panjarValue - Total nilai panjar untuk pegawai tersebut.
+     * @param {NodeListOf<Element>} rincianRows - Kumpulan elemen <tr> rincian biaya pegawai.
+     */
+    const distributePanjar = (panjarValue, rincianRows) => {
+        if (!rincianRows || rincianRows.length === 0) return;
 
-            e.target.value = formatCurrency(e.target.value).replace('Rp\u00A0', '');
+        const itemCount = rincianRows.length;
+        const baseAmount = Math.floor(panjarValue / itemCount);
+        let remainder = panjarValue % itemCount;
 
-            const newLength = e.target.value.length;
-            const oldLength = oldValue.length;
-            e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
-        }
-    });
-
-    // Event delegation untuk tombol "Terapkan" panjar
-    rincianContainer.addEventListener('click', (e) => {
-        if (e.target.classList.contains('terapkan-panjar-btn')) {
-            const pegawaiId = e.target.dataset.pegawaiId;
-            const panjarInput = rincianContainer.querySelector(`.panjar-input[data-pegawai-id="${pegawaiId}"]`);
-            const totalPanjarPegawaiEl = rincianContainer.querySelector(`.total-panjar-pegawai[data-pegawai-id="${pegawaiId}"]`);
-
-            const panjarValue = parseCurrency(panjarInput.value);
-
-            const rincianRows = rincianTableBody.querySelectorAll(`tr.rincian-row[data-pegawai-id="${pegawaiId}"]`);
-            const panjarRows = rincianTableBody.querySelectorAll(`tr.panjar-row[data-pegawai-id="${pegawaiId}"] .total-panjar-pegawai`);
-
-            if (rincianRows.length > 0) {
-                const itemCount = rincianRows.length;
-                const baseAmount = Math.floor(panjarValue / itemCount);
-                let remainder = panjarValue % itemCount;
-
-                rincianRows.forEach((row, index) => {
-                    let amountForItem = baseAmount;
-                    if (remainder > 0) {
-                        amountForItem += 1;
-                        remainder--;
-                    }
-                    row.querySelector('.nilai-panjar').textContent = formatCurrency(amountForItem);
-                });
+        rincianRows.forEach((row) => {
+            let amountForItem = baseAmount;
+            if (remainder > 0) {
+                amountForItem += 1;
+                remainder--;
             }
+            const panjarCell = row.querySelector('.nilai-panjar');
+            if (panjarCell) {
+                panjarCell.textContent = formatCurrency(amountForItem);
+            }
+        });
+    };
 
-            panjarRows.forEach(el => el.textContent = `${formatCurrency(panjarValue)}`);
-
-            recalculateGrandTotal();
-        }
-    });
 
     // Merender daftar pembayaran ke dalam tabel
     const renderPembayaranList = (pembayaranList) => {

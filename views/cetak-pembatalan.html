@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Surat Pembatalan Tugas</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+        body {
+            font-family: 'arial', Times, serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            background-color: #fff;
+        }
+
+        .page-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 2cm;
+            margin: 1cm auto;
+            background: white;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+        }
+
+        .kop-surat {
+            text-align: center;
+            padding-bottom: 10px;
+            margin-bottom: 0;
+        }
+
+        .kop-surat h1 {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        .kop-surat h2 {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        .kop-surat p {
+            font-size: 12pt;
+            margin: 0;
+        }
+
+        .judul-surat {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .judul-surat h3 {
+            font-size: 14pt;
+            margin: 0;
+        }
+
+        .content-table {
+            width: 100%;
+            margin-top: 20px;
+            vertical-align: top;
+        }
+
+        .content-table td {
+            padding: 2px 0;
+        }
+
+        .tanda-tangan {
+            width: 56%;
+            margin-left: 45%;
+            margin-top: 50px;
+            text-align: left;
+            text-wrap: none;
+        }
+
+        @media print {
+
+            body,
+            .page-container {
+                margin: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="print-area" class="page-container">
+        <p class="text-center">Memuat data...</p>
+    </div>
+
+    <!-- PERBAIKAN: Tambahkan skrip untuk mengambil dan merender data -->
+    <script src="/js/cetak-pembatalan.js"></script>
+</body>
+
+</html>

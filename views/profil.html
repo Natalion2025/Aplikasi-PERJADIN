@@ -69,7 +69,8 @@
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Profil Saya</h2>
             <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md max-w-4xl mx-auto">
-                <form id="avatar-upload-form">
+                <!-- PERBAIKAN: Mengubah ID form menjadi 'profile-form' -->
+                <form id="profile-form">
                     <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
                         <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Informasi Akun</h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Perbarui informasi profil dan detail
@@ -93,7 +94,8 @@
                                 <label for="nama_lengkap"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama
                                     Lengkap</label>
-                                <input type="text" id="nama_lengkap" name="name" required
+                                <!-- PERBAIKAN: Menambahkan field 'name' untuk kompatibilitas dengan backend -->
+                                <input type="text" id="nama_lengkap" name="nama_lengkap" required
                                     class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>

@@ -95,9 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (button.classList.contains('edit-btn')) {
             // Logika untuk membuka modal dan mengisi data
             const response = await fetch(`/api/panjar/${id}`);
+            if (!response.ok) {
+                alert('Gagal memuat data untuk diedit.');
+                return;
+            }
             const data = await response.json();
 
-            // Panggil fungsi global openPanjarModal yang ada di spt-register.js
+            // Panggil fungsi global openPanjarModal yang sudah diekspos dari spt-register.js
             if (typeof window.openPanjarModal === 'function') {
                 window.openPanjarModal(data); // Kirim data untuk diisi
             } else {
@@ -112,13 +116,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadUangMuka();
 });
-
-// Perlu sedikit modifikasi pada spt-register.js untuk menangani mode edit
-// Kita akan membuat fungsi openPanjarModal menjadi global
-const originalOpenPanjarModal = window.openPanjarModal;
-window.openPanjarModal = (data = null) => {
-    originalOpenPanjarModal(); // Panggil fungsi asli
-    if (data) {
-        // Logika untuk mengisi form akan ditambahkan di spt-register.js
-    }
-};
