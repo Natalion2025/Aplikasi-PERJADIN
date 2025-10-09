@@ -1,6 +1,6 @@
 // public/js/pembayaran.js
 (function () {
-    // Elemen Modal
+    // Elemen Modal Bukti Bayar
     const openModalBtn = document.getElementById('buat-bukti-button');
     const modal = document.getElementById('pembayaran-modal');
     const closeModalBtn = document.getElementById('close-pembayaran-modal-button');
@@ -8,6 +8,16 @@
     const pembayaranForm = document.getElementById('pembayaran-form');
     const modalTitle = document.getElementById('pembayaran-modal-title');
     const pembayaranIdInput = document.getElementById('pembayaran-id');
+
+    // Elemen Modal Pengeluaran Rill
+    const openPengeluaranRillBtn = document.getElementById('pengeluaran-rill-button');
+    const pengeluaranRillModal = document.getElementById('pengeluaran-rill-modal');
+    const closePengeluaranRillBtn = document.getElementById('close-pengeluaran-rill-modal-button');
+    const cancelPengeluaranRillBtn = document.getElementById('cancel-pengeluaran-rill-button');
+    const pengeluaranRillForm = document.getElementById('pengeluaran-rill-form');
+    const pengeluaranSptSelect = document.getElementById('pengeluaran_spt_id');
+    const pengeluaranRillIdInput = document.getElementById('pengeluaran-rill-id');
+    const pengeluaranPelaksanaSelect = document.getElementById('pengeluaran_pelaksana_id');
 
     // Elemen Form
     const anggaranSelect = document.getElementById('anggaran_id');
@@ -26,12 +36,25 @@
 
     // Elemen List/Tabel
     const pembayaranTableBody = document.getElementById('pembayaran-table-body');
+    const pengeluaranRillTableBody = document.getElementById('pengeluaran-rill-table-body');
+
+    // Elemen Tab
+    const buktiBayarTab = document.getElementById('bukti-bayar-tab');
+    const pengeluaranRillTab = document.getElementById('pengeluaran-rill-tab');
+    const buktiBayarPanel = document.getElementById('bukti-bayar-panel');
+    const pengeluaranRillPanel = document.getElementById('pengeluaran-rill-panel');
 
     const formatCurrency = (value) => {
         const numberString = String(value || '').replace(/[^0-9-]/g, '');
         const number = parseFloat(numberString);
         if (isNaN(number)) return 'Rp 0';
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+    };
+
+    const formatInputCurrency = (value) => {
+        if (!value) return '';
+        const number = parseFloat(String(value).replace(/[^0-9]/g, ''));
+        return isNaN(number) ? '' : new Intl.NumberFormat('id-ID').format(number);
     };
 
     const parseCurrency = (value) => {
@@ -150,6 +173,7 @@
             sptList.forEach(spt => {
                 const option = new Option(spt.nomor_surat, spt.id);
                 sptSelect.appendChild(option);
+                pengeluaranSptSelect.appendChild(option.cloneNode(true)); // Clone untuk modal pengeluaran riil
                 sptDataMap.set(spt.id.toString(), spt);
             });
 
@@ -604,6 +628,157 @@
         }
     });
 
+    // --- LOGIKA MODAL PENGELUARAN RILL ---
+
+    const openPengeluaranRillModal = async (id = null) => {
+        pengeluaranRillForm.reset();
+        pengeluaranRillIdInput.value = '';
+        const modalTitle = document.getElementById('pengeluaran-rill-modal-title');
+
+        if (id) {
+            // Mode Edit
+            modalTitle.textContent = 'Edit Pengeluaran Riil';
+            try {
+                const response = await fetch(`/api/pengeluaran-riil/${id}`);
+                if (!response.ok) throw new Error('Gagal memuat data untuk diedit.');
+                const data = await response.json();
+
+                pengeluaranRillIdInput.value = data.id;
+                pengeluaranSptSelect.value = data.spt_id;
+                // Trigger change untuk memuat pelaksana, lalu pilih pelaksana yang sesuai
+                await pengeluaranSptSelect.dispatchEvent(new Event('change'));
+                // Beri jeda singkat agar dropdown pelaksana selesai dimuat
+                await new Promise(resolve => setTimeout(resolve, 100));
+                pengeluaranPelaksanaSelect.value = data.pegawai_id;
+
+                document.getElementById('pengeluaran_uraian').value = data.uraian;
+                document.getElementById('pengeluaran_jumlah').value = formatInputCurrency(data.jumlah);
+
+            } catch (error) {
+                alert(error.message);
+                return; // Jangan buka modal jika data gagal dimuat
+            }
+        } else {
+            // Mode Tambah Baru
+            modalTitle.textContent = 'Tambah Pengeluaran Riil';
+            pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
+            pengeluaranPelaksanaSelect.disabled = true;
+        }
+
+        pengeluaranRillModal.classList.remove('hidden');
+    };
+
+
+    const closePengeluaranRillModal = () => {
+        pengeluaranRillModal.classList.add('hidden');
+    };
+
+    // Event listener untuk perubahan dropdown SPT di modal pengeluaran riil
+    pengeluaranSptSelect.addEventListener('change', async (e) => {
+        const sptId = e.target.value;
+        pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Memuat... --</option>';
+        pengeluaranPelaksanaSelect.disabled = true;
+
+        if (!sptId) {
+            pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/spt/${sptId}`);
+            if (!response.ok) throw new Error('Gagal mengambil detail pegawai SPT.');
+            const sptDetail = await response.json();
+
+            pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih Pelaksana --</option>';
+            sptDetail.pegawai.forEach(p => {
+                const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id);
+                pengeluaranPelaksanaSelect.appendChild(option);
+            });
+            pengeluaranPelaksanaSelect.disabled = false;
+        } catch (error) {
+            console.error("Error fetching SPT details for pengeluaran riil:", error);
+            pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Gagal memuat --</option>';
+        }
+    });
+
+    // Handle submit form pengeluaran riil
+    pengeluaranRillForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = pengeluaranRillIdInput.value;
+        const formData = new FormData(pengeluaranRillForm);
+        const data = {
+            spt_id: formData.get('spt_id'),
+            pegawai_id: formData.get('pegawai_id'),
+            uraian: formData.get('uraian'),
+            jumlah: formData.get('jumlah').replace(/[^0-9]/g, '') // Bersihkan format currency
+        };
+
+        const isEditMode = !!id;
+        const url = isEditMode ? `/api/pengeluaran-riil/${id}` : '/api/pengeluaran-riil';
+        const method = isEditMode ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data.');
+
+            alert(result.message);
+            closePengeluaranRillModal();
+            loadPengeluaranRill(); // Muat ulang data di tab
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        }
+    });
+
+    // --- LOGIKA TAB PENGELUARAN RILL ---
+
+    const loadPengeluaranRill = async () => {
+        pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        try {
+            const response = await fetch('/api/pengeluaran-riil');
+            if (!response.ok) throw new Error('Gagal memuat data pengeluaran riil.');
+            const data = await response.json();
+            renderPengeluaranRill(data);
+        } catch (error) {
+            pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+        }
+    };
+
+    const renderPengeluaranRill = (dataList) => {
+        pengeluaranRillTableBody.innerHTML = '';
+        if (!dataList || dataList.length === 0) {
+            pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada data.</td></tr>`;
+            return;
+        }
+
+        dataList.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${index + 1}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${item.nama_pegawai}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${item.uraian}</td>
+                <td class="px-6 py-4 text-sm text-right text-gray-800 dark:text-gray-300">${formatCurrency(item.jumlah)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button data-id="${item.id}" class="print-riil-btn text-blue-600 hover:text-blue-900" title="Cetak">
+                        <i class="fas fa-print"></i>
+                    </button>
+                    <button data-id="${item.id}" class="edit-riil-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button data-id="${item.id}" class="delete-riil-btn text-red-600 hover:text-red-900 ml-4" title="Hapus">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            pengeluaranRillTableBody.appendChild(row);
+        });
+    };
+
+
     // Event listeners untuk modal
     openModalBtn.addEventListener('click', openModal);
     closeModalBtn.addEventListener('click', closeModal);
@@ -612,7 +787,91 @@
         if (event.target === modal) closeModal();
     });
 
+    // Event listeners untuk modal pengeluaran riil
+    openPengeluaranRillBtn.addEventListener('click', () => openPengeluaranRillModal());
+    closePengeluaranRillBtn.addEventListener('click', closePengeluaranRillModal);
+    cancelPengeluaranRillBtn.addEventListener('click', closePengeluaranRillModal);
+    pengeluaranRillModal.addEventListener('click', (event) => {
+        if (event.target === pengeluaranRillModal) closePengeluaranRillModal();
+    });
+    document.getElementById('pengeluaran_jumlah').addEventListener('input', (e) => {
+        e.target.value = formatInputCurrency(e.target.value);
+    });
+
+    // Event delegation untuk tombol aksi di tabel pengeluaran riil
+    pengeluaranRillTableBody.addEventListener('click', async (event) => {
+        const target = event.target.closest('button');
+        if (!target) return;
+
+        const id = target.dataset.id;
+
+        if (target.classList.contains('edit-riil-btn')) {
+            openPengeluaranRillModal(id);
+        }
+
+        if (target.classList.contains('delete-riil-btn')) {
+            if (confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?')) {
+                try {
+                    const response = await fetch(`/api/pengeluaran-riil/${id}`, { method: 'DELETE' });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message);
+                    alert(result.message);
+                    loadPengeluaranRill();
+                } catch (error) {
+                    alert(`Gagal menghapus: ${error.message}`);
+                }
+            }
+        }
+
+        if (target.classList.contains('print-riil-btn')) {
+            window.open(`/cetak/pengeluaran-riil/${id}`, '_blank');
+        }
+    });
+
+
+    // --- LOGIKA TAB ---
+    const switchTab = (selectedTab, selectedPanel) => {
+        // Reset semua tab
+        [buktiBayarTab, pengeluaranRillTab].forEach(tab => {
+            if (tab) {
+                tab.setAttribute('aria-selected', 'false');
+                tab.classList.remove('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
+                tab.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+            }
+        });
+
+        // Reset semua panel
+        [buktiBayarPanel, pengeluaranRillPanel].forEach(panel => {
+            if (panel) panel.classList.add('hidden');
+        });
+
+        // Aktifkan tab dan panel yang dipilih
+        if (selectedTab) {
+            selectedTab.setAttribute('aria-selected', 'true');
+            selectedTab.classList.add('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
+            selectedTab.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+        }
+        if (selectedPanel) {
+            selectedPanel.classList.remove('hidden');
+        }
+    };
+
+    const setupTabs = () => {
+        if (buktiBayarTab) {
+            buktiBayarTab.addEventListener('click', () => switchTab(buktiBayarTab, buktiBayarPanel));
+        }
+        if (pengeluaranRillTab) {
+            pengeluaranRillTab.addEventListener('click', () => {
+                switchTab(pengeluaranRillTab, pengeluaranRillPanel);
+                loadPengeluaranRill();
+            });
+        }
+        // Set tab default saat halaman dimuat
+        switchTab(buktiBayarTab, buktiBayarPanel);
+    };
+
     // Inisialisasi halaman
     loadDropdownOptions();
     loadPembayaran();
+    setupTabs();
 })();

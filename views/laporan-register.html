@@ -215,6 +215,9 @@
                             <option value="">-- Pilih SPT terlebih dahulu --</option>
                         </select>
                     </div>
+                    <!-- Elemen Notifikasi Baru -->
+                    <div id="pembatalan-pegawai-notif" class="hidden"></div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="tempat_pembatalan"
@@ -275,7 +278,7 @@
                     <div class="flex justify-end items-center pt-4">
                         <button id="kembali-pembatalan-btn" type="button"
                             class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Kembali</button>
-                        <button type="submit"
+                        <button type="submit" id="submit-pembatalan-btn"
                             class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Batalkan Tugas</button>
                     </div>
                 </form>

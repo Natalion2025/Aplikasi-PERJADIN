@@ -5,35 +5,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Bukti Panjar</title>
+    <link href="/css/output.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'arial', Times, serif;
             font-size: 12pt;
-            margin: 0;
+            background-color: #f3f4f6;
+        }
+
+        .print-container,
+        .page-container {
+            /* Tambahkan .page-container untuk kompatibilitas dengan JS */
+            width: 21cm;
+            min-height: 29.7cm;
             padding: 2cm;
+            margin: 1cm auto;
+            background: white;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 
         .kop-surat {
+            right: 30px;
+            display: flex;
+            line-height: 22px;
             text-align: center;
-            border-bottom: 3px solid black;
+            text-wrap: nowrap;
+            border-bottom: 4px double black;
             padding-bottom: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
-        .kop-surat h1 {
-            font-size: 16pt;
+        .kop-surat img {
+            position: absolute;
+            width: 155px;
+            height: 110px;
+        }
+
+        .text-kop {
+            margin-left: 120px;
+            text-align: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .kop-surat .text-kop h1 {
+            font-size: 18pt;
             font-weight: bold;
             margin: 0;
         }
 
-        .kop-surat h2 {
-            font-size: 18pt;
-            font-weight: bold;
-            margin: 5px 0;
+        .kop-surat .text-kop h2 {
+            font-size: 16pt;
+            margin: 0;
         }
 
-        .kop-surat p {
-            font-size: 11pt;
+        .kop-surat .text-kop p {
+            font-size: 12pt;
             margin: 0;
         }
 
@@ -55,11 +82,40 @@
             padding: 2px 0;
             vertical-align: top;
         }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: white;
+            }
+
+            #controls {
+                display: none;
+            }
+
+            .print-container,
+            .page-container {
+                margin-top: -1cm;
+                width: 21cm;
+                min-height: 29.7cm;
+                box-shadow: none;
+                border: none;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div id="print-area">Memuat data...</div>
+    <div id="controls" class="p-4 bg-white shadow-md text-center">
+        <button onclick="window.print()"
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cetak</button>
+    </div>
+    <div id="print-area" class="print-container">
+        <div class="text-center p-8">
+            <p>Memuat data...</p>
+        </div>
+    </div>
     <script src="/js/cetak-panjar.js"></script>
 </body>
 

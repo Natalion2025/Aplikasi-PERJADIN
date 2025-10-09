@@ -444,6 +444,20 @@ db.run(`CREATE TABLE IF NOT EXISTS pembayaran (
     if (err) console.error("Error creating 'pembayaran' table:", err.message);
 });
 
+// Pastikan tabel 'pengeluaran_riil' ada
+db.run(`CREATE TABLE IF NOT EXISTS pengeluaran_riil (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    spt_id INTEGER NOT NULL,
+    pegawai_id INTEGER NOT NULL,
+    uraian TEXT NOT NULL,
+    jumlah REAL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (spt_id) REFERENCES spt(id) ON DELETE CASCADE,
+    FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
+)`, (err) => {
+    if (err) console.error("Error creating 'pengeluaran_riil' table:", err.message);
+});
+
 // Cek dan perbaiki struktur tabel 'pembayaran' jika kolom 'panjar_data' belum ada.
 db.all("PRAGMA table_info(pembayaran)", (err, cols) => {
     if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
@@ -774,6 +788,11 @@ app.get('/uang-muka', isAuthenticated, (req, res) => {
 // Rute untuk halaman Cetak Pembayaran
 app.get('/cetak/pembayaran/:id', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'cetak-pembayaran.html'));
+});
+
+// Rute untuk halaman Cetak Pengeluaran Riil
+app.get('/cetak/pengeluaran-riil/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-pengeluaran-riil.html'));
 });
 
 // Rute untuk halaman Cetak Panjar/Uang Muka
@@ -1347,6 +1366,21 @@ app.post('/api/spt/cancel', isApiAuthenticated, isApiAdminOrSuperAdmin, async (r
         res.status(500).json({ message: error.message || 'Terjadi kesalahan pada server.' });
     }
 });
+
+// API BARU: Mengambil daftar pegawai yang sudah dibatalkan untuk SPT tertentu
+app.get('/api/pembatalan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const sql = "SELECT pegawai_id FROM pembatalan_spt WHERE spt_id = ?";
+        const rows = await dbAll(sql, [spt_id]);
+        const canceledPegawaiIds = rows.map(row => row.pegawai_id);
+        res.json(canceledPegawaiIds);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil pembatalan untuk SPT ID ${spt_id}:`, error);
+        res.status(500).json({ message: "Gagal mengambil data pembatalan.", error: error.message });
+    }
+});
+
 
 // GET: Mengambil detail satu pembatalan untuk mode edit
 app.get('/api/pembatalan/:id', isApiAuthenticated, async (req, res) => {
@@ -2416,6 +2450,22 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
 
 // --- Rute API Laporan Perjalanan Dinas ---
 
+// API BARU: Mengambil ID penandatangan laporan berdasarkan SPT ID
+app.get('/api/laporan/signers/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const laporan = await dbGet('SELECT penandatangan_ids FROM laporan_perjadin WHERE spt_id = ?', [spt_id]);
+        if (!laporan || !laporan.penandatangan_ids) {
+            return res.json([]); // Tidak ada laporan atau tidak ada penandatangan, kembalikan array kosong
+        }
+        const signerIds = JSON.parse(laporan.penandatangan_ids);
+        res.json(signerIds);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil penandatangan untuk SPT ID ${spt_id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
 // GET: Mengambil semua laporan untuk register
 app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
     try {
@@ -3306,6 +3356,141 @@ app.delete('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     runQuery('DELETE FROM pembayaran WHERE id = ?', [req.params.id])
         .then(() => res.json({ message: 'Bukti pembayaran berhasil dihapus.' }))
         .catch(err => res.status(500).json({ message: 'Gagal menghapus data.', error: err.message }));
+});
+
+// =================================================================
+// API ENDPOINTS UNTUK PENGELUARAN RIIL
+// =================================================================
+
+// GET: Mengambil semua data pengeluaran riil
+app.get('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                pr.id,
+                pr.uraian,
+                pr.jumlah,
+                p.nama_lengkap as nama_pegawai
+            FROM pengeluaran_riil pr
+            JOIN pegawai p ON pr.pegawai_id = p.id
+            ORDER BY pr.created_at DESC
+        `;
+        const rows = await dbAll(sql);
+        res.json(rows);
+    } catch (error) {
+        console.error('[API ERROR] Gagal mengambil data pengeluaran riil:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// POST: Membuat entri pengeluaran riil baru
+app.post('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
+    const { spt_id, pegawai_id, uraian, jumlah } = req.body;
+
+    if (!spt_id || !pegawai_id || !uraian || !jumlah) {
+        return res.status(400).json({ message: 'Semua kolom wajib diisi.' });
+    }
+
+    try {
+        const sql = `INSERT INTO pengeluaran_riil (spt_id, pegawai_id, uraian, jumlah) VALUES (?, ?, ?, ?)`;
+        const result = await runQuery(sql, [spt_id, pegawai_id, uraian, parseFloat(jumlah) || 0]);
+        res.status(201).json({ message: 'Data pengeluaran riil berhasil disimpan!', id: result.lastID });
+    } catch (error) {
+        console.error('[API ERROR] Gagal menyimpan pengeluaran riil:', error);
+        res.status(500).json({ message: 'Gagal menyimpan data.', error: error.message });
+    }
+});
+
+// GET: Mengambil satu data pengeluaran riil untuk edit
+app.get('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `SELECT * FROM pengeluaran_riil WHERE id = ?`;
+        const item = await dbGet(sql, [req.params.id]);
+        if (!item) {
+            return res.status(404).json({ message: 'Data pengeluaran riil tidak ditemukan.' });
+        }
+        res.json(item);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil pengeluaran riil id ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+});
+
+// PUT: Memperbarui data pengeluaran riil
+app.put('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { spt_id, pegawai_id, uraian, jumlah } = req.body;
+
+    if (!spt_id || !pegawai_id || !uraian || !jumlah) {
+        return res.status(400).json({ message: 'Semua kolom wajib diisi.' });
+    }
+
+    try {
+        const sql = `UPDATE pengeluaran_riil SET spt_id = ?, pegawai_id = ?, uraian = ?, jumlah = ? WHERE id = ?`;
+        const result = await runQuery(sql, [spt_id, pegawai_id, uraian, parseFloat(jumlah) || 0, id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data tidak ditemukan untuk diperbarui.' });
+        }
+        res.json({ message: 'Data pengeluaran riil berhasil diperbarui.' });
+    } catch (error) {
+        console.error(`[API ERROR] Gagal memperbarui pengeluaran riil id ${id}:`, error);
+        res.status(500).json({ message: 'Gagal memperbarui data.', error: error.message });
+    }
+});
+
+// DELETE: Menghapus data pengeluaran riil
+app.delete('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        const result = await runQuery('DELETE FROM pengeluaran_riil WHERE id = ?', [req.params.id]);
+        if (result.changes === 0) {
+            return res.status(404).json({ message: 'Data tidak ditemukan.' });
+        }
+        res.json({ message: 'Data pengeluaran riil berhasil dihapus.' });
+    } catch (err) {
+        console.error(`[API ERROR] Gagal menghapus pengeluaran riil id ${req.params.id}:`, err);
+        res.status(500).json({ message: 'Gagal menghapus data.', error: err.message });
+    }
+});
+
+// GET: Data untuk cetak pengeluaran riil
+app.get('/api/cetak/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
+    try {
+        // 1. Ambil data pengeluaran riil utama untuk mendapatkan spt_id dan pegawai_id
+        const mainRiilSql = `SELECT * FROM pengeluaran_riil WHERE id = ?`;
+        const mainRiil = await dbGet(mainRiilSql, [req.params.id]);
+        if (!mainRiil) {
+            return res.status(404).json({ message: 'Data pengeluaran riil tidak ditemukan.' });
+        }
+
+        // 2. Ambil SEMUA item pengeluaran riil untuk pegawai dan SPT yang sama
+        const allRiilSql = `SELECT uraian, jumlah FROM pengeluaran_riil WHERE spt_id = ? AND pegawai_id = ?`;
+        const allRiilItems = await dbAll(allRiilSql, [mainRiil.spt_id, mainRiil.pegawai_id]);
+
+        // 3. Ambil data SPT
+        const sptSql = `SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ?`;
+        const spt = await dbGet(sptSql, [mainRiil.spt_id]);
+
+        // 4. Ambil data Pelaksana (yang membuat pernyataan)
+        const pelaksanaSql = `SELECT nama_lengkap, nip, jabatan FROM pegawai WHERE id = ?`;
+        const pelaksana = await dbGet(pelaksanaSql, [mainRiil.pegawai_id]);
+
+        // 5. Ambil data Pengguna Anggaran (Kepala Dinas)
+        const penggunaAnggaranSql = `SELECT nama_lengkap, nip FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1`;
+        const penggunaAnggaran = await dbGet(penggunaAnggaranSql);
+
+        const responseData = {
+            items: allRiilItems,
+            spt: spt || {},
+            pelaksana: pelaksana || {},
+            penggunaAnggaran: penggunaAnggaran || { nama_lengkap: '(Nama Kepala Dinas)', nip: '(NIP Kepala Dinas)' },
+            tanggal_cetak: new Date().toISOString() // Tanggal hari ini
+        };
+
+        res.json(responseData);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil data cetak pengeluaran riil id ${req.params.id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
 });
 
 // =================================================================

@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
 
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'arial', Times, serif;
             background-color: #fff;
             color: #000;
         }
@@ -23,28 +23,45 @@
             border: 1px #D3D3D3 solid;
             border-radius: 5px;
             background: white;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 
         .kop-surat {
+            right: 30px;
+            display: flex;
+            line-height: 22px;
             text-align: center;
-            border-bottom: 4px double #000;
+            text-wrap: nowrap;
+            border-bottom: 4px double black;
             padding-bottom: 10px;
+            margin-bottom: 10px;
         }
 
-        .kop-surat h1 {
+        .kop-surat img {
+            position: absolute;
+            width: 155px;
+            height: 110px;
+        }
+
+        .text-kop {
+            margin-left: 120px;
+            text-align: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .kop-surat .text-kop h1 {
             font-size: 18pt;
             font-weight: bold;
             margin: 0;
         }
 
-        .kop-surat h2 {
-            font-size: 22pt;
-            font-weight: bold;
-            margin: 5px 0;
+        .kop-surat .text-kop h2 {
+            font-size: 16pt;
+            margin: 0;
         }
 
-        .kop-surat p {
+        .kop-surat .text-kop p {
             font-size: 12pt;
             margin: 0;
         }
@@ -86,10 +103,16 @@
         }
 
         @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: white;
+            }
 
-            body,
             .page-container {
-                margin: 0;
+                margin-top: -2cm;
+                width: 21cm;
+                min-height: 29.7cm;
                 box-shadow: none;
                 border: none;
             }

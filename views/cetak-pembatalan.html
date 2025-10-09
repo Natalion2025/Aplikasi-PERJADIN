@@ -19,26 +19,45 @@
         .page-container {
             width: 21cm;
             min-height: 29.7cm;
-            padding: 2cm;
+            padding: 1.5cm;
             margin: 1cm auto;
             background: white;
             box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 
         .kop-surat {
+            right: 30px;
+            display: flex;
+            line-height: 22px;
             text-align: center;
+            text-wrap: nowrap;
+            border-bottom: 4px double black;
             padding-bottom: 10px;
-            margin-bottom: 0;
+            margin-bottom: 10px;
+        }
+
+        .kop-surat img {
+            position: absolute;
+            width: 155px;
+            height: 110px;
+        }
+
+        .text-kop {
+            margin-left: 120px;
+            text-align: center;
+            justify-content: center;
+            position: relative;
         }
 
         .kop-surat h1 {
-            font-size: 20pt;
+            font-size: 18pt;
             font-weight: bold;
+            margin: 0;
         }
 
         .kop-surat h2 {
             font-size: 16pt;
-            font-weight: bold;
+            margin: 0;
         }
 
         .kop-surat p {
@@ -78,7 +97,10 @@
 
             body,
             .page-container {
-                margin: 0;
+                margin-top: -1cm;
+                width: 21cm;
+                min-height: 29.7cm;
+                border: none;
                 box-shadow: none;
             }
         }

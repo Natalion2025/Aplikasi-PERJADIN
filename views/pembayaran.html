@@ -11,7 +11,7 @@
     <link href="/css/output.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'arial', sans-serif;
             margin: 0;
             padding: 0;
         }
@@ -142,38 +142,102 @@
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Pembayaran</h2>
-                <button id="buat-bukti-button"
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Buat Bukti Bayar
-                </button>
+                <div class="flex space-x-2">
+                    <button id="pengeluaran-rill-button"
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-file-invoice-dollar mr-2"></i>Pengeluaran Rill
+                    </button>
+                    <button id="buat-bukti-button"
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Buat Bukti Bayar
+                    </button>
+                </div>
             </div>
 
             <div class="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-md">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Daftar Bukti Pembayaran</h3>
-                <div id="pembayaran-list-container" class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Nomor Bukti</th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Tanggal</th>
-                                <th scope="col"
-                                    class="w-2/5 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Penerima & Uraian</th>
-                                <th scope="col"
-                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Nominal</th>
-                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span></th>
-                            </tr>
-                        </thead>
-                        <tbody id="pembayaran-table-body"
-                            class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
-                            <!-- Data akan dimuat di sini oleh JavaScript -->
-                        </tbody>
-                    </table>
+                <!-- Kontainer Tab -->
+                <div class="border-b border-gray-200 dark:border-gray-700">
+                    <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="payment-tabs" role="tablist">
+                        <li class="me-2" role="presentation">
+                            <button class="inline-block p-4 border-b-2 rounded-t-lg" id="bukti-bayar-tab" type="button"
+                                role="tab" aria-controls="bukti-bayar-panel" aria-selected="true">Daftar
+                                Bukti Pembayaran</button>
+                        </li>
+                        <li class="me-2" role="presentation">
+                            <button
+                                class="inline-block p-4 border-b-2 rounded-t-lg border-transparent hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                                id="pengeluaran-rill-tab" type="button" role="tab"
+                                aria-controls="pengeluaran-rill-panel" aria-selected="false">Daftar Bukti Pengeluaran
+                                Riil</button>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Konten Tab -->
+                <div id="payment-tab-content" class="pt-6">
+                    <!-- Panel 1: Daftar Bukti Pembayaran -->
+                    <div id="bukti-bayar-panel" role="tabpanel" aria-labelledby="bukti-bayar-tab">
+                        <div id="pembayaran-list-container" class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <!-- Header tabel bukti pembayaran yang sudah ada -->
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nomor Bukti</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Tanggal</th>
+                                        <th scope="col"
+                                            class="w-2/5 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Penerima & Uraian</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nominal</th>
+                                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pembayaran-table-body"
+                                    class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Panel 2: Daftar Bukti Pengeluaran Riil -->
+                    <div id="pengeluaran-rill-panel" class="hidden" role="tabpanel"
+                        aria-labelledby="pengeluaran-rill-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Uraian</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jumlah</th>
+                                        <th scope="col" class="relative px-6 py-3">
+                                            <span class="sr-only">Aksi</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pengeluaran-rill-table-body"
+                                    class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
+                                    <!-- Data akan dimuat di sini -->
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">Data belum
+                                            tersedia.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -317,6 +381,64 @@
                     class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pembayaran-form"
                     class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pengeluaran Rill -->
+    <div id="pengeluaran-rill-modal" class="modal-overlay hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto relative flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                <h3 id="pengeluaran-rill-modal-title" class="text-xl font-semibold text-white">Tambah Pengeluaran Rill
+                </h3>
+                <button id="close-pengeluaran-rill-modal-button" class="text-gray-300 hover:text-white">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+                <form id="pengeluaran-rill-form" class="space-y-6">
+                    <input type="hidden" id="pengeluaran-rill-id">
+                    <div>
+                        <label for="pengeluaran_spt_id"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor SPT</label>
+                        <select id="pengeluaran_spt_id" name="spt_id" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            <option value="">-- Pilih SPT --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="pengeluaran_pelaksana_id"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Pelaksana</label>
+                        <select id="pengeluaran_pelaksana_id" name="pegawai_id" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                            disabled>
+                            <option value="">-- Pilih SPT terlebih dahulu --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="pengeluaran_uraian"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uraian</label>
+                        <textarea id="pengeluaran_uraian" name="uraian" rows="3" required
+                            placeholder="Contoh: Biaya taksi dari bandara ke hotel"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="pengeluaran_jumlah"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jumlah</label>
+                        <input type="text" id="pengeluaran_jumlah" name="jumlah" required
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 currency-input"
+                            placeholder="Masukkan nominal">
+                    </div>
+                </form>
+            </div>
+            <!-- Modal Footer -->
+            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                <button id="cancel-pengeluaran-rill-button" type="button"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                <button type="submit" form="pengeluaran-rill-form"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Simpan</button>
             </div>
         </div>
     </div>

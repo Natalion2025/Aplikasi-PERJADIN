@@ -26,16 +26,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { pembatalan, spt, pejabatPemberiTugas, pelaksana, sppd, anggaran } = data;
 
         const suratHtml = `
-        <div style=" display: flex; margin-bottom: 5px; margin-top: 20px; justify-content: center; width: 100%; margin-left: -20px; margin-right: auto;">
-            <img src="/assets/logomelawi.png" alt="Logo Melawi" class="logo" style="width: 170px; height: 120px;">
             <div class="kop-surat">
-                <h1>PEMERINTAH KABUPATEN MELAWI</h1>
-                <h2>SEKRETARIAT DAERAH</h2>
-                <p>Jalan Protokol No. 1 Telp. (0568) 21005 Fax. (0568) 21490</p>
-                <p>NANGA PINOH</p>
+                <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                <div class="text-kop">
+                    <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                    <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                    <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                    <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                    <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
+                </div>
             </div>
-        </div>
-        <p style="border-bottom: 4px double black"></p>
 
             <div class="judul-surat">
                 <h3>SURAT PERNYATAAN PEMBATALAN TUGAS PERJALANAN DINAS</h3>
@@ -103,16 +103,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             <div style="page-break-after: always;"></div>
 
-        <div style=" display: flex; margin-bottom: 5px; margin-top: 20px; justify-content: center; width: 100%; margin-left: -20px; margin-right: auto;">
-            <img src="/assets/logomelawi.png" alt="Logo Melawi" class="logo" style="width: 170px; height: 120px;">
             <div class="kop-surat">
-                <h1>PEMERINTAH KABUPATEN MELAWI</h1>
-                <h2>SEKRETARIAT DAERAH</h2>
-                <p>Jalan Protokol No. 1 Telp. (0568) 21005 Fax. (0568) 21490</p>
-                <p>NANGA PINOH</p>
+                <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                <div class="text-kop">
+                    <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                    <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                    <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                    <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                    <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
+                </div>
             </div>
-        </div>
-        <p style="border-bottom: 4px double black"></p>
             <div class="judul-surat">
                 <h3>SURAT PERNYATAAN PEMBEBANAN <br> BIAYA PEMBATALAN PERJALANAN DINAS</h3>
                 <p>NOMOR: ......................</p>

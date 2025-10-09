@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
 
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'arial', Times, serif;
             background-color: #fff;
             color: #000;
             font-size: 12pt;
@@ -24,21 +24,31 @@
             border: 1px #D3D3D3 solid;
             border-radius: 5px;
             background: white;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 
         .kop-surat {
-            text-align: center;
-            border-bottom: 4px double #000;
-            padding-bottom: 10px;
+            right: 30px;
             display: flex;
-            align-items: center;
-            gap: 1rem;
+            line-height: 22px;
+            text-align: center;
+            text-wrap: nowrap;
+            border-bottom: 4px double black;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
 
         .kop-surat img {
-            width: 90px;
-            height: auto;
+            position: absolute;
+            width: 155px;
+            height: 110px;
+        }
+
+        .text-kop {
+            margin-left: 120px;
+            text-align: center;
+            justify-content: center;
+            position: relative;
         }
 
         .kop-surat .text-kop {
@@ -46,19 +56,18 @@
             flex-grow: 1;
         }
 
-        .kop-surat h1 {
+        .kop-surat .text-kop h1 {
             font-size: 18pt;
             font-weight: bold;
             margin: 0;
         }
 
-        .kop-surat h2 {
-            font-size: 22pt;
-            font-weight: bold;
-            margin: 5px 0;
+        .kop-surat .text-kop h2 {
+            font-size: 16pt;
+            margin: 0;
         }
 
-        .kop-surat p {
+        .kop-surat .text-kop p {
             font-size: 12pt;
             margin: 0;
         }
@@ -92,62 +101,6 @@
             border: 1px solid black;
             padding: 8px;
             vertical-align: top;
-        }
-
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-
-            body,
-            html {
-                background: #fff;
-            }
-
-            .page-container {
-                margin: 0;
-                padding: 1.5cm;
-                border: none;
-                box-shadow: none;
-            }
-        }
-
-        .kop-surat {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-        }
-
-        .kop-surat img {
-            width: 80px;
-            height: 80px;
-            margin-right: 20px;
-        }
-
-        .text-kop {
-            text-align: center;
-            flex-grow: 1;
-        }
-
-        .text-kop h1 {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 0;
-            text-transform: uppercase;
-        }
-
-        .text-kop h2 {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 0;
-            text-transform: uppercase;
-        }
-
-        .text-kop p {
-            font-size: 12px;
-            margin: 2px 0;
         }
 
         .judul-sppd {
@@ -187,6 +140,31 @@
 
         .ttd-section p {
             margin: 5px 0;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: white;
+            }
+
+            body,
+            html {
+                background: #fff;
+            }
+
+            .page-container {
+                width: 21cm;
+                min-height: 29.7cm;
+                margin-top: -1cm;
+                box-shadow: none;
+                border: none;
+            }
         }
     </style>
 </head>

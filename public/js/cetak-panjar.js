@@ -50,11 +50,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
 
         const printContent = `
+            
             <div class="kop-surat">
-                <h1>PEMERINTAH KABUPATEN MELAWI</h1>
-                <h2>DINAS KOMUNIKASI DAN INFORMATIKA</h2>
-                <p>Jalan Poros Provinsi Nanga Pinoh - Kota Baru, Km. 7, Telp. (0568) 21005 Fax. (0568) 21490</p>
-                <p>NANGA PINOH</p>
+                <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                <div class="text-kop">
+                    <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                    <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                    <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                    <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                    <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
+                </div>
             </div>
 
             <h3 class="judul">RINCIAN BIAYA PERJALANAN DINAS</h3>
@@ -132,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>NIP. ${data.pejabat_nip}</td>
                 </tr>
             </table>
-        `;
+        `; // Penutup template literal dipindahkan ke bawah
 
         printArea.innerHTML = printContent;
         setTimeout(() => window.print(), 500);

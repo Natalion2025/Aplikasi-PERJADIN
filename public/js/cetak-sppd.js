@@ -103,10 +103,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="kop-surat">
                 <img src="/assets/logomelawi.png" alt="Logo Melawi">
                 <div class="text-kop">
-                    <h1>PEMERINTAH KABUPATEN MELAWI</h1>
-                    <h2>SEKRETARIAT DAERAH</h2>
-                    <p>Jalan Protokol No. 1 Telp. (0568) 21005 Fax. (0568) 21490</p>
-                    <p>NANGA PINOH</p>
+                    <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                    <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                    <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                    <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                    <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
                 </div>
             </div>
 

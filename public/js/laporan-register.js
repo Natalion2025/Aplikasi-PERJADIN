@@ -23,6 +23,10 @@
     const rincianBiayaInput = document.getElementById('pembatalan_rincian_biaya');
     const nominalBiayaInput = document.getElementById('pembatalan_nominal_biaya');
     const panjarToggle = document.getElementById('pembatalan-panjar-toggle');
+    // Elemen baru untuk notifikasi dan tombol simpan
+    const pembatalanNotif = document.getElementById('pembatalan-pegawai-notif');
+    const submitPembatalanBtn = formPembatalan.querySelector('button[type="submit"]');
+    let canceledPegawaiForSpt = []; // Cache untuk menyimpan ID pegawai yang sudah dibatalkan
 
 
     const formatDate = (dateString) => {
@@ -207,22 +211,45 @@
         pegawaiSelectPembatalan.innerHTML = '<option value="">-- Memuat Pegawai... --</option>';
         pegawaiSelectPembatalan.disabled = true;
 
+        // Reset notifikasi dan cache setiap kali SPT diganti
+        pembatalanNotif.classList.add('hidden');
+        canceledPegawaiForSpt = [];
+
         if (!sptId) {
             pegawaiSelectPembatalan.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
             return;
         }
 
         try {
-            const response = await fetch(`/api/spt/${sptId}`);
-            if (!response.ok) throw new Error('Gagal memuat detail pegawai.');
-            const sptDetail = await response.json();
+            // Ambil data SPT dan data penandatangan laporan secara bersamaan
+            // PERBAIKAN: Ambil juga data pegawai yang sudah dibatalkan
+            const [sptRes, signersRes, canceledRes] = await Promise.all([
+                fetch(`/api/spt/${sptId}`),
+                fetch(`/api/laporan/signers/by-spt/${sptId}`),
+                fetch(`/api/pembatalan/by-spt/${sptId}`) // Panggil API baru
+            ]);
+
+            if (!sptRes.ok) throw new Error('Gagal memuat detail pegawai.');
+            const sptDetail = await sptRes.json();
+
+            const signerIds = signersRes.ok ? await signersRes.json() : [];
+            const signerIdSet = new Set(signerIds.map(id => id.toString()));
+
+            // Simpan data pegawai yang sudah dibatalkan ke cache
+            canceledPegawaiForSpt = canceledRes.ok ? await canceledRes.json() : [];
 
             pegawaiSelectPembatalan.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
-            sptDetail.pegawai.forEach(p => {
-                pegawaiSelectPembatalan.add(new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id));
-            });
-            if (selectedPegawaiId) pegawaiSelectPembatalan.value = selectedPegawaiId;
-            pegawaiSelectPembatalan.disabled = false;
+            const availablePegawai = sptDetail.pegawai.filter(p => !signerIdSet.has(p.pegawai_id.toString()));
+
+            if (availablePegawai.length === 0) {
+                pegawaiSelectPembatalan.innerHTML = '<option value="">-- Semua pegawai sudah melapor --</option>';
+            } else {
+                availablePegawai.forEach(p => {
+                    pegawaiSelectPembatalan.add(new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id));
+                });
+                if (selectedPegawaiId) pegawaiSelectPembatalan.value = selectedPegawaiId;
+                pegawaiSelectPembatalan.disabled = false;
+            }
         } catch (error) {
             pegawaiSelectPembatalan.innerHTML = '<option value="">-- Gagal memuat --</option>';
         }
@@ -336,6 +363,26 @@
     // Event listener untuk perubahan dropdown SPT di modal
     sptSelectPembatalan.addEventListener('change', (e) => {
         populatePegawaiDropdown(e.target.value);
+    });
+
+    // Event listener untuk perubahan dropdown PEGAWAI di modal
+    pegawaiSelectPembatalan.addEventListener('change', (e) => {
+        const selectedPegawaiId = e.target.value;
+        const isAlreadyCanceled = canceledPegawaiForSpt.includes(parseInt(selectedPegawaiId, 10));
+
+        if (isAlreadyCanceled) {
+            pembatalanNotif.textContent = 'Pegawai ini sudah pernah dibuatkan surat pembatalan tugas untuk SPT terkait.';
+            pembatalanNotif.className = 'p-2 text-sm text-center rounded-md border border-red-300 bg-red-50 text-red-700';
+            pembatalanNotif.classList.remove('hidden');
+            submitPembatalanBtn.disabled = true;
+            submitPembatalanBtn.classList.add('cursor-not-allowed', 'bg-red-300');
+            submitPembatalanBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        } else {
+            pembatalanNotif.classList.add('hidden');
+            submitPembatalanBtn.disabled = false;
+            submitPembatalanBtn.classList.remove('cursor-not-allowed', 'bg-red-300');
+            submitPembatalanBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        }
     });
 
     // Event listener untuk submit form pembatalan

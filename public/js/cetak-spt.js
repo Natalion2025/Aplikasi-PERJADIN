@@ -82,14 +82,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
 
         printArea.innerHTML = `
-            <div class="kop-surat flex flex-row items-center gap-x-4 space-around mb-4">
-            <img src="/assets/logomelawi.png" alt="Logo Melawi" class="w-40 h-40 object-contain">
-            <section>    
-                <h1>PEMERINTAH KABUPATEN MELAWI</h1>
-                <h2>SEKRETARIAT DAERAH</h2>
-                <p>Jalan Protokol No. 1 Telp. (0568) 21005 Fax. (0568) 21490</p>
-                <p>NANGA PINOH</p>
-            </section>
+            <div class="kop-surat">
+                <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                <div class="text-kop">
+                    <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                    <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                    <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                    <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                    <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
+                </div>
             </div>
 
             <div class="judul-spt">
@@ -131,6 +132,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
     };
+
+    setTimeout(() => {
+        window.print();
+    }, 500);
 
     const fullData = await fetchFullData();
     renderSurat(fullData);

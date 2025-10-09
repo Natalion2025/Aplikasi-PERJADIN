@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Pengeluaran Riil</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'arial', Times, serif;
+            font-size: 12pt;
+            background-color: #f3f4f6;
+        }
+
+        .print-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1.5cm;
+            margin: 1cm auto;
+            border: 1px #D3D3D3 solid;
+            border-radius: 5px;
+            background: white;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+        }
+
+        .kop-surat {
+            right: 30px;
+            display: flex;
+            line-height: 22px;
+            text-align: center;
+            text-wrap: nowrap;
+            border-bottom: 4px double black;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .kop-surat img {
+            position: absolute;
+            width: 155px;
+            height: 110px;
+        }
+
+        .text-kop {
+            margin-left: 120px;
+            text-align: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .kop-surat .text-kop h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .kop-surat .text-kop h2 {
+            font-size: 16pt;
+            margin: 0;
+        }
+
+        .kop-surat .text-kop p {
+            font-size: 12pt;
+            margin: 0;
+        }
+
+        .judul-surat {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .judul-surat h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .content-table td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        .rincian-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .rincian-table th,
+        .rincian-table td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .rincian-table th {
+            text-align: center;
+            background-color: #f2f2f2;
+        }
+
+        .tanda-tangan-container {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tanda-tangan-box {
+            width: 45%;
+            text-align: center;
+        }
+
+        .tanda-tangan-box .signature-space {
+            height: 80px;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                background-color: white;
+            }
+
+            #controls {
+                display: none;
+            }
+
+            .print-container {
+                margin-top: -1cm;
+                width: 21cm;
+                min-height: 29.7cm;
+                box-shadow: none;
+                border: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls" class="p-4 bg-white shadow-md text-center">
+        <button onclick="window.print()"
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cetak</button>
+    </div>
+
+    <div id="print-area" class="print-container">
+        <div class="text-center p-8">
+            <p>Memuat data...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const printArea = document.getElementById('print-area');
+            const pathParts = window.location.pathname.split('/');
+            const id = pathParts[pathParts.length - 1];
+
+            const formatCurrency = (value) => {
+                const number = parseFloat(value);
+                if (isNaN(number)) return '-';
+                return new Intl.NumberFormat('id-ID').format(number);
+            };
+
+            const formatDate = (dateString) => {
+                if (!dateString) return '-';
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return new Date(dateString).toLocaleDateString('id-ID', options);
+            };
+
+            try {
+                const response = await fetch(`/api/cetak/pengeluaran-riil/${id}`);
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Gagal memuat data cetak.');
+                }
+                const data = await response.json();
+                const { items, spt, pelaksana, penggunaAnggaran, tanggal_cetak } = data;
+
+                let totalJumlah = 0;
+                const rincianRows = items.map((item, index) => {
+                    totalJumlah += item.jumlah;
+                    return `
+                        <tr>
+                            <td style="text-align: center;">${index + 1}</td>
+                            <td>${item.uraian}</td>
+                            <td style="text-align: right;">${formatCurrency(item.jumlah)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const printContent = `
+                    <div class="kop-surat">
+                        <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                        <div class="text-kop">
+                            <h2>PEMERINTAH KABUPATEN MELAWI</h2>
+                            <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
+                            <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
+                            <p>Nanga Pinoh, Kabupaten Melawi, Kode Pos 79672,</p>
+                            <p>email dinas_kominfo@melawikab.go.id, website www.melawikab.go.id</p>
+                        </div>
+                    </div>
+
+                    <div class="judul-surat">
+                        <h3>DAFTAR PENGELUARAN RIIL</h3>
+                    </div>
+
+                    <p>Yang bertanda tangan di bawah ini:</p>
+                    <table class="content-table" style="margin-left: 20px;">
+                        <tr><td style="width: 30%;">Nama</td><td style="width: 5%;">:</td><td>${pelaksana.nama_lengkap || '-'}</td></tr>
+                        <tr><td>NIP</td><td>:</td><td>${pelaksana.nip || '-'}</td></tr>
+                        <tr><td>Jabatan</td><td>:</td><td>${pelaksana.jabatan || '-'}</td></tr>
+                        <tr><td>Instansi</td><td>:</td><td>Dinas Komunikasi dan Informatika</td></tr>
+                    </table>
+                    <br>
+
+                    <p style="text-align: justify;">Berdasarkan Surat Tugas (ST) Nomor ${spt.nomor_surat || '......'} tanggal ${formatDate(spt.tanggal_surat)}, dengan ini kami menyatakan dengan sesungguhnya bahwa:</p>
+                    
+                    <ol style="list-style-position: inside; text-align: justify;">
+                        <number style="flex-direction: row; display: flex;">1.
+                        <li style="padding-left: 20px;">Biaya transpor pegawai dan/atau biaya penginapan di bawah ini yang tidak dapat diperoleh bukti–bukti pengeluarannya, meliputi:
+                            <table class="rincian-table">
+                                <thead>
+                                    <tr><th>No</th><th>Uraian</th><th>Jumlah</th></tr>
+                                </thead>
+                                <tbody>
+                                    ${rincianRows}
+                                    <tr>
+                                        <td colspan="2" style="text-align: center; font-weight: bold;">Jumlah</td>
+                                        <td style="text-align: right; font-weight: bold;">${formatCurrency(totalJumlah)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </li>
+                        </number>
+                        <number style="flex-direction: row; display: flex;">2.
+                        <li style="padding-left: 20px;">Jumlah uang tersebut pada angka (1) di atas benar-benar dikeluarkan untuk pelaksanaan perjalanan dinas dimaksud dan apabila di kemudian hari terdapat kelebihan atas pembayaran, kami bersedia untuk menyetorkan kelebihan tersebut ke Kas Pemerintah Daerah.</li>
+                        </number>
+                    </ol>
+                    <br>
+
+                    <p style="text-align: justify;">Demikian pernyataan ini kami buat dengan sebenarnya, untuk dipergunakan sebagaimana mestinya.</p>
+
+                    <div class="tanda-tangan-container">
+                        <div class="tanda-tangan-box">
+                            <p>Mengetahui / Menyetujui</p>
+                            <p>Pengguna Anggaran</p>
+                            <div class="signature-space"></div>
+                            <p style="font-weight: bold; text-decoration: underline;">${penggunaAnggaran.nama_lengkap}</p>
+                            <p>NIP. ${penggunaAnggaran.nip}</p>
+                        </div>
+                        <div class="tanda-tangan-box">
+                            <p>Nanga Pinoh, ${formatDate(tanggal_cetak)}</p>
+                            <p>Pelaksana Perjalanan Dinas</p>
+                            <div class="signature-space"></div>
+                            <p style="font-weight: bold; text-decoration: underline;">${pelaksana.nama_lengkap}</p>
+                            <p>NIP. ${pelaksana.nip}</p>
+                        </div>
+                    </div>
+                `;
+                printArea.innerHTML = printContent;
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            } catch (error) {
+                printArea.innerHTML = `<div class="text-center p-8 text-red-500"><strong>Error:</strong> ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+
+</html>
