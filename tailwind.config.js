@@ -15,6 +15,18 @@ module.exports = {
         'gradient-start': '#2c3e50',
         'gradient-end': '#3498db',
         customBlue: 'rgb(52, 152, 219)',
+        chocolate: {
+          50: '#FBF8F1',
+          100: '#F2E8D7',
+          200: '#E6D3B4',
+          300: '#D9BE91',
+          400: '#CDB96F',
+          500: '#B08851',
+          600: '#8E673E',
+          700: '#6C462C',
+          800: '#4A251A',
+          900: '#280F08',
+        },
       },
       boxShadow: {
         'custom': '3px 0 15px rgba(0,0,0,0.1)',

@@ -60,6 +60,19 @@ db.run(`CREATE TABLE IF NOT EXISTS anggaran (
     }
 });
 
+// Cek dan perbaiki struktur tabel 'anggaran' jika kolom 'pptk_id' belum ada.
+db.all("PRAGMA table_info(anggaran)", (err, cols) => {
+    if (err) return;
+    const hasPptkId = cols.some(col => col.name === 'pptk_id');
+    if (!hasPptkId) {
+        console.warn("[DB MIGRATION] Kolom 'pptk_id' tidak ditemukan. Menambahkan kolom ke tabel 'anggaran'...");
+        db.run("ALTER TABLE anggaran ADD COLUMN pptk_id INTEGER REFERENCES pegawai(id)", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'pptk_id':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'pptk_id' berhasil ditambahkan.");
+        });
+    }
+});
+
 // Pastikan tabel 'spt' (Surat Perintah Tugas) ada
 db.run(`CREATE TABLE IF NOT EXISTS spt (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -562,6 +575,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// PERBAIKAN: Pindahkan konfigurasi session ke atas, sebelum rute API didefinisikan.
+// Ini memastikan bahwa setiap request yang masuk akan memiliki data sesi yang sudah diproses.
+app.use(session({
+    store: new SQLiteStore({
+        db: 'sessions.db',
+        dir: './database',
+        busyTimeout: 5000
+    }),
+    secret: 'kunci-rahasia-perjadin-melawi',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 }
+}));
+
 // Konfigurasi Multer untuk upload file
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -609,19 +636,6 @@ const uploadProfileImage = multer({
         cb(null, file.mimetype.startsWith('image/')); // Izinkan semua tipe gambar
     }
 });
-
-// Konfigurasi Session
-app.use(session({
-    store: new SQLiteStore({
-        db: 'sessions.db',
-        dir: './database',
-        busyTimeout: 5000
-    }),
-    secret: 'kunci-rahasia-perjadin-melawi',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }
-}));
 
 // Middleware untuk proteksi rute
 const isAuthenticated = (req, res, next) => {
@@ -753,6 +767,11 @@ app.get('/cetak/sppd/:id', isAuthenticated, (req, res) => {
 // Halaman Cetak SPPD Detail
 app.get('/cetak/sppd-detail/:id', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'cetak-sppd.html'));
+});
+
+// Halaman Cetak Visum PERJADIN (Dinamis)
+app.get('/cetak/visum/:id', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'cetak-visum.html'));
 });
 
 // Halaman Anggaran
@@ -968,11 +987,14 @@ app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
         const sql = `
             SELECT
                 a.*,
-                COALESCE(SUM(p.nominal_bayar), 0) as realisasi
+                COALESCE(SUM(p.nominal_bayar), 0) as realisasi,
+                pptk.nama_lengkap as pptk_nama
             FROM
                 anggaran a
             LEFT JOIN
                 pembayaran p ON a.id = p.anggaran_id
+            LEFT JOIN
+                pegawai pptk ON a.pptk_id = pptk.id
             GROUP BY
                 a.id
             ORDER BY
@@ -1008,7 +1030,7 @@ app.get('/api/anggaran/:id', isApiAuthenticated, async (req, res) => {
 
 // POST a new anggaran
 app.post('/api/anggaran', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
-    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran } = req.body;
+    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran, pptk_id } = req.body;
     if (!mata_anggaran || !nilai_anggaran) {
         return res.status(400).json({ message: 'Mata Anggaran dan Nilai Anggaran wajib diisi.' });
     }
@@ -1016,8 +1038,8 @@ app.post('/api/anggaran', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
     const [mata_anggaran_kode, mata_anggaran_nama] = mata_anggaran.split(' - ');
 
     try {
-        const sql = 'INSERT INTO anggaran (bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode, mata_anggaran_nama, nilai_anggaran) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran]);
+        const sql = 'INSERT INTO anggaran (bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode, mata_anggaran_nama, nilai_anggaran, pptk_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran, pptk_id || null]);
         res.status(201).json({ id: result.lastID, ...req.body });
     } catch (err) {
         console.error('[API ERROR] Gagal menambah anggaran:', err);
@@ -1027,7 +1049,7 @@ app.post('/api/anggaran', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
 
 // PUT (update) an anggaran
 app.put('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
-    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran } = req.body;
+    const { bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran, nilai_anggaran, pptk_id } = req.body;
     if (!mata_anggaran || !nilai_anggaran) {
         return res.status(400).json({ message: 'Mata Anggaran dan Nilai Anggaran wajib diisi.' });
     }
@@ -1035,8 +1057,8 @@ app.put('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (
     const [mata_anggaran_kode, mata_anggaran_nama] = mata_anggaran.split(' - ');
 
     try {
-        const sql = 'UPDATE anggaran SET bidang_urusan = ?, program = ?, kegiatan = ?, sub_kegiatan = ?, mata_anggaran_kode = ?, mata_anggaran_nama = ?, nilai_anggaran = ? WHERE id = ?';
-        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran, req.params.id]);
+        const sql = 'UPDATE anggaran SET bidang_urusan = ?, program = ?, kegiatan = ?, sub_kegiatan = ?, mata_anggaran_kode = ?, mata_anggaran_nama = ?, nilai_anggaran = ?, pptk_id = ? WHERE id = ?';
+        const result = await runQuery(sql, [bidang_urusan, program, kegiatan, sub_kegiatan, mata_anggaran_kode.trim(), mata_anggaran_nama.trim(), nilai_anggaran, pptk_id || null, req.params.id]);
         if (result.changes === 0) {
             return res.status(404).json({ message: 'Data anggaran tidak ditemukan.' });
         }
@@ -1069,7 +1091,7 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
             SELECT 
-                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, 
+                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id,
                 s.tanggal_berangkat, s.status,
                 -- PERBAIKAN: Gunakan COALESCE untuk mengambil nama dari tabel pejabat atau pegawai
                 COALESCE(pj.nama, pg.nama_lengkap) as pejabat_nama,
@@ -1084,14 +1106,22 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
         const spts = await dbAll(sql);
 
         for (const spt of spts) {
+            // Ambil semua pegawai yang ditugaskan
             const pegawaiSql = `
                 SELECT pg.nama_lengkap, pg.nip FROM spt_pegawai sp
                 JOIN pegawai pg ON sp.pegawai_id = pg.id
                 WHERE sp.spt_id = ?
             `;
             const pegawaiRows = await dbAll(pegawaiSql, [spt.id]);
-            // Mengubah nama properti agar konsisten dan menyertakan data lengkap
             spt.pegawai = pegawaiRows.map(p => p.nama_lengkap);
+
+            // Ambil pegawai yang tugasnya dibatalkan untuk SPT ini
+            const canceledPegawaiSql = `
+                SELECT p.nama_lengkap FROM pembatalan_spt ps
+                JOIN pegawai p ON ps.pegawai_id = p.id
+                WHERE ps.spt_id = ?`;
+            const canceledPegawaiRows = await dbAll(canceledPegawaiSql, [spt.id]);
+            spt.pegawai_dibatalkan = canceledPegawaiRows.map(p => p.nama_lengkap);
         }
 
         res.json(spts);
@@ -1517,6 +1547,42 @@ app.get('/api/cetak/pembatalan/:id', isApiAuthenticated, async (req, res) => {
     }
 });
 
+// API BARU: Data untuk Cetak Visum Dinamis
+app.get('/api/cetak/visum/:spt_id', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const sql = `
+            SELECT
+                s.tempat_berangkat,
+                s.lokasi_tujuan,
+                s.tanggal_berangkat,
+                s.tanggal_kembali,
+                -- Data Kepala Dinas (diambil dari tabel pegawai)
+                kadis.nama_lengkap as kadis_nama,
+                kadis.nip as kadis_nip,
+                kadis.jabatan as kadis_jabatan,
+                -- Data PPTK dari anggaran terkait
+                pptk.nama_lengkap as pptk_nama,
+                pptk.nip as pptk_nip,
+                pptk.jabatan as pptk_jabatan
+            FROM spt s
+            -- Subquery untuk mencari Kepala Dinas secara dinamis
+            CROSS JOIN (SELECT * FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1) as kadis
+            LEFT JOIN anggaran a ON s.anggaran_id = a.id
+            LEFT JOIN pegawai pptk ON a.pptk_id = pptk.id
+            WHERE s.id = ?
+        `;
+        const data = await dbGet(sql, [spt_id]);
+        if (!data) {
+            return res.status(404).json({ message: 'Data SPT atau data terkait tidak ditemukan.' });
+        }
+        res.json(data);
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil data cetak visum untuk SPT ID ${spt_id}:`, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
+    }
+});
+
 // --- Rute API SPPD (Surat Perjalanan Dinas) ---
 
 // GET: Mengambil semua data SPPD untuk register
@@ -1711,6 +1777,13 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             penggunaAnggaran = { nama_lengkap: 'Kepala Dinas (Data tidak ditemukan)' };
         }
 
+        // PERMINTAAN: Penandatangan SPPD harus Kepala Dinas.
+        let penandatanganSppd = await dbGet("SELECT nama_lengkap as nama, nip, jabatan FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1");
+        if (!penandatanganSppd) {
+            console.warn(`[WARN] Data Penandatangan SPPD (Kepala Dinas) tidak ditemukan.`);
+            penandatanganSppd = { nama: '(Nama Kepala Dinas)', nip: '(NIP Kepala Dinas)', jabatan: 'Kepala Dinas' };
+        }
+
         const pengikutSql = `
             SELECT p.nama_lengkap, p.nip 
             FROM spt_pegawai sp
@@ -1719,7 +1792,7 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         `;
         const pengikut = await dbAll(pengikutSql, [spt_id]);
 
-        res.json({ sppdList, spt, pejabat, pengikut, anggaran, penggunaAnggaran });
+        res.json({ sppdList, spt, pejabat, pengikut, anggaran, penggunaAnggaran, penandatanganSppd });
 
     } catch (err) {
         console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}:`, err);
@@ -2321,6 +2394,43 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
             fs.unlinkSync(filePath);
         }
         res.status(500).json({ message: 'Terjadi kesalahan saat memproses file Excel.' });
+    }
+});
+
+// GET: Download template standar biaya
+// PERBAIKAN: Endpoint ini dipindahkan ke luar dari middleware isApiAuthenticated
+// karena request dari tag <a> tidak membawa cookie sesi secara default.
+// Keamanan tetap terjaga karena halaman standar-biaya itu sendiri sudah diproteksi oleh isAuthenticated.
+app.get('/api/standar-biaya/template/:tipe', (req, res) => {
+    const tipeBiaya = req.params.tipe.toUpperCase();
+
+    // PERBAIKAN: Gunakan map untuk menentukan nama file secara dinamis
+    const templateMap = {
+        'A': 'A_Template Uang Harian Dalam Kota_Kabupaten.xlsx',
+        'B': 'B_Template Biaya Penginapan Dalam Kota_Kabupaten.xlsx',
+        'C': 'C_Template Uang Harian Dalam Negeri.xlsx',
+        'D': 'D_Template Biaya Uang Representasi.xlsx',
+        'E': 'E_Template Biaya Penginapan Dalam Negeri.xlsx',
+        'F': 'F_Template Biaya Transportasi Kab_Kecamatan.xlsx',
+        'G': 'G_Template Biaya Transportasi Ibu Kota_Kecamatan_Desa.xlsx',
+        'H': 'H_Template Biaya Tiket Pesawat Dalam Negeri PP dari Pontianak.xlsx',
+        'I': 'I_Template Biaya Tiket Pesawat Dalam Negeri PP dari Jakarta (Transit).xlsx',
+        'J': 'J_Template Biaya Transportasi Dalam Provinsi PP dari Melawi.xlsx',
+        'K': 'K_Template Biaya Taksi Dalam Negeri.xlsx',
+    };
+
+    const fileName = templateMap[tipeBiaya];
+
+    if (!fileName) {
+        return res.status(404).send(`Template untuk tipe ${tipeBiaya} tidak didefinisikan.`);
+    }
+
+    const filePath = path.join(__dirname, 'public', 'templates', fileName);
+    if (fs.existsSync(filePath)) {
+        res.download(filePath, fileName);
+    } else {
+        console.error(`[DOWNLOAD ERROR] Template tidak ditemukan di path: ${filePath}`);
+        res.status(404).send(`Template untuk tipe ${tipeBiaya} tidak ditemukan.`);
     }
 });
 

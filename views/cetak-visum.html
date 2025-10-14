@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Form Visum Perjalanan Dinas</title>
+    <link rel="stylesheet" href="/css/output.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            color: #000;
+        }
+
+        .page-container {
+            /* Gaya awal untuk placeholder */
+            text-align: center;
+        }
+
+        .page-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1cm;
+            margin: 1cm auto;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 1px solid #ddd;
+        }
+
+        .section {
+            display: flex;
+            border: 1px solid black;
+            border-bottom: none;
+        }
+
+        .section:last-of-type {
+            border-bottom: 1px solid black;
+        }
+
+        .section-label {
+            padding: 8px;
+            flex-shrink: 0;
+            flex-basis: 30px;
+            vertical-align: top;
+        }
+
+        .section-content-wrapper {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .content-block {
+            flex-basis: 50%;
+            padding: 7px;
+            min-height: 150px;
+            /* Ensure blocks have a minimum height */
+        }
+
+        .content-block:first-child {
+            border-right: 1px solid black;
+        }
+
+        .content-block-final {
+            flex-basis: 100%;
+            padding: 8px;
+            min-height: 100px;
+            text-align: start;
+            /* Ensure blocks have a minimum height */
+        }
+
+        .signature-box {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .signature-box .name {
+            margin-top: 70px;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        .final-section-content {
+            padding: 8px;
+            text-align: justify;
+        }
+
+        @media print {
+
+            body,
+            .page-container {
+                margin: 0;
+                box-shadow: none;
+                border: none;
+                background: white;
+            }
+
+            .page-container {
+                padding: 0.75cm;
+                width: 21cm;
+                min-height: 29.7cm;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <p>Memuat data visum...</p>
+    </div>
+    <script src="/js/cetak-visum.js"></script>
+</body>
+
+</html>

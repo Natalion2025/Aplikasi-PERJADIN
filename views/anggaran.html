@@ -74,10 +74,10 @@
 
         <!-- Konten -->
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between mb-6">
                 <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Anggaran</h2>
                 <button id="tambah-anggaran-button"
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    class="fixed right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
                     <i class="fas fa-plus mr-2"></i>Tambah Anggaran
                 </button>
             </div>
@@ -103,7 +103,12 @@
                                 <th scope="col"
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Sisa Anggaran</th>
-                                <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span></th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    PPTK</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="anggaran-table-body"
@@ -202,6 +207,16 @@
                         <input type="text" id="nilai_anggaran" name="nilai_anggaran" required
                             placeholder="Masukkan hanya angka, contoh: 1.000.000" inputmode="numeric" pattern="[0-9.,]*"
                             class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+
+                    <div>
+                        <label for="pptk_id"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300">PPTK</label>
+                        <select id="pptk_id" name="pptk_id"
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="">-- Pilih PPTK --</option>
+                            <!-- Opsi akan diisi oleh JavaScript -->
+                        </select>
                     </div>
                 </form>
             </div>

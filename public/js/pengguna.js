@@ -73,12 +73,12 @@ const setupPage = async () => {
             }
 
             const editHtml = canEdit ?
-                `<a href="/edit-pengguna/${targetUser.id}" class="text-indigo-600 hover:text-indigo-900">Edit</a>` :
-                `<span class="text-gray-400 cursor-not-allowed">Edit</span>`;
+                `<a href="/edit-pengguna/${targetUser.id}" class="text-yellow-600 hover:text-yellow-800" title="Edit Pengguna"><i class="fas fa-edit"></i></a>` :
+                `<span class="text-gray-400 cursor-not-allowed" title="Tidak dapat mengedit"><i class="fas fa-edit"></i></span>`;
 
             const deleteHtml = canDelete ?
-                `<button data-id="${targetUser.id}" data-name="${targetUser.name}" class="delete-btn text-red-600 hover:text-red-900 ml-4">Hapus</button>` :
-                `<span class="text-gray-400 cursor-not-allowed ml-4">Hapus</span>`;
+                `<button data-id="${targetUser.id}" data-name="${targetUser.name}" class="delete-btn text-red-600 hover:text-red-800 ml-4" title="Hapus Pengguna"><i class="fas fa-trash"></i></button>` :
+                `<span class="text-gray-400 cursor-not-allowed ml-4" title="Tidak dapat menghapus"><i class="fas fa-trash"></i></span>`;
 
             const row = document.createElement('tr');
             row.innerHTML = `

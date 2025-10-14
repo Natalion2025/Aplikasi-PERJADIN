@@ -50,9 +50,12 @@
             return;
         }
 
-        laporanList.forEach(laporan => {
+        laporanList.forEach((laporan, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}</div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${laporan.judul}</div>
                 </td>
@@ -92,11 +95,15 @@
             return;
         }
 
-        canceledList.forEach(item => {
+        canceledList.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${item.nomor_surat}</div>
+                    <div class="text-sm text-gray-900 dark:text-gray-400">${index + 1}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-gray-400">${item.nomor_surat}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">
                     ${formatDate(item.tanggal_pembatalan)}
@@ -174,6 +181,12 @@
         if (id) {
             modalTitle.textContent = 'Edit Formulir Pembatalan Tugas';
             try {
+                // PERBAIKAN: Saat mode edit, aktifkan semua opsi SPT di dropdown
+                // agar SPT yang terkait dengan data yang diedit bisa dipilih.
+                Array.from(sptSelectPembatalan.options).forEach(opt => {
+                    opt.disabled = false;
+                });
+
                 const response = await fetch(`/api/pembatalan/${id}`);
                 if (!response.ok) throw new Error('Gagal memuat data pembatalan.');
                 const data = await response.json();
@@ -199,6 +212,12 @@
             rincianBiayaInput.value = '';
             nominalBiayaInput.value = '';
             panjarToggle.checked = false;
+            // PERBAIKAN: Saat mode tambah, nonaktifkan SPT yang sudah dibatalkan sepenuhnya.
+            Array.from(sptSelectPembatalan.options).forEach(opt => {
+                if (opt.text.includes('(Dibatalkan)')) {
+                    opt.disabled = true;
+                }
+            });
             panjarToggle.dispatchEvent(new Event('change'));
         }
     };
@@ -268,11 +287,7 @@
             spts.forEach(spt => {
                 const option = document.createElement('option');
                 option.value = spt.id;
-                option.textContent = spt.status === 'dibatalkan' ? `${spt.nomor_surat} (Dibatalkan)` : spt.nomor_surat;
-                // Saat mode tambah, nonaktifkan pilihan SPT yang sudah dibatalkan.
-                if (spt.status === 'dibatalkan') {
-                    option.disabled = true;
-                }
+                option.textContent = spt.nomor_surat + (spt.status === 'dibatalkan' ? ' (Dibatalkan)' : '');
                 sptSelectPembatalan.appendChild(option);
             });
         } catch (error) {

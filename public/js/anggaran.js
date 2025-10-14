@@ -8,6 +8,7 @@
     const anggaranForm = document.getElementById('anggaran-form');
     const modalTitle = document.getElementById('anggaran-modal-title');
     const anggaranIdInput = document.getElementById('anggaran-id');
+    const pptkSelect = document.getElementById('pptk_id');
 
     // Elemen List/Tabel
     const anggaranTableBody = document.getElementById('anggaran-table-body');
@@ -43,6 +44,7 @@
             document.getElementById('sub_kegiatan').value = anggaran.sub_kegiatan;
             // Gabungkan kode dan nama untuk mencocokkan value di <option>
             document.getElementById('mata_anggaran').value = `${anggaran.mata_anggaran_kode} - ${anggaran.mata_anggaran_nama}`;
+            document.getElementById('pptk_id').value = anggaran.pptk_id;
             document.getElementById('nilai_anggaran').value = formatCurrency(anggaran.nilai_anggaran);
         } else {
             // Mode Tambah
@@ -69,8 +71,8 @@
 
         if (anggaranList.length === 0) {
             const canManage = currentUserRole === 'admin' || currentUserRole === 'superadmin';
-            // Sesuaikan jumlah kolom pada pesan "data kosong" agar sesuai dengan header
-            const colspan = canManage ? 7 : 6;
+            // Sesuaikan jumlah kolom pada pesan "data kosong" agar sesuai dengan header (bertambah 1 karena ada PPTK)
+            const colspan = canManage ? 8 : 7;
             const message = canManage ? 'Belum ada data anggaran. Silakan tambahkan anggaran baru.' : 'Data anggaran belum tersedia.';
             anggaranTableBody.innerHTML = `<tr><td colspan="${colspan}" class="px-6 py-4 text-center text-gray-500">${message}</td></tr>`;
             return;
@@ -81,8 +83,8 @@
 
             const actionButtons = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
                 ? `<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                       <button data-id="${anggaran.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
-                       <button data-id="${anggaran.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4">Hapus</button>
+                       <button data-id="${anggaran.id}" class="edit-btn text-yellow-600 hover:text-yellow-800" title="Edit Anggaran"><i class="fas fa-edit"></i></button>
+                       <button data-id="${anggaran.id}" class="delete-btn text-red-600 hover:text-red-800 ml-4" title="Hapus Anggaran"><i class="fas fa-trash"></i></button>
                    </td>`
                 : ''; // Jangan render kolom sama sekali jika bukan admin
 
@@ -103,6 +105,9 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${anggaran.sisa < 0 ? 'text-red-500' : 'text-green-600'}">
                     Rp ${formatCurrency(anggaran.sisa)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    ${anggaran.pptk_nama || '-'}
                 </td>
                 ${actionButtons}
             `;
@@ -133,9 +138,10 @@
     const loadAnggaran = async () => {
         try {
             // Ambil data sesi dan data anggaran secara bersamaan
-            const [sessionRes, anggaranRes] = await Promise.all([
+            const [sessionRes, anggaranRes, pegawaiRes] = await Promise.all([
                 fetch('/api/user/session'),
-                fetch('/api/anggaran')
+                fetch('/api/anggaran'),
+                fetch('/api/pegawai') // Ambil data pegawai untuk dropdown PPTK
             ]);
 
             if (sessionRes.ok) {
@@ -154,10 +160,20 @@
             const anggaranList = await anggaranRes.json();
             renderAnggaranList(anggaranList);
 
+            // Isi dropdown PPTK
+            if (pegawaiRes.ok) {
+                const pegawaiList = await pegawaiRes.json();
+                pptkSelect.innerHTML = '<option value="">-- Pilih PPTK --</option>';
+                pegawaiList.forEach(p => {
+                    const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.id);
+                    pptkSelect.appendChild(option);
+                });
+            }
+
         } catch (error) {
             console.error('Error:', error);
             // Sesuaikan colspan untuk pesan error
-            const colspan = (currentUserRole === 'admin' || currentUserRole === 'superadmin') ? 7 : 6;
+            const colspan = (currentUserRole === 'admin' || currentUserRole === 'superadmin') ? 8 : 7;
             anggaranTableBody.innerHTML = `<tr><td colspan="${colspan}" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
@@ -171,6 +187,7 @@
 
         // Parse nilai anggaran dari format mata uang ke angka sebelum dikirim
         data.nilai_anggaran = parseCurrency(data.nilai_anggaran);
+        data.pptk_id = document.getElementById('pptk_id').value;
 
         // Pisahkan kode dan nama mata anggaran
         const mataAnggaranValue = data.mata_anggaran;
@@ -200,17 +217,19 @@
     anggaranTableBody.addEventListener('click', async (event) => {
         const target = event.target;
 
-        // Handle Edit
-        if (target.classList.contains('edit-btn')) {
-            const id = target.dataset.id;
+        // Handle Edit (periksa parent jika ikon yang diklik)
+        const editBtn = target.closest('.edit-btn');
+        if (editBtn) {
+            const id = editBtn.dataset.id; // PERBAIKAN: Ambil ID dari tombol, bukan dari target klik
             const response = await fetch(`/api/anggaran/${id}`);
             const anggaran = await response.json();
             openModal(anggaran);
         }
 
-        // Handle Delete
-        if (target.classList.contains('delete-btn')) {
-            const id = target.dataset.id;
+        // Handle Delete (periksa parent jika ikon yang diklik)
+        const deleteBtn = target.closest('.delete-btn');
+        if (deleteBtn) {
+            const id = deleteBtn.dataset.id; // PERBAIKAN: Ambil ID dari tombol, bukan dari target klik
             if (confirm('Apakah Anda yakin ingin menghapus data anggaran ini?')) {
                 try {
                     const response = await fetch(`/api/anggaran/${id}`, { method: 'DELETE' });

@@ -28,18 +28,6 @@
     const sptPanel = document.getElementById('spt-panel');
     const sppdPanel = document.getElementById('sppd-panel');
 
-    // Elemen Modal Pembatalan
-    const pembatalanModal = document.getElementById('pembatalan-modal');
-    const closePembatalanModalBtn = document.getElementById('close-pembatalan-modal');
-    const cancelPembatalanBtn = document.getElementById('cancel-pembatalan-button');
-    const pembatalanForm = document.getElementById('pembatalan-form');
-    const pembatalanSptIdInput = document.getElementById('pembatalan_spt_id');
-    const pembatalanPegawaiSelect = document.getElementById('pembatalan_pegawai_id');
-    // Elemen baru untuk notifikasi dan tombol simpan
-    const pembatalanNotif = document.getElementById('pembatalan-pegawai-notif');
-    const submitPembatalanBtn = pembatalanForm.querySelector('button[type="submit"]');
-    let canceledPegawaiForSpt = []; // Cache untuk menyimpan ID pegawai yang sudah dibatalkan
-
     const formatDate = (dateString) => {
         if (!dateString) return '-';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -84,18 +72,7 @@
                 : '<span class="text-gray-400">Tidak ada</span>';
 
             const isCancelled = spt.status === 'dibatalkan';
-            const rowClass = isCancelled ? 'bg-red-50 dark:bg-red-900/20' : '';
             const hasReport = spt.laporan_count > 0;
-
-            // Tombol aksi hanya aktif jika SPT belum dibatalkan
-            const actionButtons = (role === 'admin' || role === 'superadmin') && !isCancelled
-                ? `<a href="/edit-spt/${spt.id}" class="edit-btn text-yellow-600 hover:text-yellow-900 ml-4" title="Edit SPT">
-                       <i class="fas fa-edit"></i>
-                   </a>
-                   <button data-id="${spt.id}" data-nomor="${spt.nomor_surat}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus SPT">
-                       <i class="fas fa-trash"></i>
-                   </button>`
-                : '';
 
             // Logika untuk tombol/status laporan
             const reportButton = isCancelled
@@ -105,6 +82,22 @@
                     : hasReport
                         ? `<span class="text-gray-400 ml-4 cursor-not-allowed" title="Sudah Dilaporkan"><i class="fas fa-check-circle"></i></span>`
                         : '';
+
+            // Tombol aksi hanya aktif jika SPT belum dibatalkan
+            const actionButtons = (role === 'admin' || role === 'superadmin') && !isCancelled
+                ? `<a href="/edit-spt/${spt.id}" class="edit-btn text-yellow-600 hover:text-yellow-900 ml-4" title="Edit SPT">
+                       <i class="fas fa-edit"></i>
+                   </a>
+                   <button data-id="${spt.id}" data-nomor="${spt.nomor_surat}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus SPT">
+                       <i class="fas fa-trash"></i>
+                   </button>
+                   <a href="/cetak/visum/${spt.id}" target="_blank"
+                        class="py-1 px-2 rounded-xl ml-4 text-green-800 bg-green-100 hover:bg-green-200 transition-colors"
+                        title="Cetak Form Visum">
+                        <i class="fas fa-print text-green-800"></i> Form Visum
+                    </a>`
+
+                : '';
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -128,14 +121,11 @@
                     <a href="/cetak/sppd/${spt.id}" target="_blank" class="text-green-600 hover:text-green-900 ml-4" title="Cetak SPPD">
                         <i class="fas fa-file-alt"></i>
                     </a>
-                    <button data-id="${spt.id}" data-nomor="${spt.nomor_surat}" class="cancel-spt-btn text-orange-500 hover:text-orange-700 ml-4" title="Batalkan Perjalanan">
-                        <i class="fas fa-ban"></i>
-                    </button>
                     ${reportButton}
                     ${actionButtons}
                 </td>
             `;
-            row.className = rowClass;
+            row.className = isCancelled ? 'bg-red-50 dark:bg-red-900/20' : '';
             sptTableBody.appendChild(row);
         });
     };
@@ -238,27 +228,29 @@
     window.openPanjarModal = async (data = null) => {
         if (!panjarModal) return;
 
-        panjarForm.reset();
         rincianBiayaContainer.innerHTML = ''; // Kosongkan rincian
         panjarTanggalInput.value = new Date().toISOString().split('T')[0]; // Set tanggal hari ini
         document.getElementById('panjar-id').value = '';
+        panjarForm.reset(); // Pindahkan reset ke sini
 
         await loadPanjarDropdowns(); // Muat semua opsi dropdown
+        panjarSptSelect.dispatchEvent(new Event('change')); // Trigger change untuk reset pelaksana
 
-        if (data) {
+        if (data && data.id) { // Periksa apakah ada data dan ID (mode edit)
             // === MODE EDIT ===
             document.getElementById('panjar-id').value = data.id;
             document.getElementById('panjar_tempat').value = data.tempat;
             document.getElementById('panjar_tanggal').value = data.tanggal_panjar;
-
-            // 1. Set nilai dropdown SPT terlebih dahulu
             panjarSptSelect.value = data.spt_id;
 
-            // 2. Trigger event 'change' secara manual dan TUNGGU hingga selesai
-            // Ini akan memuat daftar pelaksana yang sesuai dengan SPT yang dipilih
+            // PERBAIKAN: Trigger 'change' pada SPT untuk memuat SEMUA pegawai terkait dalam mode edit.
+            // Event ini akan menjalankan listener yang sudah kita perbaiki sebelumnya.
             await panjarSptSelect.dispatchEvent(new Event('change'));
 
-            // 3. Setelah daftar pelaksana dimuat, baru set nilai untuk dropdown lainnya
+            // Setelah daftar pelaksana dimuat (tanpa filter), kita bisa set nilainya.
+            // Beri jeda singkat untuk memastikan DOM sudah diperbarui oleh event 'change'.
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             panjarBendaharaSelect.value = data.bendahara_id;
             panjarPelaksanaSelect.value = data.pelaksana_id;
             panjarPejabatSelect.value = data.pejabat_id;
@@ -272,6 +264,8 @@
 
         } else {
             // === MODE TAMBAH BARU ===
+            // PERBAIKAN: Atur nilai default SETELAH form di-reset.
+            document.getElementById('panjar_tempat').value = 'Nanga Pinoh';
             addRincianBiayaRow(); // Tambah satu baris rincian default
         }
 
@@ -359,6 +353,20 @@
     // Event listener untuk perubahan dropdown SPT di modal panjar
     panjarSptSelect.addEventListener('change', async (e) => {
         const sptId = e.target.value;
+        const panjarId = document.getElementById('panjar-id').value;
+        const isEditMode = !!panjarId;
+
+        panjarPelaksanaSelect.disabled = true;
+        // PERBAIKAN: Ambil elemen tombol simpan dan notifikasi
+        const submitBtn = panjarForm.querySelector('button[type="submit"]');
+        const submitButton = document.getElementById('submit-panjar-button');
+        let panjarNotif = document.getElementById('panjar-pelaksana-notif');
+        if (panjarNotif) panjarNotif.classList.add('hidden');
+        // PERBAIKAN: Selalu aktifkan tombol simpan di awal setiap kali SPT diganti.
+        // Tombol akan dinonaktifkan lagi nanti jika memang diperlukan.
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitButton) submitButton.disabled = false;
+
         panjarPelaksanaSelect.innerHTML = '<option value="">-- Memuat... --</option>';
         if (!sptId) {
             panjarPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
@@ -366,17 +374,58 @@
         }
 
         try {
-            // Ambil detail pegawai untuk SPT yang dipilih
-            const response = await fetch(`/api/spt/${sptId}`);
-            if (!response.ok) throw new Error('Gagal mengambil detail pegawai SPT.');
-            const sptDetail = await response.json();
+            const sptRes = await fetch(`/api/spt/${sptId}`);
+            if (!sptRes.ok) throw new Error('Gagal mengambil detail pegawai SPT.');
+            const sptDetail = await sptRes.json();
+
+            let availablePegawai = sptDetail.pegawai;
+
+            // PERBAIKAN: Hanya lakukan penyaringan jika dalam mode TAMBAH BARU
+            if (!isEditMode) {
+                const panjarRes = await fetch(`/api/panjar/by-spt/${sptId}`);
+                const existingPanjarMap = panjarRes.ok ? await panjarRes.json() : {};
+                const pegawaiDenganPanjar = Object.keys(existingPanjarMap);
+
+                // Saring pegawai yang belum memiliki panjar
+                availablePegawai = sptDetail.pegawai.filter(p => !pegawaiDenganPanjar.includes(p.pegawai_id.toString()));
+            }
 
             panjarPelaksanaSelect.innerHTML = '<option value="">-- Pilih Pegawai Pelaksana --</option>';
-            sptDetail.pegawai.forEach(p => {
-                const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id);
-                panjarPelaksanaSelect.appendChild(option);
-            });
+            if (availablePegawai.length > 0) {
+                availablePegawai.forEach(p => {
+                    const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id);
+                    panjarPelaksanaSelect.appendChild(option);
+                });
+                panjarPelaksanaSelect.disabled = false;
+            } else {
+                // Berikan pesan yang sesuai tergantung mode
+                if (isEditMode) {
+                    panjarPelaksanaSelect.innerHTML = '<option value="">-- Tidak ada pegawai di SPT ini --</option>';
+                } else {
+                    panjarPelaksanaSelect.innerHTML = '<option value="">-- Semua pegawai sudah menerima uang muka --</option>';
+                    // PERBAIKAN: Tampilkan notifikasi dan nonaktifkan tombol simpan
+                    if (!panjarNotif) {
+                        panjarNotif = document.createElement('div');
+                        panjarNotif.id = 'panjar-pelaksana-notif';
+                        panjarNotif.className = 'mt-2 p-2 text-sm text-center rounded-md';
+                        panjarPelaksanaSelect.parentNode.insertBefore(panjarNotif, panjarPelaksanaSelect.nextSibling);
+                    }
+                    panjarNotif.textContent = 'Semua pegawai terkait nomor surat tugas yang Anda pilih telah menerima uang muka.';
+                    panjarNotif.classList.remove('hidden');
+                    panjarNotif.classList.add('border', 'border-yellow-300', 'bg-yellow-50', 'text-yellow-700');
 
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                    }; // Nonaktifkan tombol simpan
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }; // Nonaktifkan tombol simpan
+
+                    // PERBAIKAN: Pastikan dropdown pegawai juga dinonaktifkan
+                    // saat tidak ada pegawai yang tersedia.
+                    panjarPelaksanaSelect.disabled = true;
+                }
+            }
         } catch (error) {
             console.error("Error fetching SPT details for panjar:", error);
             panjarPelaksanaSelect.innerHTML = '<option value="">-- Gagal memuat --</option>';
@@ -453,201 +502,9 @@
         });
     }
 
-    // --- LOGIKA MODAL PEMBATALAN ---
-    const openPembatalanModal = async (sptId, nomorSurat) => {
-        if (!pembatalanModal) return;
-
-        pembatalanForm.reset();
-        pembatalanSptIdInput.value = sptId;
-        document.getElementById('pembatalan-modal-title').textContent = `Batalkan Perjalanan (SPT: ${nomorSurat})`;
-        document.getElementById('pembatalan_tanggal').value = new Date().toISOString().split('T')[0];
-        document.getElementById('pembatalan_tempat').value = 'Nanga Pinoh';
-        document.getElementById('pembatalan_rincian_biaya').readOnly = false;
-        document.getElementById('pembatalan_nominal_biaya').readOnly = false;
-
-        // Reset toggle
-        const panjarToggle = document.getElementById('pembatalan-panjar-toggle');
-        if (panjarToggle) {
-            panjarToggle.checked = false;
-            panjarToggle.dispatchEvent(new Event('change'));
-        }
-        // Reset notifikasi dan cache
-        pembatalanNotif.classList.add('hidden');
-        canceledPegawaiForSpt = [];
-
-        // Isi dropdown pegawai
-        pembatalanPegawaiSelect.innerHTML = '<option value="">-- Memuat Pegawai... --</option>';
-        try {
-            // Ambil data SPT dan data penandatangan laporan secara bersamaan
-            const [sptRes, signersRes, canceledRes] = await Promise.all([
-                fetch(`/api/spt/${sptId}`),
-                fetch(`/api/laporan/signers/by-spt/${sptId}`),
-                fetch(`/api/pembatalan/by-spt/${sptId}`) // Panggil API baru
-            ]);
-
-            if (!sptRes.ok) throw new Error('Gagal memuat detail SPT');
-            const sptDetail = await sptRes.json();
-
-            const signerIds = signersRes.ok ? await signersRes.json() : [];
-            const signerIdSet = new Set(signerIds.map(id => id.toString()));
-
-            // Simpan data pegawai yang sudah dibatalkan ke cache
-            canceledPegawaiForSpt = canceledRes.ok ? await canceledRes.json() : [];
-
-            pembatalanPegawaiSelect.innerHTML = '<option value="">-- Pilih Pegawai --</option>';
-
-            // Saring pegawai yang sudah menjadi penandatangan
-            const availablePegawai = sptDetail.pegawai.filter(p => !signerIdSet.has(p.pegawai_id.toString()));
-
-            if (availablePegawai.length === 0) {
-                pembatalanPegawaiSelect.innerHTML = '<option value="">-- Semua pegawai sudah melapor --</option>';
-            } else {
-                availablePegawai.forEach(p => {
-                    const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id);
-                    pembatalanPegawaiSelect.appendChild(option);
-                });
-            }
-            pembatalanModal.classList.remove('hidden'); // Tampilkan modal setelah semua data dimuat
-        } catch (error) {
-            alert(error.message);
-        }
-    };
-
-    const closePembatalanModal = () => {
-        if (pembatalanModal) pembatalanModal.classList.add('hidden');
-    };
-
-    // Event listener untuk toggle ambil data panjar
-    const pembatalanPanjarToggle = document.getElementById('pembatalan-panjar-toggle');
-    if (pembatalanPanjarToggle) {
-        pembatalanPanjarToggle.addEventListener('change', async (e) => {
-            const isChecked = e.target.checked;
-            const rincianInput = document.getElementById('pembatalan_rincian_biaya');
-            const nominalInput = document.getElementById('pembatalan_nominal_biaya');
-            const notifElement = document.getElementById('pembatalan-panjar-notif');
-            const sptId = pembatalanSptIdInput.value;
-            const pegawaiId = pembatalanPegawaiSelect.value;
-
-            if (isChecked) {
-                if (!pegawaiId) {
-                    alert('Pilih pegawai terlebih dahulu!');
-                    e.target.checked = false;
-                    return;
-                }
-                try {
-                    const res = await fetch(`/api/panjar/by-spt/${sptId}/pegawai/${pegawaiId}`);
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.message);
-
-                    rincianInput.value = data.uraian;
-                    nominalInput.value = formatCurrency(data.total);
-                    rincianInput.readOnly = true;
-                    nominalInput.readOnly = true;
-                    notifElement.textContent = 'Data uang muka berhasil dimuat.';
-                    notifElement.className = 'p-2 text-sm text-center rounded-md border border-green-300 bg-green-50 text-green-700';
-                    notifElement.classList.remove('hidden');
-                } catch (error) {
-                    // Tampilkan notifikasi, bukan alert
-                    notifElement.textContent = `Info: ${error.message}`;
-                    notifElement.className = 'p-2 text-sm text-center rounded-md border border-yellow-300 bg-yellow-50 text-yellow-700';
-                    notifElement.classList.remove('hidden');
-                    e.target.checked = false;
-                }
-            } else {
-                rincianInput.readOnly = false;
-                nominalInput.readOnly = false;
-                notifElement.classList.add('hidden');
-            }
-        });
-    }
-
-    // Event listener untuk perubahan dropdown pegawai di modal pembatalan
-    const pembatalanPegawaiSelectChange = () => {
-        // Reset toggle setiap kali pegawai diganti
-        const panjarToggle = document.getElementById('pembatalan-panjar-toggle');
-        if (panjarToggle) {
-            panjarToggle.checked = false;
-            panjarToggle.dispatchEvent(new Event('change'));
-        }
-
-        const selectedPegawaiId = pembatalanPegawaiSelect.value;
-        const isAlreadyCanceled = canceledPegawaiForSpt.includes(parseInt(selectedPegawaiId, 10));
-
-        if (isAlreadyCanceled) {
-            pembatalanNotif.textContent = 'Pegawai ini sudah pernah dibuatkan surat pembatalan tugas untuk SPT terkait.';
-            pembatalanNotif.className = 'p-2 text-sm text-center rounded-md border border-red-300 bg-red-50 text-red-700';
-            pembatalanNotif.classList.remove('hidden');
-            submitPembatalanBtn.disabled = true;
-        } else {
-            pembatalanNotif.classList.add('hidden');
-            submitPembatalanBtn.disabled = false;
-        }
-    };
-
-    if (pembatalanPegawaiSelect) {
-        pembatalanPegawaiSelect.addEventListener('change', pembatalanPegawaiSelectChange);
-    }
-
-    // Event listener untuk input manual nominal biaya
-    const nominalBiayaInput = document.getElementById('pembatalan_nominal_biaya');
-    if (nominalBiayaInput) {
-        nominalBiayaInput.addEventListener('input', (e) => {
-            // Hanya format jika tidak dalam mode readonly (diambil dari panjar)
-            if (!e.target.readOnly) {
-                e.target.value = formatCurrency(e.target.value);
-            }
-        });
-    }
-
-    // Event listener untuk input manual rincian biaya
-    const rincianBiayaInput = document.getElementById('pembatalan_rincian_biaya');
-    if (rincianBiayaInput) {
-        rincianBiayaInput.addEventListener('input', (e) => {
-            // Jika user mulai mengetik manual, pastikan toggle mati
-            const toggle = document.getElementById('pembatalan-panjar-toggle');
-            if (toggle && toggle.checked) {
-                toggle.checked = false;
-                toggle.dispatchEvent(new Event('change'));
-            }
-        });
-    }
-
-    // Handle submit form pembatalan
-    if (pembatalanForm) {
-        pembatalanForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(pembatalanForm);
-            const data = Object.fromEntries(formData.entries());
-            data.nominal_biaya = data.nominal_biaya.replace(/[^0-9]/g, ''); // Bersihkan format currency
-
-            try {
-                const response = await fetch('/api/spt/cancel', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message);
-
-                alert(result.message);
-                closePembatalanModal();
-                loadSptList(); // Muat ulang daftar SPT
-            } catch (error) {
-                alert(`Error: ${error.message}`);
-            }
-        });
-    }
-
     // Event delegation untuk tombol hapus
     if (sptTableBody) {
         sptTableBody.addEventListener('click', async (event) => {
-            const cancelBtn = event.target.closest('.cancel-spt-btn');
-            if (cancelBtn) {
-                const id = cancelBtn.dataset.id;
-                const nomor = cancelBtn.dataset.nomor;
-                openPembatalanModal(id, nomor);
-            }
-
             const deleteBtn = event.target.closest('.delete-btn');
             if (deleteBtn) {
                 const id = deleteBtn.dataset.id;
@@ -671,8 +528,6 @@
     if (openPanjarModalBtn) openPanjarModalBtn.addEventListener('click', openPanjarModal);
     if (closePanjarModalBtn) closePanjarModalBtn.addEventListener('click', closePanjarModal);
     if (cancelPanjarBtn) cancelPanjarBtn.addEventListener('click', closePanjarModal);
-    if (closePembatalanModalBtn) closePembatalanModalBtn.addEventListener('click', closePembatalanModal);
-    if (cancelPembatalanBtn) cancelPembatalanBtn.addEventListener('click', closePembatalanModal);
 
     if (tambahRincianBtn) tambahRincianBtn.addEventListener('click', addRincianBiayaRow);
 

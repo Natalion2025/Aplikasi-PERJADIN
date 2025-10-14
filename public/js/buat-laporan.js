@@ -83,6 +83,27 @@
         }
     };
 
+    // --- FUNGSI BARU: Mengatur visibilitas dan urutan rincian pengeluaran ---
+    const updateAndReorderExpenseBlocks = () => {
+        const checkedSigners = Array.from(penandatanganContainer.querySelectorAll('input[type="checkbox"]:checked'));
+        const allExpenseBlocks = pengeluaranPerPegawaiContainer.querySelectorAll('.pengeluaran-pegawai-item');
+
+        // 1. Sembunyikan semua blok terlebih dahulu
+        allExpenseBlocks.forEach(block => {
+            block.classList.add('hidden');
+        });
+
+        // 2. Tampilkan dan urutkan blok sesuai urutan checkbox yang dicentang
+        checkedSigners.forEach(checkbox => {
+            const pegawaiId = checkbox.value;
+            const expenseBlock = pengeluaranPerPegawaiContainer.querySelector(`.pengeluaran-pegawai-item[data-pegawai-id="${pegawaiId}"]`);
+            if (expenseBlock) {
+                expenseBlock.classList.remove('hidden');
+                pengeluaranPerPegawaiContainer.appendChild(expenseBlock); // Pindahkan ke akhir untuk mengurutkan
+            }
+        });
+    };
+
     // Fungsi untuk mengisi data form berdasarkan SPT yang dipilih
     const populateFormFromSpt = async () => {
         const selectedOption = sptSelect.options[sptSelect.selectedIndex];
@@ -149,6 +170,8 @@
                 // Set judul dan ID unik untuk setiap blok pegawai
                 pegawaiItem.querySelector('.pegawai-name-title').textContent = `Rincian untuk ${pegawai.nama_lengkap}`;
                 pegawaiItem.dataset.pegawaiId = pegawai.pegawai_id;
+                // Sembunyikan blok secara default
+                pegawaiItem.classList.add('hidden');
 
                 // PERUBAHAN: Tidak menambahkan baris biaya secara default. Pengguna akan menambahkannya secara manual.
                 // Tambahkan event listener untuk tombol "Tambah" di dalam blok ini
@@ -156,6 +179,8 @@
 
                 pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
             });
+            // Panggil fungsi untuk menampilkan rincian yang relevan (pelaksana utama)
+            updateAndReorderExpenseBlocks();
 
             dasarPerjalananEl.value = sptDetail.dasar_surat;
             tujuanPerjalananEl.value = sptDetail.maksud_perjalanan;
@@ -247,6 +272,9 @@
                 setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
                 pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
             });
+
+            // Panggil fungsi untuk menampilkan dan mengurutkan rincian sesuai data yang ada
+            updateAndReorderExpenseBlocks();
 
             // Jalankan checkRemoveButtons untuk setiap blok pegawai
             document.querySelectorAll('.pengeluaran-pegawai-item').forEach(checkRemoveButtons);
@@ -479,6 +507,31 @@
             return;
         }
 
+        // --- VALIDASI BARU: Cek rincian pengeluaran untuk setiap penandatangan ---
+        let validationPassed = true;
+        let missingDetailsFor = [];
+
+        for (const pegawaiId of selectedSignerIds) {
+            const expenseBlock = pengeluaranPerPegawaiContainer.querySelector(`.pengeluaran-pegawai-item[data-pegawai-id="${pegawaiId}"]`);
+            const signerCheckbox = penandatanganContainer.querySelector(`input[value="${pegawaiId}"]`);
+            const signerName = signerCheckbox ? signerCheckbox.nextElementSibling.querySelector('span.font-medium').textContent : `ID ${pegawaiId}`;
+
+            if (expenseBlock) {
+                const nominalInputs = expenseBlock.querySelectorAll('[name$="[nominal]"]');
+                const hasValue = Array.from(nominalInputs).some(input => parseCurrency(input.value) > 0);
+
+                if (!hasValue) {
+                    validationPassed = false;
+                    missingDetailsFor.push(signerName);
+                }
+            }
+        }
+
+        if (!validationPassed) {
+            alert(`Validasi Gagal:\n\nHarap isi minimal satu rincian pengeluaran untuk penandatangan berikut:\n- ${missingDetailsFor.join('\n- ')}`);
+            return; // Hentikan proses simpan
+        }
+
         const formData = new FormData();
 
         // Ambil data form biasa
@@ -562,6 +615,9 @@
 
     // Event listener untuk perubahan SPT
     sptSelect.addEventListener('change', populateFormFromSpt);
+
+    // Event listener untuk checkbox penandatangan (menggunakan event delegation)
+    penandatanganContainer.addEventListener('change', updateAndReorderExpenseBlocks);
 
     const setupAddButtonListeners = (pegawaiItem, pegawaiId) => {
         pegawaiItem.querySelector('.tambah-transportasi-btn').addEventListener('click', () => {

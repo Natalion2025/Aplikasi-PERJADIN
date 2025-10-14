@@ -64,7 +64,7 @@
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Uang Muka
                 </h2>
-                <div class="flex items-center space-x-4">
+                <div class="flex fixed space-x-4 right-4">
                     <button id="tambah-panjar-button"
                         class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
                         <i class="fas fa-plus mr-2"></i>Tambah Uang Muka
@@ -187,8 +187,8 @@
             <div class="flex justify-end items-center pt-4 mt-4 border-t bg-dark-blue -m-5 p-4 rounded-b-md">
                 <button id="cancel-panjar-button" type="button"
                     class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
-                <button type="submit" form="panjar-form"
-                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+                <button type="submit" form="panjar-form" id="submit-panjar-button"
+                    class="bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
             </div>
         </div>
     </div>

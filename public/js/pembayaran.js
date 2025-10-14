@@ -69,6 +69,8 @@
         pembayaranIdInput.value = '';
         modalTitle.textContent = 'Buat Bukti Pembayaran Baru';
         sptTomSelect.enable();
+        anggaranTomSelect.enable(); // Pastikan anggaran bisa dipilih saat buat baru
+        pptkTomSelect.enable(); // Pastikan PPTK bisa dipilih saat buat baru
         sptTomSelect.clear();
         clearRincian();
         uangHarianInfoContainer.classList.add('hidden');
@@ -91,6 +93,8 @@
             sptTomSelect.setValue(data.spt_id);
             pptkTomSelect.setValue(data.pptk_id);
             sptTomSelect.disable();
+            anggaranTomSelect.disable(); // Nonaktifkan juga saat edit
+            pptkTomSelect.disable(); // Nonaktifkan juga saat edit
 
             // PERBAIKAN: Trigger change event dan tunggu DOM diperbarui.
             // Ini memastikan elemen rincian sudah ada sebelum kita mengisi panjar.
@@ -140,6 +144,9 @@
 
     // Variabel untuk menyimpan data SPT lengkap
     let sptDataMap = new Map();
+    // Variabel untuk menyimpan data Anggaran lengkap
+    let anggaranDataMap = new Map();
+
     // Variabel untuk menyimpan instance TomSelect
     let anggaranTomSelect = null;
     let sptTomSelect = null;
@@ -158,12 +165,15 @@
             if (sptTomSelect) sptTomSelect.destroy();
             if (pptkTomSelect) pptkTomSelect.destroy();
 
+            // Proses Data Anggaran
             const anggaranList = await anggaranRes.json();
+            anggaranDataMap.clear(); // Kosongkan map sebelum diisi
             anggaranSelect.innerHTML = '<option value="">-- Pilih Anggaran --</option>';
             anggaranList.forEach(a => {
                 const optionText = `${a.mata_anggaran_kode} - ${a.mata_anggaran_nama} (Sub: ${a.sub_kegiatan})`;
                 const option = new Option(optionText, a.id);
                 anggaranSelect.appendChild(option);
+                anggaranDataMap.set(a.id.toString(), a); // Simpan data anggaran lengkap
             });
 
             if (!sptRes.ok) throw new Error('Gagal memuat data SPT.');
@@ -189,6 +199,21 @@
             anggaranTomSelect = new TomSelect(anggaranSelect, { sortField: { field: "text", direction: "asc" } });
             sptTomSelect = new TomSelect(sptSelect, { sortField: { field: "text", direction: "asc" } });
             pptkTomSelect = new TomSelect(pptkSelect, { sortField: { field: "text", direction: "asc" } });
+
+            // Tambahkan event listener untuk perubahan pada dropdown anggaran
+            anggaranTomSelect.on('change', (value) => {
+                if (value) {
+                    const selectedAnggaran = anggaranDataMap.get(value);
+                    if (selectedAnggaran && selectedAnggaran.pptk_id) {
+                        pptkTomSelect.setValue(selectedAnggaran.pptk_id);
+                        pptkTomSelect.disable(); // Nonaktifkan dropdown PPTK
+                    } else {
+                        pptkTomSelect.clear();
+                        pptkTomSelect.enable(); // Aktifkan jika tidak ada PPTK terkait
+                    }
+                }
+            });
+
 
         } catch (error) {
             console.error('Error loading dropdowns:', error);
@@ -425,6 +450,18 @@
             return;
         }
 
+        // --- LOGIKA BARU: Otomatisasi Pemilihan Anggaran ---
+        const selectedSptData = sptDataMap.get(selectedSptId);
+        if (selectedSptData && selectedSptData.anggaran_id) {
+            // Atur nilai dropdown anggaran dan nonaktifkan
+            anggaranTomSelect.setValue(selectedSptData.anggaran_id); // Ini akan memicu event 'change' pada anggaran
+            anggaranTomSelect.disable();
+        } else {
+            // Jika SPT tidak punya anggaran, aktifkan dropdown agar bisa dipilih manual
+            anggaranTomSelect.clear();
+            anggaranTomSelect.enable();
+        }
+
         const selectedSpt = sptDataMap.get(selectedSptId.toString());
         if (selectedSpt && selectedSpt.maksud_perjalanan) {
             uraianPembayaranTextarea.value = `Pembayaran Perjalanan Dinas dalam rangka ${selectedSpt.maksud_perjalanan}`;
@@ -560,6 +597,14 @@
         // PERBAIKAN: Jika dalam mode edit, pastikan spt_id disertakan karena dropdown dinonaktifkan.
         const id = pembayaranIdInput.value;
         if (id) {
+            // PERBAIKAN: Ambil juga pptk_id secara manual karena dropdown mungkin dinonaktifkan
+            if (pptkTomSelect.isDisabled) {
+                data.pptk_id = pptkTomSelect.getValue();
+            }
+            // Ambil juga anggaran_id secara manual karena dropdown dinonaktifkan
+            if (anggaranTomSelect.isDisabled) {
+                data.anggaran_id = anggaranTomSelect.getValue();
+            }
             data.spt_id = sptSelect.value;
         }
 
@@ -573,6 +618,18 @@
             }
         });
         data.panjar_data = JSON.stringify(panjarData); // Tambahkan ke objek data
+
+        // PERBAIKAN FINAL: Pastikan pptk_id selalu terkirim, bahkan saat form tambah baru
+        // dan dropdown dinonaktifkan.
+        if (pptkTomSelect && pptkTomSelect.isDisabled) {
+            data.pptk_id = pptkTomSelect.getValue();
+        }
+
+        // PERBAIKAN: Pastikan anggaran_id juga terkirim saat dropdown dinonaktifkan
+        // pada mode tambah baru.
+        if (anggaranTomSelect && anggaranTomSelect.isDisabled) {
+            data.anggaran_id = anggaranTomSelect.getValue();
+        }
 
         const isEditMode = !!id;
         const url = isEditMode ? `/api/pembayaran/${id}` : '/api/pembayaran';
@@ -758,10 +815,10 @@
         dataList.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${index + 1}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${item.nama_pegawai}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-300">${item.uraian}</td>
-                <td class="px-6 py-4 text-sm text-right text-gray-800 dark:text-gray-300">${formatCurrency(item.jumlah)}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.nama_pegawai}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.uraian}</td>
+                <td class="px-6 py-4 text-sm text-left text-gray-800 dark:text-gray-400">${formatCurrency(item.jumlah)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${item.id}" class="print-riil-btn text-blue-600 hover:text-blue-900" title="Cetak">
                         <i class="fas fa-print"></i>

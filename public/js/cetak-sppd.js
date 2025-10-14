@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             pejabat,
             pengikut,
             anggaran,
-            penggunaAnggaran } = data;
+            penggunaAnggaran,
+            penandatanganSppd } = data; // Ambil data penandatangan SPPD
 
         if (!sppdList || sppdList.length === 0 || !spt || !pejabat) {
             printArea.innerHTML = `<p class="text-center text-red-500">Data tidak lengkap untuk mencetak SPPD.</p>`;
@@ -98,11 +99,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const pegawai = sppd.pegawai; // Ambil data pegawai dari setiap item SPPD
 
             return `
-            <div style="page-break-after: always;">
+        <div style="page-break-after: always;">
             <div class="page-container">
-            <div class="kop-surat">
-                <img src="/assets/logomelawi.png" alt="Logo Melawi">
-                <div class="text-kop">
+                <div class="kop-surat">
+                    <img src="/assets/logomelawi.png" alt="Logo Melawi">
+                    <div class="text-kop">
                     <h2>PEMERINTAH KABUPATEN MELAWI</h2>
                     <h1>DINAS KOMUNIKASI DAN INFORMATIKA</h1>
                     <p>Jl. Poros Provinsi Nanga Pinoh – Kota Baru KM. 7,</p>
@@ -111,12 +112,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
 
-            <div class="flex justify-between mt-4">
-                <div></div>
-                <div>
-                    <p>Lembar ke : 1 (satu)</p>
-                    <p>Kode No. : 090</p>
-                    <p>Nomor : ${sppd.nomor_sppd || 'N/A'}</p>
+            <div class="mt-4">
+                <div class="flex flex-row leading-tight justify-end space-x-4">
+                    Lembar ke<br>
+                    Kode No.<br>
+                    Nomor <br>
+                    <span>
+                    : 1 (satu) <br>
+                    : 090 <br>
+                    : ${sppd.nomor_sppd || 'N/A'} <br>
+                    </span>
                 </div>
             </div>
 
@@ -216,25 +221,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             </table>
 
-            <div class="flex justify-between mt-8">
-                <div class="ttd-section">
-                    <p>Dikeluarkan di: Nanga Pinoh</p>
-                    <p>Pada tanggal: ${formatDate(sppd.tanggal_sppd)}</p>
-                    <br><br><br>
-                    <p><strong>${pejabat.jabatan || ''}</strong></p>
-                    <br><br><br>
-                    <p><strong>${pejabat.nama || ''}</strong></p>
-                    <p>NIP. ${pejabat.nip || ''}</p>
-                </div>
-                <div class="ttd-section">
-                    <p>PERHATIAN</p>
-                    <p>Pegawai yang melakukan perjalanan dinas, harus melaporkan</p>
-                    <p>kembali kepada pejabat yang berwenang, memberikan</p>
-                    <p>pertanggungjawaban sesuai ketentuan.</p>
-                </div>
+            <div class="flex mr-[38px] justify-end leading-tight mt-4 space-x-4">
+                Dikeluarkan di<br>
+                Pada tanggal<br>
+                <span>
+                    : Nanga Pinoh<br>
+                    : ${formatDate(sppd.tanggal_sppd)}<br>
+                </span>
             </div>
+            <div class="mt-3 mr-[32px] items-end leading-tight flex flex-col">
+                ${penandatanganSppd.jabatan.toUpperCase() + ' ' + 'KOMUNIKASI DAN <br> INFORMATIKA KABUPATEN MELAWI' || 'Kepala Dinas'}<br>
+                <br><br><br>
+                ${penandatanganSppd.nama || '(Nama Kepala Dinas)'}<br>
+                NIP. ${penandatanganSppd.nip || '(NIP Kepala Dinas)'}<br>
             </div>
-            </div>
+        </div>
+    
         `;
         }).join('');
 

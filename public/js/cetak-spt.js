@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
 
-            <div class="judul-spt">
+            <div class="judul-spt" style="line-height: 1.2">
                 <h3>SURAT PERINTAH TUGAS</h3>
                 <p>Nomor: ${spt.nomor_surat}</p>
             </div>
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             <h3 style="text-align: center; font-weight: bold; font-size: 12pt; margin-top: 15px; margin-bottom: 15px;">MEMERINTAHKAN:</h3>
 
-            <table class="content-table">
+            <table class="content-table" style="line-height: 1;">
                 <tr>
                     <td style="width: 15%;">Kepada</td>
                     <td style="width: 5%;">:</td>
@@ -116,16 +116,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <table class="content-table">${pegawaiHtml}</table>
                     </td>
                 </tr>
-                <tr>
+                <tr style="line-height: 1.2;">
                     <td style="width: 15%;">Untuk</td>
                     <td style="width: 5%;">:</td>
                     <td style="width: 80%;">${spt.maksud_perjalanan} ke ${spt.lokasi_tujuan} selama ${spt.lama_perjalanan} hari, dari tanggal ${formatDate(spt.tanggal_berangkat)} s/d ${formatDate(spt.tanggal_kembali)}.</td>
                 </tr>
             </table>
 
-            <div class="tanda-tangan">
+            <div class="tanda-tangan" style="line-height: 1.2">
                 <p class="text-left">Ditetapkan di Nanga Pinoh</p>
-                <p class="text-left">Pada tanggal ${formatDate(spt.tanggal_surat)}</p>
+                <p class="text-left">Pada tanggal ${formatDate(spt.tanggal_surat)}</p><br>
                 <p class="text-left font-bold pb-2">${pejabatPemberiTugas.jabatan},</p>
                 <br><br><br><br>
                 <p class="text-left text-nowrap font-bold underline">${pejabatPemberiTugas.nama}</p>
