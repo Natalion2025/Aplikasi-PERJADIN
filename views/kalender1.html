@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalender - Aplikasi Perjadin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        /* Saat sidebar terlihat, geser konten utama di semua ukuran layar */
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        /* Utility class untuk rotasi ikon */
+        /*.rotate-180 {
+            transform: rotate(180deg);
+        }*/
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50 dark:bg-gray-900">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content akan dimuat di sini -->
+    </aside>
+
+    <!-- Konten utama -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content akan dimuat di sini -->
+        </header>
+
+        <!-- Konten Kalender -->
+        <main class="p-6 bg-[#f5f9fc] dark:bg-gray-800">
+            <div
+                class="flex p-5 w-full h-[58px] space-y-8 items-center bg-[#ffffff] border-[#e8e8e8] border border-solid ">
+                <!-- Head Kalender -->
+                <div class="h-fit flex justify-between space-x-0 space-y-0 items-center w-full">
+                    <div class="h-fit w-full flex items-center justify-start space-x-10 p-0">
+                        <img class="overflow-visible cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png"
+                            id="previous-month" alt="Bulan Sebelumnya">
+                        <div class="text-left font-poppins font-semibold text-[24px] leading-[30px] text-mainNavy">
+                            January, 2025</div>
+                        <img class="overflow-visible cursor-pointer w-[24px] h-[24px]" src="/img/arrow_forward.png"
+                            id="next-month" alt="Bulan Berikutnya">
+                    </div>
+                    <div class="flex items-center w-fit h-full space-x-2 p-0">
+                        <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full">
+                            <div class="text-mainNavy w-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
+                                id="day-view">
+                                Day</div>
+                        </div>
+                        <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full">
+                            <div class="text-mainNavy w-auto h-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
+                                id="week-view">
+                                Week</div>
+                        </div>
+                        <div
+                            class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full bg-[#DAEF84]">
+                            <div class="text-mainNavy w-auto h-auto text-left font-poppins font-bold text-[14px] flex align-middle cursor-pointer"
+                                id="month-view">
+                                Month</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Titel Kalender -->
+            <div class="title flex w-full h-[82px] items-center bg-[#ffffff] border-[#e8e8e8] border border-solid">
+                <div class="empty pr-[4.1rem]"></div>
+                <div class="sunday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="sun text-[#969696] font-semibold font-sans">SUN</div>
+                    <div class="_31 text-mainNavy font-medium text-[22px] font-inter">31</div>
+                </div>
+                <div class="monday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="mon text-[#969696] font-semibold font-sans">MON</div>
+                    <div class="_01 text-mainNavy font-medium text-[22px] font-inter">01</div>
+                </div>
+                <div class="tuesday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="tue text-[#969696] font-semibold font-sans">TUE</div>
+                    <div class="_02 text-mainNavy font-medium text-[22px] font-inter">02</div>
+                </div>
+                <div class="wednesday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="wed text-[#969696] font-semibold font-sans">WED</div>
+                    <div class="_03 text-mainNavy font-medium text-[22px] font-inter">03</div>
+                </div>
+                <div class="thursday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="thur text-[#969696] font-semibold font-sans">THUR</div>
+                    <div class="frame-14502">
+                        <div class="_04 text-mainNavy font-medium text-[22px] font-inter">04</div>
+                    </div>
+                </div>
+                <div class="friday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="fri text-[#969696] font-semibold font-sans">FRI</div>
+                    <div class="_05 text-mainNavy font-medium text-[22px] font-inter">05</div>
+                </div>
+                <div class="saturday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
+                    <div class="sat text-[#969696] font-semibold font-sans">SAT</div>
+                    <div class="_06 text-mainNavy font-medium text-[22px] font-inter">06</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/main1.js"></script>
+    <script src="/js/header-logic.js"></script>
+    <script src="/js/kalender.js"></script>
+    <script src="/js/sidebar.js"></script>
+</body>
+
+</html>

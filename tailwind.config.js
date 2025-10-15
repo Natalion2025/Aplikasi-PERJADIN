@@ -9,12 +9,18 @@ module.exports = {
 
   theme: {
     extend: {
+      fontFamily: {
+        poppins: ['"Poppins"', 'sans-serif'],
+        inter: ['"Inter"', 'sans-serif'],
+      },
       colors: {
         'dark-navy': '#2c3e50',
         'dark-blue': '#34495e',
         'gradient-start': '#2c3e50',
         'gradient-end': '#3498db',
         customBlue: 'rgb(52, 152, 219)',
+        mainNavy: '#003861',
+        purpleCustom: '#4F55FB',
         chocolate: {
           50: '#FBF8F1',
           100: '#F2E8D7',

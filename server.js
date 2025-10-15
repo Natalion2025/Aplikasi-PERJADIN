@@ -739,6 +739,11 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
+// Halaman Kalender
+app.get('/kalender1', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'kalender1.html'));
+});
+
 // Halaman Tambah SPT (terproteksi)
 app.get('/tambah-spt', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'tambah-spt.html'));
