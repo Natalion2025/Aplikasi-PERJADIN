@@ -67,72 +67,249 @@
 
         <!-- Konten Kalender -->
         <main class="p-6 bg-[#f5f9fc] dark:bg-gray-800">
-            <div
-                class="flex p-5 w-full h-[58px] space-y-8 items-center bg-[#ffffff] border-[#e8e8e8] border border-solid ">
-                <!-- Head Kalender -->
-                <div class="h-fit flex justify-between space-x-0 space-y-0 items-center w-full">
-                    <div class="h-fit w-full flex items-center justify-start space-x-10 p-0">
-                        <img class="overflow-visible cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png"
-                            id="previous-month" alt="Bulan Sebelumnya">
-                        <div class="text-left font-poppins font-semibold text-[24px] leading-[30px] text-mainNavy">
-                            January, 2025</div>
-                        <img class="overflow-visible cursor-pointer w-[24px] h-[24px]" src="/img/arrow_forward.png"
-                            id="next-month" alt="Bulan Berikutnya">
-                    </div>
-                    <div class="flex items-center w-fit h-full space-x-2 p-0">
-                        <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full">
-                            <div class="text-mainNavy w-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
-                                id="day-view">
-                                Day</div>
+            <table class="table-note-agenda">
+                <tbody class="title-months">
+                    <div class="p-5 flex justify-between w-[943px] h-[58px] items-center bg-[#ffffff] border-[#e8e8e8] border
+                    border-solid">
+                        <!-- Title Months -->
+                        <div class="flex space-x-10 items-center">
+                            <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png" id="previous-month"
+                                alt="Bulan Sebelumnya">
+                            <div class="text-left font-poppins font-semibold text-[24px] leading-[30px] text-mainNavy">
+                                January, 2025
+                            </div>
+                            <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_forward.png" id="next-month"
+                                alt="Bulan Berikutnya">
                         </div>
-                        <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full">
-                            <div class="text-mainNavy w-auto h-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
-                                id="week-view">
-                                Week</div>
-                        </div>
-                        <div
-                            class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] h-full bg-[#DAEF84]">
-                            <div class="text-mainNavy w-auto h-auto text-left font-poppins font-bold text-[14px] flex align-middle cursor-pointer"
-                                id="month-view">
-                                Month</div>
+
+                        <!-- Title Variant Date/Category -->
+                        <div class="flex items-center w-fit h-full space-x-4 p-0">
+                            <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px]">
+                                <div class="text-mainNavy w-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
+                                    id="day-view">
+                                    Day</div>
+                            </div>
+                            <div class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px]">
+                                <div class="text-mainNavy w-auto h-auto text-left font-poppins font-normal text-[14px] flex align-middle cursor-pointer"
+                                    id="week-view">
+                                    Week</div>
+                            </div>
+                            <div
+                                class="flex justify-center rounded-[8px] py-2 px-8 items-center space-x-8 w-[79px] bg-[#DAEF84]">
+                                <div class="text-mainNavy w-auto h-auto text-left font-poppins font-bold text-[14px] flex align-middle cursor-pointer"
+                                    id="month-view">
+                                    Month</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            <!-- Titel Kalender -->
-            <div class="title flex w-full h-[82px] items-center bg-[#ffffff] border-[#e8e8e8] border border-solid">
-                <div class="empty pr-[4.1rem]"></div>
-                <div class="sunday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="sun text-[#969696] font-semibold font-sans">SUN</div>
-                    <div class="_31 text-mainNavy font-medium text-[22px] font-inter">31</div>
-                </div>
-                <div class="monday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="mon text-[#969696] font-semibold font-sans">MON</div>
-                    <div class="_01 text-mainNavy font-medium text-[22px] font-inter">01</div>
-                </div>
-                <div class="tuesday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="tue text-[#969696] font-semibold font-sans">TUE</div>
-                    <div class="_02 text-mainNavy font-medium text-[22px] font-inter">02</div>
-                </div>
-                <div class="wednesday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="wed text-[#969696] font-semibold font-sans">WED</div>
-                    <div class="_03 text-mainNavy font-medium text-[22px] font-inter">03</div>
-                </div>
-                <div class="thursday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="thur text-[#969696] font-semibold font-sans">THUR</div>
-                    <div class="frame-14502">
-                        <div class="_04 text-mainNavy font-medium text-[22px] font-inter">04</div>
-                    </div>
-                </div>
-                <div class="friday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="fri text-[#969696] font-semibold font-sans">FRI</div>
-                    <div class="_05 text-mainNavy font-medium text-[22px] font-inter">05</div>
-                </div>
-                <div class="saturday py-3 pl-3 pr-20 border border-r-[#e8e8e8] border-solid">
-                    <div class="sat text-[#969696] font-semibold font-sans">SAT</div>
-                    <div class="_06 text-mainNavy font-medium text-[22px] font-inter">06</div>
-                </div>
-            </div>
+                </tbody>
+                <!-- Titel Days -->
+                <tbody class="title-days w-full">
+                    <tr class="h-[41px] items-center bg-[#ffffff] border-[#e8e8e8] border">
+                        <td class="pl-3 pr-[2.7rem]"></td>
+                        <td class="sunday py-3 pl-3 pr-20 border text-[#969696]
+                            font-semibold font-sans">SUN <br><span
+                                class="text-mainNavy font-medium text-[22px] font-inter">31</span></td>
+                        <td class="monday py-3 pl-3 pr-20 border text-[#969696]
+                            font-semibold font-sans">MON <br><span
+                                class="text-mainNavy font-medium text-[22px] font-inter">01</span></td>
+                        <td class="tuesday py-3 pl-3 pr-20 border text-[#969696]
+                            font-semibold font-sans">TUE<br><span
+                                class="text-mainNavy font-medium text-[22px] font-inter">02</span></td>
+                        <td class="wednesday py-3 pl-3 pr-21 border text-[#969696]
+                            font-semibold font-sans">WED<br><span
+                                class="text-mainNavy font-medium text-[22px] font-inter">03</span></td>
+                        <td class="thursday py-3 pl-3 pr-20 border text-[#969696] font-semibold font-sans">
+                            THUR<br><span class="text-mainNavy font-medium text-[22px] font-inter">04</span></td>
+                        <td class="friday py-3 pl-3 pr-20 border border-b-0 text-[#969696] font-semibold font-sans">
+                            FRI<br><span class="text-mainNavy font-medium text-[22px] font-inter">05</span></td>
+                        <td class="saturday py-3 pl-3 pr-[5.1rem] text-[#969696] font-semibold font-sans">
+                            SAT<br><span class="text-mainNavy font-medium text-[22px] font-inter">06</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Note Field -->
+            <table>
+                <tbody class="w-full items-center bg-[#ffffff] border-[#e8e8e8] border border-solid">
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            08.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            09.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            10.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            11.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            12.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            13.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            14.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                    <tr class="title">
+                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid font-sans items-center justify-center text-nowrap"
+                            rowspan="2">
+                            15.00
+                        </td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-28 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.47rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.8rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.4rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[7.65rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.7rem] h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 pr-[6.87rem] h-[41px] border"></td>
+                    </tr>
+                    <tr>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                        <td class="note-agenda-row-top row-span-2 pl-3 h-[41px] border"></td>
+                    </tr>
+                </tbody>
+            </table>
         </main>
     </div>
 
