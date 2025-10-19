@@ -19,15 +19,17 @@ if (!window.App.sidebarInitialized) {
             const sidebarToggle = document.getElementById('sidebar-toggle'); // Tombol di header
             const sidebarClose = document.getElementById('sidebar-close');   // Tombol di sidebar
 
-            if (!sidebar || !sidebarToggle || !sidebarClose) {
-                console.warn('DIAGNOSTIK: Satu atau lebih elemen untuk toggle sidebar tidak ditemukan.');
+            if (!sidebar || !sidebarToggle) {
+                console.warn('DIAGNOSTIK: Elemen sidebar atau tombol toggle tidak ditemukan.');
                 return;
             }
 
             const toggleSidebar = () => sidebar.classList.toggle('visible');
 
             sidebarToggle.addEventListener('click', toggleSidebar);
-            sidebarClose.addEventListener('click', toggleSidebar);
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', () => sidebar.classList.remove('visible'));
+            }
         };
 
         /**

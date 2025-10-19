@@ -22,7 +22,7 @@ module.exports = {
         '27': '6.75rem',
         '29': '7.25rem',
         '30': '7.5rem',
-        '31': '7,75rem',
+        '31': '7.75rem',
       },
       fontFamily: {
         poppins: ['"Poppins"', 'sans-serif'],
@@ -71,7 +71,23 @@ module.exports = {
         'slide-out': 'slide-out 0.3s ease-in-out',
       },
       width: {
-        'calc-auto': 'calc(100% - 280px)', // Mendefinisikan kelas lebar kustom
+        '15': '3.75rem',
+        '29': '7.25rem',
+        '30': '7.5rem',
+        '31': '7.75rem',
+        '32': '8rem',
+        '33': '8.25rem',
+        '35': '8.75rem',
+        '36': '9rem',
+        '37': '9.25rem',
+        // Gabungkan dengan definisi yang lain
+        'calc-auto': 'calc(100% - 280px)',
+      },
+      margin: {
+        '41': '10.625rem',
+        '42': '11rem',
+        '43': '11.25rem',
+        '45': '11.75rem',
       },
     },
   },
