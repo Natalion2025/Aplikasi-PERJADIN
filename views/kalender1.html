@@ -381,7 +381,22 @@
                         </div>
                     </div>
                     <!-- PANEL KONTEN TAB -->
-                    <div class="" id="tab-content-container">
+                    <div class="relative" id="tab-content-container">
+                        <!-- Konten Status -->
+                        <div id="event-tooltip-template" title="Rapat koordinasi..."
+                            class="status absolute bg-opacity-100 text-opacity-100 hidden flex-col items-start bg-green-50 dark:bg-gray-900 border border-y-0 border-r-0 border-l-4 border-greenSoft rounded-md shadow-lg w-60">
+                            <div class="w-full p-2 text-greenSoft font-poppins">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <div class="tooltip-date-range">5 Okt - 6
+                                        Okt </div>
+                                    <div class="tooltip-spt-no">900/xx/...
+                                    </div>
+                                </div>
+                                <div class="tooltip-title dark:text-gray-200">
+                                    Rapat koordinasi...
+                                </div>
+                            </div>
+                        </div>
                         <!-- Konten Day -->
                         <div class="flex space-x-4" id="day-panel" role="tabpanel" aria-labelledby="day-tab">
                             <!-- PERBAIKAN: Menggabungkan semua elemen kalender ke dalam satu tabel -->
@@ -391,34 +406,34 @@
                                         class="h-[41px] text-left items-center bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700">
                                         <th class="py-3 pl-3 w-14 text-[20px] border dark:border-gray-700 font-sans text-[#969696] dark:text-gray-400
                                     font-normal">NO</th>
-                                        <th class="sunday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
+                                        <th class="sunday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
                                     font-semibold font-sans">SUN <br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">29</span>
                                         </th>
-                                        <th class="monday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
+                                        <th class="monday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
                                     font-semibold font-sans">MON <br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">30</span>
                                         </th>
-                                        <th class="tuesday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
+                                        <th class="tuesday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
                                     font-semibold font-sans">TUE<br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">31</span>
                                         </th>
-                                        <th class="wednesday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
+                                        <th class="wednesday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
                                     font-semibold font-sans">WED<br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">01</span>
                                         </th>
                                         <th
-                                            class="thursday py-3 leading-8 bg-[#E9EAFE] bg-opacity-50 dark:bg-slate-700 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
+                                            class="thursday py-3 leading-8 dark:bg-slate-700 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
                                             THUR<br><span
                                                 class="text-white font-medium text-[22px] font-inter p-2 bg-purpleCustom rounded-full">02</span>
                                         </th>
                                         <th
-                                            class="friday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
+                                            class="friday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
                                             FRI<br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">03</span>
                                         </th>
                                         <th
-                                            class="saturday py-3 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
+                                            class="saturday py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold font-sans">
                                             SAT<br><span
                                                 class="text-mainNavy dark:text-gray-300 font-medium text-[22px] font-inter">04</span>
                                         </th>
@@ -427,310 +442,7 @@
                                 <!-- Grid Agenda -->
                                 <tbody
                                     class="bg-white dark:bg-slate-800 border border-solid border-[#e8e8e8] dark:border-gray-700">
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 dark:bg-slate-700 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
-                                            rowspan="2">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td
-                                            class="note-agenda-row-top row-span-2 h-[41px] bg-[#E9EAFE] bg-opacity-50 border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
-                                        </td>
-                                    </tr>
+                                    <!-- Baris akan di-generate oleh JavaScript -->
                                 </tbody>
                             </table>
                         </div>

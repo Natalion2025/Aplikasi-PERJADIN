@@ -1097,7 +1097,7 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
         const sql = `
             SELECT 
                 s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id,
-                s.tanggal_berangkat, s.status,
+                s.tanggal_berangkat, s.tanggal_kembali, s.status,
                 -- PERBAIKAN: Gunakan COALESCE untuk mengambil nama dari tabel pejabat atau pegawai
                 COALESCE(pj.nama, pg.nama_lengkap) as pejabat_nama,
                 COALESCE(pj.jabatan, pg.jabatan) as pejabat_jabatan,

@@ -7,6 +7,14 @@
     const weekPanel = document.getElementById('week-panel');
     const monthPanel = document.getElementById('month-panel');
 
+    // State untuk tanggal saat ini
+    let currentDate = new Date();
+    // State untuk menyimpan data event/perjalanan dinas
+    let allEvents = [];
+    // Template untuk tooltip event
+    const eventTooltipTemplate = document.getElementById('event-tooltip-template');
+
+
     /**
      * Fungsi untuk mengalihkan tab yang aktif.
      * @param {HTMLElement} selectedTab - Tombol tab yang diklik.
@@ -58,5 +66,222 @@
         switchTab(dayView, dayPanel);
     };
 
+    // --- BAGIAN NAVIGASI TANGGAL KALENDER ---
+    const previousMonth = document.getElementById('previous-month');
+    const nextMonth = document.getElementById('next-month');
+    const calendarMainTitle = document.getElementById('calendar-main-title');
+    const dayPanelHeader = document.querySelector('#day-panel thead tr');
+
+    /**
+     * Mengambil data event (SPT) dari server.
+     */
+    const fetchEvents = async () => {
+        try {
+            const response = await fetch('/api/spt');
+            if (!response.ok) {
+                throw new Error('Gagal memuat data perjalanan dinas.');
+            }
+            allEvents = await response.json();
+            // Setelah data berhasil diambil, render ulang tampilan kalender
+            updateCalendarDisplay();
+        } catch (error) {
+            console.error(error);
+            // Opsional: tampilkan pesan error di UI
+        }
+    };
+
+    /**
+     * Merender semua event yang relevan untuk minggu yang sedang ditampilkan.
+     * @param {Date} startOfWeek - Tanggal hari pertama (Minggu) dari minggu yang ditampilkan.
+     */
+    const renderEvents = (startOfWeek, dayPanelBody) => {
+        if (!dayPanel || !eventTooltipTemplate) return;
+
+        // Hapus semua tooltip event dan baris nomor yang ada sebelumnya
+        dayPanel.querySelectorAll('.event-tooltip-instance').forEach(el => el.remove());
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        const dayHeaders = dayPanelHeader.querySelectorAll('th:not(:first-child)');
+        const cellWidth = dayHeaders.length > 0 ? dayHeaders[0].offsetWidth : 128; // Default width
+
+        // --- PERBAIKAN: Filter dan Urutkan Event ---
+        // 1. Filter event yang hanya terlihat di minggu ini
+        const visibleEvents = allEvents.filter(event => {
+            if (!event.tanggal_berangkat || !event.tanggal_kembali) return false;
+            const eventStart = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+            const eventEnd = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+            return eventStart <= endOfWeek && eventEnd >= startOfWeek;
+        });
+
+        // 2. Urutkan event yang terlihat berdasarkan tanggal mulai
+        visibleEvents.sort((a, b) => {
+            const dateA = new Date(a.tanggal_berangkat.replace(/-/g, '/'));
+            const dateB = new Date(b.tanggal_berangkat.replace(/-/g, '/'));
+            return dateA - dateB;
+        });
+
+        // 3. Render setiap event yang sudah diurutkan
+        visibleEvents.forEach((event, index) => {
+            // --- PERBAIKAN: Guard clause untuk data tidak lengkap ---
+            // Jika tanggal berangkat atau kembali tidak ada, lewati event ini.
+            if (!event.tanggal_berangkat || !event.tanggal_kembali) {
+                console.warn(`[WARN] Event dengan nomor surat "${event.nomor_surat}" dilewati karena data tanggal tidak lengkap.`);
+                return; // Lanjut ke event berikutnya
+            }
+            const eventStart = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+            const eventEnd = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+
+            // Cek apakah event bersinggungan dengan minggu yang ditampilkan
+            if (eventStart <= endOfWeek && eventEnd >= startOfWeek) {
+                const newTooltip = eventTooltipTemplate.cloneNode(true);
+                newTooltip.removeAttribute('id');
+                newTooltip.classList.add('event-tooltip-instance');
+                newTooltip.classList.remove('hidden');
+
+                // --- PERBAIKAN: Format tanggal yang lebih baik ---
+                const startMonth = eventStart.toLocaleString('id-ID', { month: 'short' });
+                const endMonth = eventEnd.toLocaleString('id-ID', { month: 'short' });
+                const dateRangeText = startMonth === endMonth
+                    ? `${eventStart.getDate()} - ${eventEnd.getDate()} ${startMonth}`
+                    : `${eventStart.getDate()} ${startMonth} - ${eventEnd.getDate()} ${endMonth}`;
+                newTooltip.querySelector('.tooltip-date-range').textContent = dateRangeText;
+                newTooltip.querySelector('.tooltip-spt-no').textContent = event.nomor_surat;
+                newTooltip.querySelector('.tooltip-title').textContent = event.maksud_perjalanan;
+
+                // --- PERBAIKAN TOTAL: Logika Posisi dan Durasi ---
+
+                // 1. Tentukan hari mulai event yang *terlihat* di minggu ini.
+                // Jika event dimulai sebelum minggu ini, maka hari mulainya adalah Minggu (indeks 0).
+                const visibleStartDate = eventStart < startOfWeek ? startOfWeek : eventStart;
+
+                // 2. Tentukan hari selesai event yang *terlihat* di minggu ini.
+                // Jika event selesai setelah minggu ini, maka hari selesainya adalah Sabtu (indeks 6).
+                const visibleEndDate = eventEnd > endOfWeek ? endOfWeek : eventEnd;
+
+                // 3. Hitung indeks kolom hari untuk memulai tooltip.
+                // `getDay()` mengembalikan 0 untuk Minggu, 1 untuk Senin, dst., yang sudah cocok dengan urutan kolom kita.
+                const startDayIndex = visibleStartDate.getDay();
+
+                // 4. Hitung durasi (jumlah hari) event yang terlihat di minggu ini.
+                // Kita tambahkan 1 karena perhitungannya inklusif.
+                const durationInMs = visibleEndDate.getTime() - visibleStartDate.getTime();
+                const durationInDays = Math.round(durationInMs / (1000 * 60 * 60 * 24)) + 1;
+
+                // Pastikan durasi minimal 1 hari
+                const duration = Math.max(1, durationInDays);
+
+                // --- PERBAIKAN UI: Atur lebar tetap dan posisi vertikal yang rapi ---
+                const headerHeight = 78; // Perkiraan tinggi header kalender dalam pixel
+                const rowSlotHeight = 72; // Total tinggi untuk 2 baris (2 * 36px)
+                const tooltipHeight = 45; // Perkiraan tinggi tooltip
+
+                // Atur posisi dan lebar tooltip
+                newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) / 2}px`;
+
+                // Pastikan startDayIndex valid sebelum mengakses offsetLeft
+                if (dayHeaders[startDayIndex]) {
+                    newTooltip.style.left = `${dayHeaders[startDayIndex].offsetLeft}px`;
+                    newTooltip.style.width = `340px`; // Atur lebar tooltip menjadi 340px
+                    newTooltip.style.zIndex = 10;
+
+                    // Tambahkan tooltip ke panel hari
+                    dayPanel.appendChild(newTooltip);
+                } else {
+                    console.error(`[ERROR] Indeks hari (${startDayIndex}) tidak valid untuk event: ${event.maksud_perjalanan}`);
+                }
+            }
+        });
+
+        // --- PERBAIKAN: Buat baris nomor urut secara dinamis ---
+        dayPanelBody.innerHTML = ''; // Kosongkan body tabel
+        const eventRowCount = visibleEvents.length > 0 ? visibleEvents.length : 4; // Tampilkan minimal 4 baris kosong
+        for (let i = 0; i < eventRowCount; i++) {
+            // Buat dua baris untuk setiap nomor urut
+            const row1 = dayPanelBody.insertRow();
+            const row2 = dayPanelBody.insertRow();
+            row1.className = 'h-[36px]'; // Setengah dari tinggi tooltip
+            row2.className = 'h-[36px]'; // Setengah dari tinggi tooltip
+
+            // Tambahkan sel nomor dengan rowspan="2" ke baris pertama
+            const cellNo = row1.insertCell();
+            cellNo.rowSpan = 2;
+            cellNo.className = 'time-agenda pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-center text-nowrap dark:text-gray-400';
+            cellNo.textContent = i + 1; // Nomor urut 1, 2, 3, ...
+
+            // Tambahkan 7 sel kosong ke setiap baris
+            for (let j = 0; j < 7; j++) row1.insertCell().className = 'note-agenda-row-top border dark:border-gray-700';
+            for (let j = 0; j < 7; j++) row2.insertCell().className = 'note-agenda-row-top border dark:border-gray-700';
+        }
+    };
+
+    /**
+     * Memperbarui semua elemen UI yang bergantung pada tanggal.
+     */
+    const updateCalendarDisplay = () => {
+        // 1. Update judul utama (Contoh: "January, 2025")
+        if (calendarMainTitle) {
+            calendarMainTitle.textContent = currentDate.toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        // 2. Update header untuk Day View
+        if (dayPanelHeader) {
+            const startOfWeek = new Date(currentDate);
+            // Set ke hari Minggu dari minggu saat ini
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+
+            const dayPanelBody = dayPanel.querySelector('tbody');
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT'];
+            const dayHeaders = dayPanelHeader.querySelectorAll('th:not(:first-child)'); // Lewati kolom "NO"
+
+            dayHeaders.forEach((th, index) => {
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + index);
+
+                const dayAbbr = days[index];
+                const dayNumber = dayDate.getDate();
+
+                // Reset kelas
+                th.classList.remove('bg-[#E9EAFE]', 'bg-opacity-50', 'dark:bg-slate-700');
+                const span = th.querySelector('span');
+                if (span) {
+                    span.classList.remove('text-white', 'bg-purpleCustom', 'rounded-full', 'p-2');
+                    span.classList.add('text-mainNavy', 'dark:text-gray-300');
+                }
+
+                // Tandai hari ini
+                if (dayDate.toDateString() === currentDate.toDateString()) {
+                    th.classList.add('bg-[#E9EAFE]', 'bg-opacity-50', 'dark:bg-slate-700');
+                    if (span) {
+                        span.classList.add('text-white', 'bg-purpleCustom', 'rounded-full', 'p-2');
+                        span.classList.remove('text-mainNavy', 'dark:text-gray-300');
+                    }
+                }
+
+                th.innerHTML = `${dayAbbr} <br><span class="${span.className}">${String(dayNumber).padStart(2, '0')}</span>`;
+            });
+
+            // 3. Render event setelah header diperbarui
+            renderEvents(startOfWeek, dayPanelBody);
+        }
+    };
+
+    // Event listeners untuk tombol navigasi
+    previousMonth.addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() - 1);
+        updateCalendarDisplay();
+    });
+
+    nextMonth.addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() + 1);
+        updateCalendarDisplay();
+    });
+
     setupTabs();
+    fetchEvents(); // Panggil untuk mengambil data SPT saat pertama kali load
+    updateCalendarDisplay(); // Panggil saat pertama kali load
 })();

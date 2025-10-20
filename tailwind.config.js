@@ -33,6 +33,7 @@ module.exports = {
         'dark-blue': '#34495e',
         'gradient-start': '#2c3e50',
         'gradient-end': '#3498db',
+        greenSoft: '#20ca9a',
         customBlue: 'rgb(52, 152, 219)',
         mainNavy: '#003861',
         purpleCustom: '#4F55FB',
