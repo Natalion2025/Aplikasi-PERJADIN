@@ -1096,16 +1096,19 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
             SELECT 
-                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id,
+                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id, s.keterangan,
                 s.tanggal_berangkat, s.tanggal_kembali, s.status,
+                a.mata_anggaran_kode, -- Tambahkan kolom ini
                 -- PERBAIKAN: Gunakan COALESCE untuk mengambil nama dari tabel pejabat atau pegawai
                 COALESCE(pj.nama, pg.nama_lengkap) as pejabat_nama,
                 COALESCE(pj.jabatan, pg.jabatan) as pejabat_jabatan,
                 (SELECT COUNT(*) FROM laporan_perjadin WHERE spt_id = s.id) as laporan_count
             FROM spt s
+            LEFT JOIN anggaran a ON s.anggaran_id = a.id -- Tambahkan JOIN ini
             -- Gabung dengan kedua tabel untuk mencari pejabat pemberi tugas
             LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
             LEFT JOIN pegawai pg ON s.pejabat_pemberi_tugas_id = pg.id
+            WHERE s.status != 'dibatalkan' -- Hanya tampilkan SPT yang belum dibatalkan
             ORDER BY s.tanggal_surat DESC, s.id DESC;
         `;
         const spts = await dbAll(sql);

@@ -51,6 +51,27 @@
         /*.rotate-180 {
             transform: rotate(180deg);
         }*/
+
+        /* Styling untuk titik acara di kalender mini */
+        .day-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .event-dot {
+            position: absolute;
+            bottom: 4px;
+            /* Sesuaikan posisi vertikal titik */
+            width: 5px;
+            height: 5px;
+            background-color: #FBBF24;
+            /* Warna kuning, sesuaikan jika perlu */
+            border-radius: 50%;
+        }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
@@ -160,19 +181,19 @@
                             <div class="flex items-center w-fit h-full space-x-4 p-0">
                                 <button id="day-view"
                                     class="flex justify-center rounded-[8px] py-2 px-8 items-center cursor-pointer">
-                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[14px]">
+                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[18px]">
                                         Day
                                     </div>
                                 </button>
                                 <button id="week-view"
                                     class="flex justify-center rounded-[8px] py-2 px-8 items-center cursor-pointer">
-                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[14px]">
+                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[18px]">
                                         Week
                                     </div>
                                 </button>
                                 <button id="month-view"
                                     class="flex justify-center rounded-[8px] py-2 px-8 items-center cursor-pointer">
-                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[14px]">
+                                    <div class="text-mainNavy dark:text-gray-300 font-poppins font-normal text-[18px]">
                                         Month
                                     </div>
                                 </button>
@@ -183,15 +204,15 @@
                     <div class="relative" id="tab-content-container">
                         <!-- Konten Status -->
                         <div id="event-tooltip-template"
-                            class="status absolute bg-opacity-100 text-opacity-100 hidden flex-col items-start bg-green-50 dark:bg-gray-900 border border-y-0 border-r-0 border-l-4 border-greenSoft rounded-md shadow-lg w-60">
-                            <div class="w-full p-2 text-greenSoft font-poppins">
+                            class="status absolute hidden flex-col items-start border border-y-0 border-r-0 border-l-4 rounded-md shadow-lg w-60 z-50">
+                            <div class="w-full p-2 font-poppins">
                                 <div class="flex items-center space-x-2 mb-1">
                                     <div class="tooltip-date-range">5 Okt - 6
                                         Okt </div>
                                     <div class="tooltip-spt-no">900/xx/...
                                     </div>
                                 </div>
-                                <div class="tooltip-title dark:text-gray-200">
+                                <div class="tooltip-title text-gray-800 dark:text-gray-200">
                                     Rapat koordinasi...
                                 </div>
                             </div>

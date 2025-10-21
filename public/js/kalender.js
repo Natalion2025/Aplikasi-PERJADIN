@@ -25,6 +25,36 @@
 
 
     /**
+     * Fungsi untuk mendapatkan tema warna tooltip berdasarkan kode anggaran.
+     * @param {string} kodeAnggaran - Kode mata anggaran dari SPT.
+     * @returns {string[]} Array berisi kelas-kelas CSS Tailwind.
+     */
+    const getTooltipTheme = (kodeAnggaran) => {
+        const themes = {
+            green: ['bg-green-50', 'border-green-400', 'text-green-400', 'dark:bg-gray-900', 'dark:border-green-500', 'dark:text-green-500'],
+            blue: ['bg-blue-50', 'border-blue-400', 'text-blue-600', 'dark:bg-gray-900', 'dark:border-blue-500', 'dark:text-blue-500'],
+            orange: ['bg-orange-50', 'border-orange-400', 'text-orange-600', 'dark:bg-gray-900', 'dark:border-orange-500', 'dark:text-orange-500'],
+            yellow: ['bg-yellow-50', 'border-yellow-400', 'text-yellow-600', 'dark:bg-gray-900', 'dark:border-yellow-500', 'dark:text-yellow-500'],
+            purple: ['bg-purple-50', 'border-purple-400', 'text-purple-600', 'dark:bg-gray-900', 'dark:border-purple-500', 'dark:text-purple-500']
+        };
+
+        if (!kodeAnggaran) return themes.green; // Default
+
+        // Perjalanan Dinas Biasa, Tetap, Meeting Luar Kota
+        if (['5.1.02.04.01.0001', '5.1.02.04.01.0002', '5.1.02.04.01.0005'].includes(kodeAnggaran.trim())) return themes.green;
+        // Perjalanan Dinas Dalam Kota, Meeting Dalam Kota
+        if (['5.1.02.04.01.0003', '5.1.02.04.01.0004'].includes(kodeAnggaran.trim())) return themes.blue;
+        // Kursus, Bimbingan Teknis
+        if (['5.1.02.02.12.0001', '5.1.02.02.12.0003'].includes(kodeAnggaran.trim())) return themes.orange;
+        // Sosialisasi
+        if (['5.1.02.02.12.0002'].includes(kodeAnggaran.trim())) return themes.yellow;
+        // Diklat Kepemimpinan
+        if (['5.1.02.02.12.0004'].includes(kodeAnggaran.trim())) return themes.purple;
+
+        return themes.green; // Fallback jika tidak ada yang cocok
+    };
+
+    /**
      * Fungsi untuk mengalihkan tab yang aktif.
      * @param {HTMLElement} selectedTab - Tombol tab yang diklik.
      * @param {HTMLElement} selectedPanel - Panel konten yang sesuai dengan tab.
@@ -91,6 +121,7 @@
                 throw new Error('Gagal memuat data perjalanan dinas.');
             }
             allEvents = await response.json();
+            console.log("[Kalender] Data SPT dimuat:", allEvents); // Debugging
             // Setelah data berhasil diambil, render ulang tampilan kalender
             updateCalendarDisplay();
         } catch (error) {
@@ -156,9 +187,27 @@
                 const dateRangeText = startMonth === endMonth
                     ? `${eventStart.getDate()} - ${eventEnd.getDate()} ${startMonth}`
                     : `${eventStart.getDate()} ${startMonth} - ${eventEnd.getDate()} ${endMonth}`;
+
+                // Terapkan tema warna berdasarkan kode anggaran
+                const themeClasses = getTooltipTheme(event.mata_anggaran_kode);
+                newTooltip.classList.add(...themeClasses);
+                // Terapkan juga warna ke elemen teks di dalamnya
+                newTooltip.querySelector('.font-poppins').classList.add(...themeClasses);
+
                 newTooltip.querySelector('.tooltip-date-range').textContent = dateRangeText;
                 newTooltip.querySelector('.tooltip-spt-no').textContent = event.nomor_surat;
-                newTooltip.querySelector('.tooltip-title').textContent = event.maksud_perjalanan;
+
+                // --- PERBAIKAN: Batasi teks maksud perjalanan menjadi 3 kalimat ---
+                const truncateText = (text, maxLength = 30) => {
+                    if (!text) return '';
+                    if (text.length <= maxLength) {
+                        return text;
+                    }
+                    // Potong teks dan pastikan tidak memotong di tengah kata
+                    let truncated = text.substr(0, maxLength);
+                    return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
+                };
+                newTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
 
                 // --- PERBAIKAN TOTAL: Logika Posisi dan Durasi ---
 
@@ -205,10 +254,6 @@
                 }
 
             }
-
-            // Custom Tema Tooltip
-
-
         });
 
         // --- PERBAIKAN: Buat baris nomor urut secara dinamis ---
@@ -231,6 +276,73 @@
             for (let j = 0; j < 7; j++) row1.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
             for (let j = 0; j < 7; j++) row2.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
         }
+    };
+
+    /**
+     * Merender event untuk tampilan mingguan (Week View).
+     * @param {Date} startOfWeek - Tanggal hari pertama (Minggu) dari minggu yang ditampilkan.
+     */
+    const renderWeekView = (startOfWeek) => {
+        if (!weekPanel) return;
+
+        const weekPanelBody = weekPanel.querySelector('tbody');
+        weekPanelBody.innerHTML = ''; // Kosongkan body tabel
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+        // Filter event yang hanya terlihat di minggu ini
+        const visibleEvents = allEvents.filter(event => {
+            if (!event.tanggal_berangkat || !event.tanggal_kembali) return false;
+            const eventStart = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+            const eventEnd = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+            return eventStart <= endOfWeek && eventEnd >= startOfWeek;
+        });
+
+        // Urutkan event berdasarkan tanggal mulai
+        visibleEvents.sort((a, b) => new Date(a.tanggal_berangkat) - new Date(b.tanggal_berangkat));
+
+        if (visibleEvents.length === 0) {
+            weekPanelBody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-gray-500">Tidak ada agenda untuk minggu ini.</td></tr>`;
+            return;
+        }
+
+        // Render setiap event dalam barisnya sendiri
+        visibleEvents.forEach((event, index) => {
+            const row = weekPanelBody.insertRow();
+            row.className = 'h-[50px]';
+
+            // Sel Nomor
+            const cellNo = row.insertCell();
+            cellNo.className = 'px-4 py-2 text-center text-sm text-gray-500 dark:text-gray-400 border dark:border-gray-700';
+            cellNo.textContent = index + 1;
+
+            // Buat 7 sel untuk setiap hari dalam seminggu
+            for (let i = 0; i < 7; i++) {
+                const cell = row.insertCell();
+                cell.className = 'p-1 border dark:border-gray-700 relative'; // Padding kecil dan posisi relatif
+
+                const currentDay = new Date(startOfWeek);
+                currentDay.setDate(startOfWeek.getDate() + i);
+
+                const eventStart = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+                const eventEnd = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+                eventStart.setHours(0, 0, 0, 0);
+                eventEnd.setHours(23, 59, 59, 999);
+
+                // Jika hari ini berada dalam rentang tanggal event, tampilkan marker
+                if (currentDay >= eventStart && currentDay <= eventEnd) {
+                    const themeClasses = getTooltipTheme(event.mata_anggaran_kode);
+                    const bgColor = themeClasses.find(c => c.startsWith('bg-')) || 'bg-gray-400';
+                    const textColor = themeClasses.find(c => c.startsWith('text-')) || 'text-gray-800';
+
+                    cell.innerHTML = `
+                        <div title="${event.maksud_perjalanan}" class="w-full h-full rounded-md flex items-center justify-center text-xs font-semibold ${bgColor.replace('-50', '-400')} ${textColor.replace('-600', '-100')}">
+                            ${currentDay.getTime() === eventStart.getTime() ? event.maksud_perjalanan.substring(0, 15) + '...' : ''}
+                        </div>`;
+                }
+            }
+        });
     };
 
     /**
@@ -269,7 +381,26 @@
                 dayClasses += ' bg-white/30';
             }
 
-            sideCalendarDaysContainer.innerHTML += `<div class="${dayClasses}" data-date="${dayDate.toISOString()}">${i}</div>`;
+            // --- PERBAIKAN: Cek apakah ada acara pada hari ini ---
+            const hasEvent = allEvents.some(event => {
+                if (!event.tanggal_berangkat || !event.tanggal_kembali) return false;
+                const start = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+                const end = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                return dayDate >= start && dayDate <= end;
+            });
+
+            const eventDotHtml = hasEvent ? '<div class="event-dot"></div>' : '';
+
+            sideCalendarDaysContainer.innerHTML += `
+                <div class="${dayClasses}" data-date="${dayDate.toISOString()}">
+                    <div class="day-wrapper">
+                        <span>${i}</span>
+                        ${eventDotHtml}
+                    </div>
+                </div>
+            `;
         }
 
         // Tambahkan event listener ke setiap tanggal yang valid
@@ -387,6 +518,13 @@
 
             // 3. Render event setelah header diperbarui
             renderEvents(startOfWeek, dayPanelBody);
+        }
+
+        // PERBAIKAN: Panggil renderWeekView jika panel minggu aktif
+        if (weekPanel && !weekPanel.classList.contains('hidden')) {
+            const startOfWeek = new Date(currentDate);
+            startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+            renderWeekView(startOfWeek);
         }
 
         // 4. Render ulang kalender mini di samping
