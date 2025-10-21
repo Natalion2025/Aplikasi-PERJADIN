@@ -14,6 +14,15 @@
     // Template untuk tooltip event
     const eventTooltipTemplate = document.getElementById('event-tooltip-template');
 
+    // --- ELEMEN SIDE CALENDAR ---
+    const sideCalendarTitle = document.getElementById('side-calendar-month-year');
+    const sideCalendarPrevBtn = document.getElementById('side-calendar-prev');
+    const sideCalendarNextBtn = document.getElementById('side-calendar-next');
+    const sideCalendarDaysContainer = document.getElementById('side-calendar-days');
+    const sideSelectedDayText = document.getElementById('side-calendar-selected-day-text');
+    const sideSelectedDate = document.getElementById('side-calendar-selected-date');
+    const sideEventsList = document.getElementById('side-calendar-events-list');
+
 
     /**
      * Fungsi untuk mengalihkan tab yang aktif.
@@ -106,6 +115,7 @@
         const dayHeaders = dayPanelHeader.querySelectorAll('th:not(:first-child)');
         const cellWidth = dayHeaders.length > 0 ? dayHeaders[0].offsetWidth : 128; // Default width
 
+
         // --- PERBAIKAN: Filter dan Urutkan Event ---
         // 1. Filter event yang hanya terlihat di minggu ini
         const visibleEvents = allEvents.filter(event => {
@@ -182,16 +192,23 @@
 
                 // Pastikan startDayIndex valid sebelum mengakses offsetLeft
                 if (dayHeaders[startDayIndex]) {
-                    newTooltip.style.left = `${dayHeaders[startDayIndex].offsetLeft}px`;
+                    newTooltip.style.left = `${dayHeaders[startDayIndex].offsetLeft - 13}px`;
                     newTooltip.style.width = `340px`; // Atur lebar tooltip menjadi 340px
                     newTooltip.style.zIndex = 10;
+                    newTooltip.title = event.maksud_perjalanan;
+
 
                     // Tambahkan tooltip ke panel hari
                     dayPanel.appendChild(newTooltip);
                 } else {
                     console.error(`[ERROR] Indeks hari (${startDayIndex}) tidak valid untuk event: ${event.maksud_perjalanan}`);
                 }
+
             }
+
+            // Custom Tema Tooltip
+
+
         });
 
         // --- PERBAIKAN: Buat baris nomor urut secara dinamis ---
@@ -207,13 +224,116 @@
             // Tambahkan sel nomor dengan rowspan="2" ke baris pertama
             const cellNo = row1.insertCell();
             cellNo.rowSpan = 2;
-            cellNo.className = 'time-agenda pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-center text-nowrap dark:text-gray-400';
+            cellNo.className = 'time-agenda pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 items-center justify-center text-center text-nowrap dark:text-gray-400';
             cellNo.textContent = i + 1; // Nomor urut 1, 2, 3, ...
 
             // Tambahkan 7 sel kosong ke setiap baris
-            for (let j = 0; j < 7; j++) row1.insertCell().className = 'note-agenda-row-top border dark:border-gray-700';
-            for (let j = 0; j < 7; j++) row2.insertCell().className = 'note-agenda-row-top border dark:border-gray-700';
+            for (let j = 0; j < 7; j++) row1.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
+            for (let j = 0; j < 7; j++) row2.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
         }
+    };
+
+    /**
+     * Merender kalender mini di samping.
+     * @param {Date} dateForMonth - Tanggal acuan untuk bulan dan tahun yang akan dirender.
+     */
+    const renderSideCalendar = (dateForMonth) => {
+        if (!sideCalendarTitle || !sideCalendarDaysContainer) return;
+
+        sideCalendarDaysContainer.innerHTML = '';
+        const year = dateForMonth.getFullYear();
+        const month = dateForMonth.getMonth();
+
+        sideCalendarTitle.textContent = dateForMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+        const lastDateOfPrevMonth = new Date(year, month, 0).getDate();
+
+        // Hari dari bulan sebelumnya
+        for (let i = firstDayOfMonth; i > 0; i--) {
+            const day = lastDateOfPrevMonth - i + 1;
+            sideCalendarDaysContainer.innerHTML += `<div class="text-white/40">${day}</div>`;
+        }
+
+        // Hari dari bulan ini
+        for (let i = 1; i <= lastDateOfMonth; i++) {
+            const dayDate = new Date(year, month, i);
+            const isToday = dayDate.toDateString() === new Date().toDateString();
+            const isSelected = dayDate.toDateString() === currentDate.toDateString();
+
+            let dayClasses = 'cursor-pointer hover:bg-white/20 rounded-full transition-colors duration-200';
+            if (isSelected) {
+                dayClasses += ' bg-yellow-400 text-black font-bold';
+            } else if (isToday) {
+                dayClasses += ' bg-white/30';
+            }
+
+            sideCalendarDaysContainer.innerHTML += `<div class="${dayClasses}" data-date="${dayDate.toISOString()}">${i}</div>`;
+        }
+
+        // Tambahkan event listener ke setiap tanggal yang valid
+        sideCalendarDaysContainer.querySelectorAll('[data-date]').forEach(dayEl => {
+            dayEl.addEventListener('click', () => {
+                currentDate = new Date(dayEl.dataset.date);
+                updateCalendarDisplay();
+            });
+        });
+    };
+
+    /**
+     * Memperbarui panel informasi di kalender samping (acara untuk tanggal terpilih).
+     * @param {Date} selectedDate - Tanggal yang dipilih.
+     */
+    const updateSidePanelInfo = (selectedDate) => {
+        if (!sideSelectedDayText || !sideSelectedDate || !sideEventsList) return;
+
+        sideSelectedDayText.textContent = selectedDate.toLocaleDateString('id-ID', { weekday: 'long' }).toUpperCase();
+        sideSelectedDate.textContent = selectedDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        const eventsOnDate = allEvents.filter(event => {
+            if (!event.tanggal_berangkat || !event.tanggal_kembali) return false;
+            const start = new Date(event.tanggal_berangkat.replace(/-/g, '/'));
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(event.tanggal_kembali.replace(/-/g, '/'));
+            end.setHours(23, 59, 59, 999);
+            return selectedDate >= start && selectedDate <= end;
+        });
+
+        sideEventsList.innerHTML = '';
+        if (eventsOnDate.length === 0) {
+            sideEventsList.innerHTML = '<p class="text-white/50 text-left">Tidak ada acara untuk tanggal ini.</p>';
+        } else {
+            eventsOnDate.forEach(event => {
+                const eventHtml = `
+                    <div class="event-item p-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors">
+                        <p class="font-semibold text-sm text-white">${event.maksud_perjalanan}</p>
+                        <p class="text-xs text-white/70">${event.nomor_surat}</p>
+                    </div>
+                `;
+                sideEventsList.innerHTML += eventHtml;
+            });
+        }
+    };
+
+    /**
+     * Mengubah bulan pada kalender (baik utama maupun samping).
+     * @param {number} monthOffset - Jumlah bulan untuk digeser (-1 untuk sebelumnya, 1 untuk berikutnya).
+     */
+    const changeMonth = (monthOffset) => {
+        // Untuk navigasi bulan, kita ubah bulan dari tanggal 1 agar tidak melompat aneh
+        const currentMonth = currentDate.getMonth();
+        currentDate.setMonth(currentMonth + monthOffset, 1);
+        updateCalendarDisplay();
+    };
+
+    /**
+     * Mengubah hari pada kalender (navigasi per hari).
+     * @param {number} dayOffset - Jumlah hari untuk digeser (-1 untuk kemarin, 1 untuk besok).
+     */
+    const changeDay = (dayOffset) => {
+        currentDate.setDate(currentDate.getDate() + dayOffset);
+        updateCalendarDisplay();
     };
 
     /**
@@ -222,13 +342,13 @@
     const updateCalendarDisplay = () => {
         // 1. Update judul utama (Contoh: "January, 2025")
         if (calendarMainTitle) {
-            calendarMainTitle.textContent = currentDate.toLocaleDateString('en-US', {
+            calendarMainTitle.textContent = currentDate.toLocaleDateString('id-ID', {
                 month: 'long',
                 year: 'numeric'
             });
         }
 
-        // 2. Update header untuk Day View
+        // 2. Update header untuk Kalender Utama (Day View)
         if (dayPanelHeader) {
             const startOfWeek = new Date(currentDate);
             // Set ke hari Minggu dari minggu saat ini
@@ -249,7 +369,7 @@
                 th.classList.remove('bg-[#E9EAFE]', 'bg-opacity-50', 'dark:bg-slate-700');
                 const span = th.querySelector('span');
                 if (span) {
-                    span.classList.remove('text-white', 'bg-purpleCustom', 'rounded-full', 'p-2');
+                    span.classList.remove('text-white', 'bg-purpleCustom', 'rounded-full', 'p-1');
                     span.classList.add('text-mainNavy', 'dark:text-gray-300');
                 }
 
@@ -257,7 +377,7 @@
                 if (dayDate.toDateString() === currentDate.toDateString()) {
                     th.classList.add('bg-[#E9EAFE]', 'bg-opacity-50', 'dark:bg-slate-700');
                     if (span) {
-                        span.classList.add('text-white', 'bg-purpleCustom', 'rounded-full', 'p-2');
+                        span.classList.add('text-white', 'bg-purpleCustom', 'rounded-full', 'p-1');
                         span.classList.remove('text-mainNavy', 'dark:text-gray-300');
                     }
                 }
@@ -268,20 +388,28 @@
             // 3. Render event setelah header diperbarui
             renderEvents(startOfWeek, dayPanelBody);
         }
+
+        // 4. Render ulang kalender mini di samping
+        renderSideCalendar(currentDate);
+
+        // 5. Perbarui daftar acara di kalender samping
+        updateSidePanelInfo(currentDate);
     };
 
     // Event listeners untuk tombol navigasi
     previousMonth.addEventListener('click', () => {
-        currentDate.setDate(currentDate.getDate() - 1);
-        updateCalendarDisplay();
+        changeDay(-1);
     });
 
     nextMonth.addEventListener('click', () => {
-        currentDate.setDate(currentDate.getDate() + 1);
-        updateCalendarDisplay();
+        changeDay(1);
     });
+
+    // Event listeners untuk navigasi kalender samping
+    sideCalendarPrevBtn.addEventListener('click', () => changeMonth(-1));
+    sideCalendarNextBtn.addEventListener('click', () => changeMonth(1));
 
     setupTabs();
     fetchEvents(); // Panggil untuk mengambil data SPT saat pertama kali load
-    updateCalendarDisplay(); // Panggil saat pertama kali load
+    // updateCalendarDisplay() akan dipanggil di dalam fetchEvents setelah data siap
 })();
