@@ -82,11 +82,6 @@
         <!-- Sidebar content akan dimuat di sini -->
     </aside>
 
-    <!-- Side Calendar -->
-    <!-- <aside class="side-calendar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="side-calendar"> -->
-    <!-- Kalender Mini Samping akan dimuat di sini -->
-    <!-- </aside> -->
-
     <!-- Konten utama -->
     <div class="main-content">
         <!-- Header -->
@@ -164,7 +159,7 @@
                 <!-- KONTROL KALENDER (NAVIGASI BULAN & TAB) -->
                 <div class="mt-24">
                     <div
-                        class="bg-white dark:bg-slate-800 p-5 rounded-t-xl shadow-xl border border-gray-200 dark:border-gray-700">
+                        class="bg-white dark:bg-slate-800 p-5 rounded-t-xl border border-gray-200 dark:border-gray-700">
                         <div class="flex justify-between items-center h-[30px]">
                             <div class="flex space-x-10 items-center">
                                 <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png"
@@ -207,12 +202,12 @@
                             class="status absolute hidden flex-col items-start border border-y-0 border-r-0 border-l-4 rounded-md shadow-lg w-60 z-50">
                             <div class="w-full p-2 font-poppins">
                                 <div class="flex items-center space-x-2 mb-1">
-                                    <div class="tooltip-date-range">5 Okt - 6
+                                    <div class="tooltip-date-range text-nowrap">5 Okt - 6
                                         Okt </div>
-                                    <div class="tooltip-spt-no">900/xx/...
+                                    <div class="tooltip-spt-no text-nowrap">900/xx/...
                                     </div>
                                 </div>
-                                <div class="tooltip-title text-gray-800 dark:text-gray-200">
+                                <div class="tooltip-title text-gray-800 dark:text-gray-200 text-nowrap">
                                     Rapat koordinasi...
                                 </div>
                             </div>
@@ -222,7 +217,7 @@
                             <!-- PERBAIKAN: Menggabungkan semua elemen kalender ke dalam satu tabel -->
                             <table class="border-collapse rounded-b-xl shadow-xl overflow-hidden">
                                 <thead>
-                                    <tr
+                                    <tr class="calendar-header-row"
                                         class="h-[41px] text-left items-center bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700">
                                         <th class="py-3 pl-3 w-14 text-[20px] border dark:border-gray-700 font-sans text-[#969696] dark:text-gray-400
                                     font-normal">NO</th>
@@ -271,7 +266,7 @@
                         <div class="" id="week-panel" role="tabpanel" aria-labelledby="week-tab">
                             <table class="border-collapse rounded-b-xl shadow-xl overflow-hidden">
                                 <thead>
-                                    <tr
+                                    <tr class="calendar-header-row"
                                         class="h-[41px] text-left items-center bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700">
                                         <th class="py-3 text-center w-14 text-[20px] border dark:border-gray-700 font-sans text-[#969696] dark:text-gray-400
                                     font-normal">NO</th>
@@ -611,318 +606,412 @@
                         <div class="" id="month-panel" role="tabpanel" aria-labelledby="month-tab">
                             <table class="border-collapse rounded-b-xl shadow-xl overflow-hidden">
                                 <thead>
+                                    <!-- PERUBAHAN: Header akan dibuat secara dinamis oleh JavaScript -->
                                     <tr
-                                        class="h-[41px] text-left items-center bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700">
-                                        <th class="py-3 w-14 border dark:border-gray-700 font-sans text-[#969696] dark:text-gray-400
-                                    font-semibold text-center">NO</th>
-                                        <th class="sunday py-3 w-32 border dark:border-gray-700 text-[#969696] bg-[#E9EAFE] dark:text-gray-400
-                                    font-semibold text-center font-sans">JANUARI</th>
-                                        <th class="monday py-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
-                                    font-semibold text-center font-sans">FEBRUARI</th>
-                                        <th class="tuesday py-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
-                                    font-semibold text-center font-sans">MARET</th>
-                                        <th class="wednesday py-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400
-                                    font-semibold text-center font-sans">MEI</th>
-                                        <th
-                                            class="thursday py-3 leading-8 dark:bg-slate-700 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold text-center font-sans">
-                                            JUNI</th>
-                                        <th
-                                            class="friday py-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold text-center font-sans">
-                                            JULI</th>
-                                        <th
-                                            class="saturday py-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold text-center font-sans">
-                                            AGUSTUS</th>
+                                        class="month-header-row h-[41px] text-left items-center bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700">
                                     </tr>
                                 </thead>
                                 <!-- Grid Agenda -->
                                 <tbody
-                                    class="bg-white dark:bg-slate-800 border border-solid border-[#e8e8e8] dark:border-gray-700">
+                                    class="tbody-month bg-white dark:bg-slate-800 border border-solid border-[#e8e8e8] dark:border-gray-700">
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr class="title">
-                                        <td class="time-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
+                                        <td class="month-agenda h-[41px] pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 font-sans items-center justify-center text-nowrap dark:text-gray-400"
                                             rowspan="2">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                     <tr>
                                         <!-- Baris ini sengaja kosong karena rowspan dari baris sebelumnya -->
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
-                                        <td class="note-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
+                                        <td
+                                            class="month-agenda-row-top row-span-2 h-[41px] border dark:border-gray-700">
                                         </td>
                                     </tr>
                                 </tbody>
@@ -933,8 +1022,6 @@
             </div>
         </main>
     </div>
-
-
     <script src="/js/main1.js"></script>
     <script src="/js/header-logic.js"></script>
     <script src="/js/kalender.js"></script>
