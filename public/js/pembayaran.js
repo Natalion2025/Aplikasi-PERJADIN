@@ -540,9 +540,12 @@
             return;
         }
 
-        pembayaranList.forEach(p => {
+        pembayaranList.forEach((p, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">${p.nomor_bukti}</div>
                 </td>
@@ -892,8 +895,8 @@
         [buktiBayarTab, pengeluaranRillTab].forEach(tab => {
             if (tab) {
                 tab.setAttribute('aria-selected', 'false');
-                tab.classList.remove('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
-                tab.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+                tab.classList.remove('bg-green-100', 'text-green-800', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
+                tab.classList.add('border-transparent', 'dark:hover:text-gray-300');
             }
         });
 
@@ -905,8 +908,8 @@
         // Aktifkan tab dan panel yang dipilih
         if (selectedTab) {
             selectedTab.setAttribute('aria-selected', 'true');
-            selectedTab.classList.add('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
-            selectedTab.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+            selectedTab.classList.add('bg-green-100', 'text-green-800', 'dark:text-indigo-500', 'dark:border-indigo-500');
+            selectedTab.classList.remove('dark:hover:text-gray-300');
         }
         if (selectedPanel) {
             selectedPanel.classList.remove('hidden');

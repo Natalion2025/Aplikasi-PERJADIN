@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         table.className = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
         table.innerHTML = `
             <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nomor SPT</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pelaksana</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-nowrap text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Biaya</th>
+                <tr class="bg-blue-50">
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nomor SPT</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pelaksana</th>
+                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-nowrap text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Biaya</th>
                     <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span></th>
                 </tr>
             </thead>
@@ -43,12 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
         data.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_panjar)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.pelaksana_nama}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatCurrency(item.total_biaya)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_panjar)}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.pelaksana_nama}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatCurrency(item.total_biaya)}</td>
+                <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${item.id}" class="print-btn text-blue-600 hover:text-blue-900" title="Cetak Bukti"><i class="fas fa-print"></i></button>
                     <button data-id="${item.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit"><i class="fas fa-edit"></i></button>
                     <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus"><i class="fas fa-trash"></i></button>

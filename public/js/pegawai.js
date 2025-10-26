@@ -66,7 +66,7 @@
         }
         pejabatList.forEach(p => {
             const pejabatCard = document.createElement('div');
-            pejabatCard.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+            pejabatCard.className = 'flex justify-between items-start p-3 bg-blue-50 border border-gray-200 dark:bg-gray-700 rounded-lg';
             pejabatCard.innerHTML = `
                 <div>
                     <p class="font-semibold text-gray-800 dark:text-white">${p.nama}</p>
@@ -193,7 +193,7 @@
         }
         pegawaiList.forEach(p => {
             const pegawaiCard = document.createElement('div');
-            pegawaiCard.className = 'flex justify-between items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-lg';
+            pegawaiCard.className = 'flex justify-between items-start p-3 bg-blue-50 border border-gray-200 dark:bg-gray-700 rounded-lg';
             pegawaiCard.innerHTML = `
                 <div>
                     <p class="font-semibold text-gray-800 dark:text-white">${p.nama_lengkap || p.nama || 'Nama tidak tersedia'}</p>

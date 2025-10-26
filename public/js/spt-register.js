@@ -57,7 +57,7 @@
 
         allSptData = sptList; // Simpan data untuk digunakan di modal panjar
 
-        sptList.forEach(spt => {
+        sptList.forEach((spt, index) => {
             const row = document.createElement('tr');
 
             // PERBAIKAN: Tandai pegawai yang dibatalkan dengan coretan
@@ -99,22 +99,35 @@
 
                 : '';
 
+            // Fungsi untuk memotong teks maks 30 karakter tanpa memotong kata
+            const truncateText = (text, maxLength = 30) => {
+                if (!text) return '';
+                if (text.length <= maxLength) return text;
+                let truncated = text.substr(0, maxLength);
+                return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
+            };
+            textContent = truncateText(spt.maksud_perjalanan);
+
+            // Bangun isi baris tabel untuk daftar register SPT
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-3 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}.</div>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${spt.nomor_surat}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_surat)}</div>
                 </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 break-words max-w-xs dark:text-gray-400">${spt.maksud_perjalanan}</div>
+                <td class="px-3 py-4">
+                    <div class="text-sm text-gray-900 break-words text-nowrap max-w-xs dark:text-gray-400" title="${spt.maksud_perjalanan}">${truncateText(spt.maksud_perjalanan)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800">
                     ${pegawaiListHtml}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-1 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-400">${spt.lokasi_tujuan}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_berangkat)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/spt/${spt.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900" title="Cetak SPT">
                         <i class="fas fa-print"></i>
                     </a>
@@ -127,6 +140,7 @@
             `;
             row.className = isCancelled ? 'bg-red-50 dark:bg-red-900/20' : '';
             sptTableBody.appendChild(row);
+            truncateText();
         });
     };
 
@@ -168,7 +182,7 @@
             return;
         }
 
-        sppdList.forEach(sppd => {
+        sppdList.forEach((sppd, index) => {
             const row = document.createElement('tr');
 
             // PERBAIKAN: Tambahkan kelas jika SPPD ini terkait dengan pegawai yang dibatalkan
@@ -176,6 +190,9 @@
             row.className = rowClass;
 
             row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}.</div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${sppd.nomor_sppd}</div>
                 </td>
@@ -544,14 +561,14 @@
 
         tabs.forEach(tab => {
             tab.setAttribute('aria-selected', 'false');
-            tab.classList.remove('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
-            tab.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+            tab.classList.remove('bg-green-100', 'text-green-700', 'dark:text-indigo-500', 'dark:border-indigo-500');
+            tab.classList.add('border-transparent', 'dark:hover:text-gray-300');
         });
         panels.forEach(panel => panel.classList.add('hidden'));
 
         selectedTab.setAttribute('aria-selected', 'true');
-        selectedTab.classList.add('text-indigo-600', 'border-indigo-600', 'dark:text-indigo-500', 'dark:border-indigo-500');
-        selectedTab.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300');
+        selectedTab.classList.add('bg-green-100', 'text-green-700', 'dark:text-indigo-500', 'dark:border-indigo-500');
+        selectedTab.classList.remove('dark:hover:text-gray-300');
         selectedPanel.classList.remove('hidden');
     };
 

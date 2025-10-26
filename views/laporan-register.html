@@ -89,14 +89,15 @@
         <!-- Page Content -->
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen" data-page-script="/js/laporan-register.js">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Hasil Perjalanan Dinas</h2>
+                <h2 class="text-2xl font-semibold text-mainNavy uppercase font-sans dark:text-gray-200">Hasil Perjalanan
+                    Dinas</h2>
                 <div class="flex fixed space-x-4 right-4">
                     <button id="pembatalan-tugas-btn"
-                        class="bg-red-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 transition-colors">
+                        class="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-700 transition-colors">
                         <i class="fas fa-ban mr-2"></i>Pembatalan Tugas
                     </button>
                     <a href="/buat-laporan"
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                        class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-xl hover:bg-sky-600 transition-colors">
                         <i class="fas fa-plus mr-2"></i>Buat Laporan
                     </a>
                 </div>
@@ -109,27 +110,27 @@
                     <ul class="flex flex-wrap -mb-px text-center" id="report-tabs" role="tablist">
                         <li class="me-2" role="presentation">
                             <button
-                                class="inline-block p-4 border-b-2 rounded-t-lg text-gray-800 hover:text-gray-500 dark:text-gray-300  dark:hover:text-gray-500 hover:border-gray-500"
+                                class="inline-block uppercase font-semibold p-4 border-b-2 rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300  dark:hover:text-gray-500"
                                 id="laporan-tab" type="button" role="tab" aria-controls="laporan-panel"
                                 aria-selected="true">Daftar Laporan</button>
                         </li>
                         <li class="me-2" role="presentation">
                             <button
-                                class="inline-block p-4 border-b-2 rounded-t-lg text-gray-800 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500 hover:border-gray-500"
+                                class="inline-block uppercase font-semibold p-4 border-b-2 rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
                                 id="pembatalan-tab" type="button" role="tab" aria-controls="pembatalan-panel"
-                                aria-selected="false">Register Pembatalan Tugas</button>
+                                aria-selected="false">Daftar Pembatalan Tugas</button>
                         </li>
                     </ul>
                 </div>
                 <!-- Konten Tab -->
                 <div id="report-tab-content">
                     <!-- Panel 1: Daftar Laporan -->
-                    <div class="p-6" id="laporan-panel" role="tabpanel" aria-labelledby="laporan-tab">
+                    <div class="px-3 py-3" id="laporan-panel" role="tabpanel" aria-labelledby="laporan-tab">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <!-- Thead untuk Daftar Laporan -->
                                 <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
+                                    <tr class="bg-blue-50">
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             No.</th>
@@ -153,12 +154,13 @@
                         </div>
                     </div>
                     <!-- Panel 2: Register Pembatalan -->
-                    <div class="hidden p-6" id="pembatalan-panel" role="tabpanel" aria-labelledby="pembatalan-tab">
+                    <div class="hidden px-3 py-3" id="pembatalan-panel" role="tabpanel"
+                        aria-labelledby="pembatalan-tab">
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <!-- Thead untuk Register Pembatalan -->
                                 <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
+                                    <tr class="bg-blue-50">
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             No.</th>
