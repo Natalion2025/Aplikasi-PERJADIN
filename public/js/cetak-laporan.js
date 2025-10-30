@@ -95,65 +95,71 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${laporan.pegawai.map(pegawai => {
-                const transportasiItems = (laporan.transportasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
-                const akomodasiItems = (laporan.akomodasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
-                const kontribusiItems = (laporan.kontribusi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
-                const lainLainItems = (laporan.lain_lain || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
-                let rows = `<tr style="background-color: #fafafa;"><td colspan="5" style="padding: 6px; border: 1px solid #ddd; font-weight: bold;">${pegawai.nama_lengkap}</td></tr>`;
+                        ${(() => {
+                    // Buat Set dari ID pegawai yang dibatalkan untuk pencarian cepat
+                    const canceledPegawaiIdSet = new Set((laporan.pegawai_dibatalkan || []).map(p => p.pegawai_id));
 
-                transportasiItems.forEach(item => {
-                    if (item.nominal > 0) rows += `<tr>
+                    // Filter pegawai yang tidak dibatalkan, lalu map menjadi string HTML
+                    return (laporan.pegawai || []).filter(pegawai => !canceledPegawaiIdSet.has(pegawai.pegawai_id)).map(pegawai => {
+                        const transportasiItems = (laporan.transportasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                        const akomodasiItems = (laporan.akomodasi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                        const kontribusiItems = (laporan.kontribusi || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                        const lainLainItems = (laporan.lain_lain || []).filter(item => item.pegawai_id === pegawai.pegawai_id);
+                        let rows = `<tr style="background-color: #fafafa;"><td colspan="5" style="padding: 6px; border: 1px solid #ddd; font-weight: bold;">${pegawai.nama_lengkap}</td></tr>`;
+
+                        transportasiItems.forEach(item => {
+                            if (item.nominal > 0) rows += `<tr>
                                     <td style="padding: 6px; border: 1px solid #ddd;">Biaya Transportasi (${item.jenis || ''} ${item.perusahaan || ''})</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">PP</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                 </tr>`;
-                });
-                akomodasiItems.forEach(item => {
-                    if (item.nominal > 0) rows += `<tr>
+                        });
+                        akomodasiItems.forEach(item => {
+                            if (item.nominal > 0) rows += `<tr>
                                     <td style="padding: 6px; border: 1px solid #ddd;">Biaya Akomodasi (${item.jenis || ''} ${item.nama || ''})</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.harga_satuan)}</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${item.malam || 1}</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">Malam</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                 </tr>`;
-                });
-                kontribusiItems.forEach(item => {
-                    if (item.nominal > 0) rows += `<tr>
+                        });
+                        kontribusiItems.forEach(item => {
+                            if (item.nominal > 0) rows += `<tr>
                                     <td style="padding: 6px; border: 1px solid #ddd;">Biaya Kontribusi (${item.jenis || ''}/kegiatan)</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">Kegiatan</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                 </tr>`;
-                });
-                lainLainItems.forEach(item => {
-                    if (item.nominal > 0) rows += `<tr>
+                        });
+                        lainLainItems.forEach(item => {
+                            if (item.nominal > 0) rows += `<tr>
                                     <td style="padding: 6px; border: 1px solid #ddd;">Biaya Lain-lain (${item.uraian || ''})</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">1</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">-</td>
                                     <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatAccounting(item.nominal)}</td>
                                 </tr>`;
-                });
-                return rows;
-            }).join('')}
+                        });
+                        return rows;
+                    }).join('');
+                })()}
                         <tr style="background-color: #f2f2f2; font-weight: bold;">
                             <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">Total Biaya Keseluruhan</td>
                             <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">Rp ${formatAccounting(totalBiayaLaporan)}</td>
                         </tr>
                     </tbody>
                 </table>
-            `;
+        `;
         }
 
 
         const signatureBlocksHtml = allSigners.map(signer => `
             <div class="signature-block">
                 <p style="font-weight: bold; text-decoration: underline;">${signer.nama}</p>
-                <p>${signer.nip}</p>
+                <p>${signer.nip}</p >
             </div>
         `).join('');
 
@@ -173,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                         `).join('')}
                     </div>
-                </div>`;
+                </div> `;
         }
 
         const laporanContentHtml = `
@@ -181,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3>LAPORAN HASIL PERJALANAN DINAS</h3>
             </div>
 
-            <div class="section-title">I. PENDAHULUAN</div>
+            <div class="section-title">I. PENDAHULUAN</div >
             <table style="width: 100%; vertical-align: top;">
                 <tr><td style="width: 25%;">a. Dasar Perjalanan</td><td style="width: 2%;">:</td><td>${nl2br(laporan.dasar_perjalanan)}</td></tr>
                 <tr><td>b. Maksud dan Tujuan</td><td>:</td><td>${nl2br(laporan.tujuan_perjalanan)}</td></tr>
@@ -204,13 +210,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="content-block">Demikian laporan ini dibuat dengan sesungguhnya untuk dapat dipergunakan sebagaimana mestinya, dan dapat dipertanggungjawabkan.</div>
 
             <div style="margin-top: 4rem;">
-                <p>${laporan.tempat_laporan}, ${formatDate(laporan.tanggal_laporan)}</p>
-                <p>Yang Melaksanakan Perjalanan Dinas,</p>
+                <p>${laporan.tempat_laporan}, ${formatDate(laporan.tanggal_laporan)}</p >
+                <p>Yang Melaksanakan Perjalanan Dinas,</p >
                 <div class="signature-container">
                     ${signatureBlocksHtml}
-                </div>
+                </div >
             </div>
-        `;
+    `;
 
         printArea.innerHTML = laporanContentHtml;
         attachmentArea.innerHTML = lampiranHtml;

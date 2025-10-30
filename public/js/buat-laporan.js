@@ -141,13 +141,24 @@
             penandatanganContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Pilih penandatangan laporan (otomatis dari SPT):</p>';
 
             if (semuaPelaksana.length > 0) {
+                //Filter pegawai yang dibatalkan agar tidak dapat membuat laporan
+                // PERBAIKAN: Buat Set dari ID pegawai yang dibatalkan untuk pengecekan cepat.
+                const canceledPegawaiIds = new Set((sptDetail.pegawai_dibatalkan || []).map(p => p.pegawai_id));
+
                 semuaPelaksana.forEach(p => {
-                    const isChecked = p.is_pengikut === 0; // Secara default, hanya pelaksana utama yang dicentang
+                    const isCanceled = canceledPegawaiIds.has(p.pegawai_id);
+                    const isDisabled = isCanceled;
+                    // Hanya centang pelaksana utama yang TIDAK dibatalkan
+                    const isChecked = p.is_pengikut === 0 && !isCanceled;
+
+                    const disabledClasses = isDisabled ? 'cursor-not-allowed' : '';
+                    const labelTitle = isDisabled ? 'Pegawai telah batal tugas' : '';
+
                     const checkboxHtml = `
-                        <div class="flex items-start">
-                            <input id="signer_${p.pegawai_id}" name="penandatangan_ids" type="checkbox" value="${p.pegawai_id}" ${isChecked ? 'checked' : ''}
+                        <div class="flex items-start ${disabledClasses}">
+                            <input id="signer_${p.pegawai_id}" name="penandatangan_ids" type="checkbox" value="${p.pegawai_id}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
                                 class="h-4 w-4 mt-1 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                            <label for="signer_${p.pegawai_id}" class="ml-3 text-sm">
+                            <label for="signer_${p.pegawai_id}" class="ml-3 text-sm ${disabledClasses}" title="${labelTitle}">
                                 <span class="font-medium text-gray-900 dark:text-gray-200">${p.nama_lengkap}</span>
                                 <span class="text-gray-500 dark:text-gray-400 block">NIP. ${p.nip} | ${p.jabatan}</span>
                             </label>
@@ -216,6 +227,8 @@
 
             // Panggil populateFormFromSpt untuk membuat checkbox, lalu centang sesuai data yang tersimpan
             await populateFormFromSpt();
+
+            // Fill/format penandatangan berdasarkan data laporan untuk di alihkan ke cetak-laporan.js
             // Penanganan error saat parsing JSON
             let selectedIds = [];
             if (laporan.penandatangan_ids) {

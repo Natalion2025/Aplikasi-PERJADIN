@@ -875,6 +875,10 @@ video {
   height: 30px;
 }
 
+.h-\[32px\] {
+  height: 32px;
+}
+
 .h-\[41px\] {
   height: 41px;
 }
@@ -943,6 +947,10 @@ video {
   width: 1.25rem;
 }
 
+.w-56 {
+  width: 14rem;
+}
+
 .w-6 {
   width: 1.5rem;
 }
@@ -969,6 +977,14 @@ video {
 
 .w-\[280px\] {
   width: 280px;
+}
+
+.w-\[32px\] {
+  width: 32px;
+}
+
+.w-\[56rem\] {
+  width: 56rem;
 }
 
 .w-\[985px\] {
@@ -1036,6 +1052,10 @@ video {
   flex-grow: 1;
 }
 
+.table-fixed {
+  table-layout: fixed;
+}
+
 .border-collapse {
   border-collapse: collapse;
 }
@@ -1101,6 +1121,10 @@ video {
 
 .items-center {
   align-items: center;
+}
+
+.justify-start {
+  justify-content: flex-start;
 }
 
 .justify-end {
@@ -1172,12 +1196,6 @@ video {
   --tw-space-y-reverse: 0;
   margin-top: calc(-1px * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(-1px * var(--tw-space-y-reverse));
-}
-
-.space-x-10 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 0;
-  margin-right: calc(2.5rem * var(--tw-space-x-reverse));
-  margin-left: calc(2.5rem * calc(1 - var(--tw-space-x-reverse)));
 }
 
 .space-x-2 > :not([hidden]) ~ :not([hidden]) {
@@ -1828,11 +1846,6 @@ video {
   padding-right: 2rem;
 }
 
-.py-0 {
-  padding-top: 0px;
-  padding-bottom: 0px;
-}
-
 .py-1 {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
@@ -1868,11 +1881,6 @@ video {
   padding-bottom: 2rem;
 }
 
-.px-0 {
-  padding-left: 0px;
-  padding-right: 0px;
-}
-
 .pb-10 {
   padding-bottom: 2.5rem;
 }
@@ -1905,6 +1913,10 @@ video {
   padding-left: 0.75rem;
 }
 
+.pl-6 {
+  padding-left: 1.5rem;
+}
+
 .pl-8 {
   padding-left: 2rem;
 }
@@ -1917,8 +1929,16 @@ video {
   padding-right: 0.5rem;
 }
 
+.pr-3 {
+  padding-right: 0.75rem;
+}
+
 .ps-2 {
   padding-inline-start: 0.5rem;
+}
+
+.pt-3 {
+  padding-top: 0.75rem;
 }
 
 .pt-4 {
@@ -1935,10 +1955,6 @@ video {
 
 .pt-8 {
   padding-top: 2rem;
-}
-
-.pt-3 {
-  padding-top: 0.75rem;
 }
 
 .text-left {
@@ -2058,6 +2074,10 @@ video {
 
 .italic {
   font-style: italic;
+}
+
+.leading-10 {
+  line-height: 2.5rem;
 }
 
 .leading-5 {
@@ -2920,11 +2940,6 @@ video {
 .dark\:text-gray-400:is(.dark *) {
   --tw-text-opacity: 1;
   color: rgb(156 163 175 / var(--tw-text-opacity, 1));
-}
-
-.dark\:text-gray-500:is(.dark *) {
-  --tw-text-opacity: 1;
-  color: rgb(107 114 128 / var(--tw-text-opacity, 1));
 }
 
 .dark\:text-gray-900:is(.dark *) {

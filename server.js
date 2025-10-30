@@ -1162,7 +1162,7 @@ app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
     }
 });
 
-// GET: Mengambil data satu SPT untuk keperluan edit dan cetak
+// GET: Mengambil data satu SPT untuk keperluan edit/cetak/detail
 app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
     try {
         const sptSql = "SELECT * FROM spt WHERE id = ?";
@@ -1182,6 +1182,15 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
         `;
         const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
         spt.pegawai = pegawaiRows;
+
+        // PERBAIKAN: Ambil juga data pegawai yang dibatalkan untuk SPT ini
+        const canceledPegawaiSql = `
+            SELECT p.id as pegawai_id, p.nama_lengkap FROM pembatalan_spt ps
+            JOIN pegawai p ON ps.pegawai_id = p.id
+            WHERE ps.spt_id = ?
+        `;
+        const canceledPegawaiRows = await dbAll(canceledPegawaiSql, [req.params.id]);
+        spt.pegawai_dibatalkan = canceledPegawaiRows;
 
         res.json(spt);
     } catch (err) {
@@ -2942,6 +2951,15 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
                 ORDER BY sp.urutan ASC
             `;
             laporan.pegawai = await dbAll(pegawaiSql, [laporan.spt_id]);
+
+            // ANOMALI FIX: Ambil juga data pegawai yang dibatalkan untuk SPT ini
+            // agar halaman cetak dapat memfilternya.
+            const canceledPegawaiSql = `
+                SELECT p.id as pegawai_id, p.nama_lengkap FROM pembatalan_spt ps
+                JOIN pegawai p ON ps.pegawai_id = p.id
+                WHERE ps.spt_id = ?
+            `;
+            laporan.pegawai_dibatalkan = await dbAll(canceledPegawaiSql, [laporan.spt_id]);
         }
 
         // PERBAIKAN: Hapus query ke tabel 'laporan_pengeluaran' yang sudah tidak ada

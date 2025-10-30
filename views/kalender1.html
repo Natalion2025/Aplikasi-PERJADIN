@@ -102,10 +102,10 @@
                         </div>
                         <div class="flex">
                             <button id="side-calendar-prev" class="p-1">
-                                <img class="w-5 h-5" src="/img/arrow_back_white.png" alt="Previous Month" />
+                                <img class="w-5 h-5" src="/img/arrow_back_white.png" alt="Side-Previous-Month" />
                             </button>
                             <button id="side-calendar-next" class="p-1">
-                                <img class="w-5 h-5" src="/img/arrow_forward_white.png" alt="Next Month" />
+                                <img class="w-5 h-5" src="/img/arrow_forward_white.png" alt="Side-Next-Month" />
                             </button>
                         </div>
                     </div>
@@ -161,15 +161,19 @@
                     <div
                         class="bg-white dark:bg-slate-800 p-5 rounded-t-xl border border-gray-200 dark:border-gray-700">
                         <div class="flex justify-between items-center h-[30px]">
-                            <div class="flex space-x-10 items-center">
-                                <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png"
-                                    id="previous-month" alt="Bulan Sebelumnya">
+                            <div class="flex space-x-2 items-center">
+                                <img src="/img/double_arrow.png" alt="bulan-sebelumnya" id="previous-month"
+                                    class="cursor-pointer w-[32px] h-[32px] rotate-180">
+                                <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_back.png" id="prev-day"
+                                    alt="hari-sebelumnya">
                                 <div id="calendar-main-title"
-                                    class="text-left font-poppins font-semibold text-[24px] leading-[30px] text-mainNavy dark:text-gray-200">
+                                    class="w-56 text-center  font-poppins font-semibold text-[24px] leading-[30px] text-mainNavy dark:text-gray-200">
                                     January, 2025
                                 </div>
-                                <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_forward.png"
-                                    id="next-month" alt="Bulan Berikutnya">
+                                <img class="cursor-pointer w-[24px] h-[24px]" src="/img/arrow_forward.png" id="next-day"
+                                    alt="hari-berikutnya">
+                                <img src="/img/double_arrow.png" alt="bulan-berikutnya" id="next-month"
+                                    class="cursor-pointer w-[32px] h-[32px]">
                             </div>
 
                             <!-- Navigasi Tab -->
@@ -213,8 +217,9 @@
                             </div>
                         </div>
                         <!-- Konten Day -->
-                        <div class="flex space-x-4" id="day-panel" role="tabpanel" aria-labelledby="day-tab">
+                        <div class="" id="day-panel" role="tabpanel" aria-labelledby="day-tab">
                             <!-- PERBAIKAN: Menggabungkan semua elemen kalender ke dalam satu tabel -->
+                            <!-- PERUBAHAN: Tambahkan w-full dan table-fixed agar lebar tabel maksimal dan kolomnya rata -->
                             <table class="border-collapse rounded-b-xl shadow-xl overflow-hidden">
                                 <thead>
                                     <tr class="calendar-header-row"

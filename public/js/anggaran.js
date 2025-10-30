@@ -78,7 +78,7 @@
             return;
         }
 
-        anggaranList.forEach(anggaran => {
+        anggaranList.forEach((anggaran, index) => {
             const row = document.createElement('tr');
 
             const actionButtons = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
@@ -89,7 +89,10 @@
                 : ''; // Jangan render kolom sama sekali jika bukan admin
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="pr-3 pl-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">${anggaran.program || '-'}</div>
                     <div class="text-sm text-gray-500 dark:text-white">${anggaran.kegiatan || '-'}</div>
                 </td>

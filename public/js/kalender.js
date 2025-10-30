@@ -9,12 +9,6 @@
 
     // State untuk tanggal saat ini
     let currentDate = new Date();
-    // State untuk navigasi di month view
-    let currentMonthViewDate = new Date();
-    // PERUBAHAN: State untuk melacak bulan aktif (0-11) di month view
-    let activeMonthIndex = new Date().getMonth();
-    // PERUBAHAN: State untuk melacak bulan awal dari jendela 7 bulan yang ditampilkan
-    let startMonthIndex = Math.max(0, activeMonthIndex - 4);
     // State untuk menyimpan data event/perjalanan dinas
     let allEvents = [];
     // Template untuk tooltip event
@@ -176,16 +170,15 @@
         targetPanel.querySelectorAll('.event-tooltip-instance').forEach(el => el.remove());
 
         const cellWidth = dayHeaders.length > 0 ? dayHeaders[0].offsetWidth : 128; // Default width
-
+        // Logika untuk menentukan event yang terlihat dalam rentang waktu tampilan 
         // --- PERBAIKAN: Tentukan rentang waktu yang ditampilkan ---
         let viewStartDate, viewEndDate;
-
-        if (isDayView) { // Logika untuk Day View (sekarang 7 minggu)
-            const totalWeeksToShow = 7;
+        if (isDayView) { // Logika untuk Day View 
+            // PERUBAHAN: Rentang tampilan untuk Day View sekarang hanya satu hari.
             viewStartDate = new Date(currentDate);
-            viewStartDate.setDate(currentDate.getDate() - currentDate.getDay() - ((totalWeeksToShow) * 1));
-            viewEndDate = new Date(viewStartDate);
-            viewEndDate.setDate(viewStartDate.getDate() + (totalWeeksToShow * 7) - 1);
+            viewStartDate.setHours(0, 0, 0, 0);
+            viewEndDate = new Date(currentDate);
+            viewEndDate.setHours(23, 59, 59, 999);
         } else if (isWeekView) { // Logika untuk Week View (sekarang 7 hari)
             viewEndDate = new Date(startOfWeek);
             viewEndDate.setDate(startOfWeek.getDate() + 6);
@@ -322,24 +315,20 @@
 
                 let startColumnIndex = -1;
 
-                if (isDayView) { // Logika untuk Day View (tampilan 7 minggu) - tidak digunakan di sini
-                    const diffTime = eventStart.getTime() - viewStartDate.getTime();
-                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                    startColumnIndex = Math.floor(diffDays / 7);
+                if (isDayView) {
+                    // PERUBAHAN: Untuk Day View, semua event ditampilkan di kolom yang sama (indeks 0).
+                    startColumnIndex = 0;
                 } else if (isWeekView) { // Logika untuk Week View (tampilan 7 hari)
                     const visibleStartDate = eventStart < startOfWeek ? startOfWeek : eventStart;
                     startColumnIndex = visibleStartDate.getDay();
                 }
 
-                if (startColumnIndex >= 0 && startColumnIndex < dayHeaders.length && dayHeaders[startColumnIndex]) {
-                    const headerElement = dayHeaders[startColumnIndex];
-                    newTooltip.style.left = `${headerElement.offsetLeft - 13}px`;
-                    targetPanel.appendChild(newTooltip);
-                } else if (startColumnIndex < 0 && dayHeaders[0]) {
+                // PERUBAHAN: Logika penempatan tooltip disederhanakan untuk Day View.
+                if (isDayView && dayHeaders[0]) {
                     newTooltip.style.left = `${dayHeaders[0].offsetLeft - 13}px`;
                     targetPanel.appendChild(newTooltip);
                 }
-            } else if (isWeekView) { // Logika untuk Week View (tampilan 7 hari)
+            } else if (isWeekView) {
                 const weekTooltip = eventTooltipTemplate.cloneNode(true);
                 weekTooltip.removeAttribute('id');
                 weekTooltip.classList.add('event-tooltip-instance');
@@ -458,23 +447,24 @@
         const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
         const lastDateOfPrevMonth = new Date(year, month, 0).getDate();
 
-        // Hari dari bulan sebelumnya
+        // Menampilkan sisa hari dari bulan sebelumnya sebelum sampai tanggal 1 bulan ini/berikutnya untuk ditampilkan pada grid kalender samping
+        // Perulangan mundur dari hari pertama bulan ini atau dari hari yang sedang ditampilkan (firstDayOfMonth) ke 0 dan seterusnya.  
         for (let i = firstDayOfMonth; i > 0; i--) {
             const day = lastDateOfPrevMonth - i + 1;
             sideCalendarDaysContainer.innerHTML += `<div class="text-white/40">${day}</div>`;
         }
 
-        // Hari dari bulan ini
+        // Perulangan dimulai dari hari pertama/tanggal 1 (i = 1) dari bulan ini (perulangan maju) sampai hari terakhir bulan ini (0) (lastDateOfMonth) untuk ditampilkan pada grid kalender samping 
         for (let i = 1; i <= lastDateOfMonth; i++) {
-            const dayDate = new Date(year, month, i);
-            const isToday = dayDate.toDateString() === new Date().toDateString();
-            const isSelected = dayDate.toDateString() === currentDate.toDateString();
+            const dayDate = new Date(year, month, i); // Logika tanggal lengkap untuk navigasi dan pengecekan event  
+            const isToday = dayDate.toDateString() === new Date().toDateString(); // Logika pengecekan hari ini/hari yang sedang berjalan ( highlight hari ini )
+            const isSelected = dayDate.toDateString() === currentDate.toDateString(); // Logika pengecekan hari yang dipilih ( highlight hari yang dipilih )
 
-            let dayClasses = 'cursor-pointer hover:bg-white/20 rounded-full transition-colors duration-200';
+            let dayClasses = 'cursor-pointer hover:bg-white/20 rounded-full transition-colors duration-200'; // Kelas dasar untuk setiap hari
             if (isSelected) {
-                dayClasses += ' bg-yellow-400 text-black font-bold';
+                dayClasses += ' bg-yellow-400 text-black font-bold'; // Kelas tambahan untuk hari yang dipilih
             } else if (isToday) {
-                dayClasses += ' bg-white/30';
+                dayClasses += ' bg-white/30'; // Kelas tambahan untuk hari ini
             }
 
             // --- PERBAIKAN: Cek apakah ada acara pada hari ini ---
@@ -548,19 +538,14 @@
      * @param {number} monthOffset - Jumlah bulan untuk digeser (-1 untuk sebelumnya, 1 untuk berikutnya).
      */
     const changeMonth = (monthOffset) => {
-        const activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
+        // Logika ini sekarang berlaku umum untuk semua view.
+        // Navigasi per hari/minggu ditangani oleh fungsi changeDay/changeWeek secara terpisah.
+        const currentMonth = currentDate.getMonth();
 
-        // Jika di Day View (tampilan 7 minggu), navigasi samping menggeser per minggu
-        if (activeTab === dayView) {
-            const daysToShift = monthOffset * 7; // Geser 7 hari
-            currentDate.setDate(currentDate.getDate() + daysToShift);
-        } else { // Untuk Week View (tampilan 7 hari) dan Month View
-            // Untuk Day View dan Month View, navigasi samping tetap per bulan
-            const currentMonth = currentDate.getMonth();
-            // Set tanggal ke 1 untuk menghindari bug lompat bulan (misal: dari 31 Maret ke Februari)
-            currentDate.setDate(1);
-            currentDate.setMonth(currentMonth + monthOffset);
-        }
+        // Set tanggal ke 1 untuk menghindari bug lompat bulan saat navigasi
+        // (misalnya, dari 31 Maret mundur sebulan akan menjadi 3 Maret, bukan Februari).
+        currentDate.setDate(1);
+        currentDate.setMonth(currentMonth + monthOffset);
 
         updateCalendarDisplay(); // Perbarui tampilan setelah mengubah tanggal
     };
@@ -579,25 +564,15 @@
     /**
      * Mengubah hari pada kalender (navigasi per hari).
      * @param {number} dayOffset - Jumlah hari untuk digeser (-1 untuk kemarin, 1 untuk besok).
-     */
+    */
     const changeDay = (dayOffset) => {
         // ==================================================
         // FITUR MODE DAY VIEW
         // ==================================================
-        currentDate.setDate(currentDate.getDate() + dayOffset); // Navigasi di Day View (tampilan 7 minggu) menggeser per hari
+        currentDate.setDate(currentDate.getDate() + dayOffset); // Navigasi di Day View menggeser per hari
         updateCalendarDisplay();
     };
 
-    /**
-     * ==================================================
-     * Mengubah tahun pada kalender (navigasi per tahun untuk month view).
-     * @param {number} yearOffset - Jumlah tahun untuk digeser.
-     */
-    const changeYear = (yearOffset) => {
-        const currentYear = currentDate.getFullYear();
-        currentDate.setFullYear(currentYear + yearOffset);
-        updateCalendarDisplay();
-    };
 
     /**
      * ==================================================
@@ -621,13 +596,13 @@
             const dayNumber = dayDate.getDate();
 
             // Reset kelas highlight dan pastikan kelas dasar tetap ada
-            th.className = 'py-3 leading-8 pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 text-left font-semibold font-sans';
+            th.className = 'py-3 leading-8  pl-3 w-32 border dark:border-gray-700 text-[#969696] dark:text-gray-400 text-left font-semibold font-sans';
 
             const span = th.querySelector('span');
             if (span) {
                 // Reset gaya span
-                span.classList.remove('text-white', 'bg-purpleCustom', 'px-2', 'font-medium', 'font-inter', 'rounded-full');
-                span.classList.add('text-mainNavy', 'dark:text-gray-300', 'text-[22px]', 'font-medium', 'font-inter');
+                span.classList.remove('text-white', 'bg-purpleCustom', 'p-2', 'font-medium', 'rounded-full');
+                span.classList.add('text-mainNavy', 'dark:text-gray-300', 'text-[18px]', 'font-medium', 'font-inter');
             }
 
             // Tandai hari yang dipilih
@@ -636,8 +611,8 @@
                 const selectedSpan = th.querySelector('span');
                 if (span) {
                     // Terapkan gaya highlight pada span
-                    span.classList.add('text-white', 'bg-purpleCustom', 'text-[22px]', 'px-2', 'font-medium', 'font-inter', 'rounded-full');
-                    span.classList.remove('text-mainNavy', 'dark:text-gray-300', 'font-medium', 'font-inter');
+                    span.classList.add('text-white', 'bg-purpleCustom', 'text-[18px]', 'p-2', 'font-medium', 'font-inter', 'rounded-full');
+                    span.classList.remove('text-mainNavy', 'dark:text-gray-300', 'font-medium');
                 }
             }
 
@@ -682,37 +657,53 @@
     };
 
     /**
-     * Update header untuk day view (tampilan 7 minggu)
+     * Update header untuk day view dengan navigasi per hari 
      */
     const updateDayViewHeader = () => {
+        // ==================================================
+        // FITUR MODE DAY VIEW (PERUBAHAN)
+        // ==================================================
         if (!dayPanelHeader) return;
 
-        const dayHeaders = dayPanelHeader.querySelectorAll('th:not(:first-child)');
-        // Tentukan titik acuan (anchor) untuk tampilan 7 minggu
-        const anchorDate = getWeekViewAnchor(currentDate);
-        const firstWeekStartDate = new Date(anchorDate);
-        firstWeekStartDate.setDate(currentDate.getDate() - (currentDate.getDay()) - (6 * 7));
+        // Kosongkan header yang ada
+        dayPanelHeader.innerHTML = '';
 
-        dayHeaders.forEach((th, index) => {
-            const weekStartDate = new Date(firstWeekStartDate);
-            weekStartDate.setDate(firstWeekStartDate.getDate() + (index * 7));
+        // Buat elemen-elemen baru sesuai permintaan
+        const thNo = document.createElement('th');
+        thNo.scope = 'col';
+        thNo.className = 'py-3 pl-3 pr-3 w-14 border dark:border-gray-700 text-[#969696] dark:text-gray-400 text-center font-semibold font-sans';
+        thNo.textContent = 'NO';
 
-            const weekEndDate = new Date(weekStartDate);
-            weekEndDate.setDate(weekStartDate.getDate() + 6);
+        const thNav = document.createElement('th');
+        thNav.scope = 'col';
+        thNav.colSpan = 7; // Gabungkan 7 kolom
+        thNav.className = 'py-3 px-4 w-[56rem] border dark:border-gray-700 text-mainNavy dark:text-gray-300 text-center font-semibold font-sans text-lg';
 
-            const startDay = String(weekStartDate.getDate()).padStart(2, '0');
-            const endDay = String(weekEndDate.getDate()).padStart(2, '0');
+        // PERUBAHAN: Pisahkan bagian tanggal untuk styling
+        const dayName = currentDate.toLocaleDateString('id-ID', { weekday: 'long' });
+        const dayNumber = currentDate.getDate();
 
-            // Reset kelas
-            th.classList.remove('bg-[#E9EAFE]', 'dark:bg-slate-700');
+        // Isi konten navigasi
+        thNav.innerHTML = `
+            <div class="text-left items-center pb-4 bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700 flex justify-start space-x-6 px-4">
+                <div class="items-center space-x-2">
+                    <span class=" py-3 leading-10 dark:bg-slate-700 pl-3 text-[#969696] dark:text-gray-400 font-semibold font-sans">
+                        ${dayName} 
+                    </span><br>
+                    <span class=" text-white font-medium text-[18px] font-inter p-2 bg-purpleCustom rounded-full">
+                        ${dayNumber}
+                    </span>
+                </div>
+            </div>
+        `;
 
-            // Tandai kolom minggu yang mengandung tanggal saat ini
-            if (currentDate >= weekStartDate && currentDate <= weekEndDate) {
-                th.classList.add('bg-[#E9EAFE]', 'dark:bg-slate-700');
-            }
+        // Tambahkan elemen ke baris header
+        dayPanelHeader.appendChild(thNo);
+        dayPanelHeader.appendChild(thNav);
 
-            th.innerHTML = `${startDay} <span class="text-3xl text-[#969696] dark:text-gray-500 font-normal">/</span> ${endDay}`;
-        });
+        // Tambahkan event listener ke tombol navigasi yang baru dibuat
+        // document.getElementById('day-view-prev').addEventListener('click', () => changeDay(-1));
+        // document.getElementById('day-view-next').addEventListener('click', () => changeDay(1));
     };
 
     /**
@@ -738,7 +729,7 @@
         (async () => {
             if (dayPanel && !dayPanel.classList.contains('hidden')) {
                 updateDayViewHeader();
-                renderEventsForView(startOfWeek, dayPanel);
+                renderEventsForView(currentDate, dayPanel); // Gunakan currentDate sebagai acuan
             } else if (weekPanel && !weekPanel.classList.contains('hidden')) {
                 await updateWeekViewHeader(weekPanelHeader);
                 renderEventsForView(startOfWeek, weekPanel); // startOfWeek sudah benar untuk 7-day view
@@ -757,68 +748,34 @@
         updateSidePanelInfo(currentDate);
     };
 
-    // --- FUNGSI BARU: Menentukan "Anchor" untuk Week View ---
-    let weekViewAnchorDate = null;
-
-    /**
-     * Menentukan tanggal acuan (anchor) untuk tampilan 7-minggu.
-     * Anchor ini hanya akan diperbarui jika tanggal saat ini (currentDate)
-     * berada di luar rentang 7-minggu yang sedang ditampilkan.
-     * Ini mencegah tampilan melompat-lompat saat navigasi panah.
-     * @param {Date} date - Tanggal saat ini.
-     * @returns {Date} Tanggal anchor yang telah ditentukan.
-     */
-    const getWeekViewAnchor = (date) => {
-        // ==================================================
-        // FITUR MODE WEEK VIEW
-        // ==================================================
-
-        if (weekViewAnchorDate === null) {
-            weekViewAnchorDate = new Date(date);
-            return weekViewAnchorDate;
-        }
-
-        const startOfView = new Date(weekViewAnchorDate);
-        startOfView.setDate(weekViewAnchorDate.getDate() - weekViewAnchorDate.getDay() - (6 * 7));
-        const endOfView = new Date(startOfView);
-        endOfView.setDate(startOfView.getDate() + (7 * 7) - 1);
-
-        if (date < startOfView || date > endOfView) {
-            weekViewAnchorDate = new Date(date);
-        }
-        return weekViewAnchorDate;
-    };
-
     // Event listeners untuk tombol navigasi
     previousMonth.addEventListener('click', () => {
         const activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
-        if (activeTab === dayView) { // Navigasi di Day View (7 minggu) adalah per hari
-            changeDay(-1);
-        } else if (activeTab === weekView) { // Navigasi di Week View (7 hari) adalah per minggu
-            changeWeek(-1);
+        if (activeTab === dayView) { // Khusus untuk Navigasi di Day View adalah per bulan karena pada sub header sudah terdapat tombol navigasi per hari
+            changeMonth(-1);
         } else if (activeTab === monthView) { // Navigasi di Month View adalah per bulan
             changeMonth(-1);
         } else {
-            changeDay(-1); // Fallback
-        }
+            changeMonth(-1); // Fallback
+        };
     });
 
     nextMonth.addEventListener('click', () => {
         const activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
-        if (activeTab === dayView) { // Navigasi di Day View (7 minggu) adalah per hari
-            changeDay(1);
-        } else if (activeTab === weekView) { // Navigasi di Week View (7 hari) adalah per minggu
-            changeWeek(1); // Ini akan menggeser 7 hari
+        if (activeTab === dayView) { // Khusus untuk Navigasi di Day View adalah per bulan karena pada sub header sudah terdapat tombol navigasi per hari
+            changeMonth(1);
         } else if (activeTab === monthView) { // Navigasi di Month View adalah per bulan
             changeMonth(1);
         } else {
-            changeDay(1); // Fallback
-        }
+            changeMonth(1); // Fallback
+        };
     });
 
     // Event listeners untuk navigasi kalender samping
     sideCalendarPrevBtn.addEventListener('click', () => changeMonth(-1));
     sideCalendarNextBtn.addEventListener('click', () => changeMonth(1));
+    document.getElementById('prev-day').addEventListener('click', () => changeDay(-1)); // Navigasi per hari di Day View sub header dari header navigasi utama
+    document.getElementById('next-day').addEventListener('click', () => changeDay(1)); // Navigasi per hari di Day View sub header dari header navigasi utama
 
     setupTabs();
     fetchEvents(); // Panggil untuk mengambil data SPT saat pertama kali load
