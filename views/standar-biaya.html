@@ -80,10 +80,11 @@
 
 <body class="bg-slate-50 dark:bg-gray-900">
     <!-- Modal Overlay -->
-    <div class="modal-overlay" id="uploadModal">
-        <div class="modal-container">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Konfirmasi Upload Standar Biaya</h3>
-            <p class="text-gray-600 mb-6">Apakah anda sudah memeriksa template dan yakin ingin mengupload SBU?</p>
+    <div class="modal-overlay flex items-center justify-center" id="uploadModal">
+        <div class="modal-container bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Konfirmasi Upload Standar Biaya</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Apakah anda sudah memeriksa template dan yakin ingin
+                mengupload SBU?</p>
 
             <div class="mb-4 hidden" id="uploadProgress">
                 <div class="flex justify-between text-sm text-gray-600 mb-1">
@@ -102,11 +103,11 @@
 
             <div class="flex justify-end space-x-3">
                 <button type="button" id="cancelUpload"
-                    class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors">
+                    class="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 transition-colors">
                     Batal
                 </button>
                 <button type="button" id="confirmUpload"
-                    class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors">
+                    class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 transition-colors">
                     Upload
                 </button>
             </div>
@@ -126,32 +127,36 @@
         </header>
 
         <!-- Page content -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-800 p-6">
             <div class="container mx-auto">
                 <!-- Judul Halaman -->
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Standar Biaya Perjalanan Dinas</h2>
-                    <p class="text-gray-600">Referensi satuan biaya berdasarkan peraturan yang berlaku.</p>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Standar Biaya Perjalanan Dinas</h2>
+                    <p class="text-gray-600 dark:text-gray-400">Referensi satuan biaya berdasarkan peraturan yang
+                        berlaku.</p>
                 </div>
 
                 <!-- Konten Utama -->
-                <div class="bg-white p-8 rounded-lg shadow-lg">
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-lg">
                     <div class="text-center mb-8">
-                        <h3 class="text-sm  font-semibold text-gray-800">BERDASARKAN PERATURAN BUPATI MELAWI</h3>
-                        <h3 class="text-sm font-semibold text-gray-800">NOMOR xxx TAHUN 2026</h3>
-                        <h3 class="text-sm font-semibold text-gray-800 mt-4">TENTANG</h3>
-                        <h3 class="text-sm font-semibold text-gray-800 uppercase">PERJALANAN DINAS ATAS BEBAN
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">BERDASARKAN PERATURAN BUPATI
+                            MELAWI</h3>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">NOMOR xxx TAHUN 2026</h3>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-4">TENTANG</h3>
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase">PERJALANAN DINAS
+                            ATAS BEBAN
                             ANGGARAN PENDAPATAN</h3>
-                        <h3 class="text-sm font-semibold text-gray-800 uppercase">DAN BELANJA DAERAH TAHUN ANGGARAN
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 uppercase">DAN BELANJA DAERAH
+                            TAHUN ANGGARAN
                             2026</h3>
                     </div>
 
                     <!-- Accordion Container -->
-                    <div id="accordion-standar-biaya" class="border rounded-lg">
+                    <div id="accordion-standar-biaya" class="border dark:border-gray-700 rounded-2xl">
                         <!-- Item A -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header rounded-t-2xl flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">A. SATUAN BIAYA UANG HARIAN PERJALANAN DINAS DALAM
                                     KOTA/KABUPATEN
                                     LEBIH DARI 8 JAM</span>
@@ -181,7 +186,7 @@
                         <!-- Contoh untuk Item B -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">B. SATUAN BIAYA PENGINAPAN PERJALANAN DINAS DALAM
                                     KOTA/KABUPATEN
                                     LEBIH DARI 8 JAM</span>
@@ -210,7 +215,7 @@
                         <!-- Item C -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">C. SATUAN BIAYA UANG HARIAN PERJALANAN DINAS DALAM
                                     NEGERI</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -238,7 +243,7 @@
                         <!-- Item D -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">D. SATUAN BIAYA UANG REPRESENTASI</span>
                                 <div class="flex items-center space-x-6 ml-4">
                                     <a href="/api/standar-biaya/template/D"
@@ -265,7 +270,7 @@
                         <!-- Item E -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">E. SATUAN BIAYA PENGINAPAN PERJALANAN DINAS DALAM
                                     NEGERI</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -293,7 +298,7 @@
                         <!-- Item F -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">F. SATUAN BIAYA TRANSPORTASI PERJALANAN DINAS DARI IBUKOTA
                                     KABUPATEN MELAWI KE IBUKOTA KECAMATAN</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -321,7 +326,7 @@
                         <!-- Item G -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">G. SATUAN BIAYA TRANSPORTASI PERJALANAN DINAS DARI IBUKOTA
                                     KECAMATAN KE DESA</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -349,7 +354,7 @@
                         <!-- Item I -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">H. SATUAN BIAYA TIKET PESAWAT PERJALANAN DINAS DALAM NEGERI
                                     PULANG PERGI (PP) DARI PONTIANAK</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -377,7 +382,7 @@
                         <!-- Item J -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">I. SATUAN BIAYA TIKET PESAWAT PERJALANAN DINAS DALAM NEGERI
                                     PULANG PERGI (PP) DARI JAKARTA</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -405,7 +410,7 @@
                         <!-- Item K -->
                         <div class="accordion-item border-b">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">J. SATUAN BIAYA TRANSPORTASI PERJALANAN DINAS LUAR DAERAH
                                     DALAM PROVINSI PULANG PERGI (PP) DARI MELAWI</span>
                                 <div class="flex items-center space-x-6 ml-4">
@@ -431,9 +436,9 @@
                         </div>
 
                         <!-- Item L -->
-                        <div class="accordion-item border-b">
+                        <div class="accordion-item">
                             <button type="button"
-                                class="accordion-header flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                class="accordion-header rounded-b-2xl flex justify-between items-center w-full p-4 text-left font-semibold text-gray-700 dark:text-gray-400 dark:hover:text-gray-700 hover:bg-gray-300 focus:outline-none">
                                 <span class="flex-1 text-sm">K. SATUAN BIAYA TAKSI PERJALANAN DINAS DALAM NEGERI</span>
                                 <div class="flex items-center space-x-6 ml-4">
                                     <a href="/api/standar-biaya/template/K"

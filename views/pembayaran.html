@@ -11,7 +11,7 @@
     <link href="/css/output.css" rel="stylesheet">
     <style>
         body {
-            font-family: 'arial', sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
         }
@@ -145,18 +145,18 @@
                     Pembayaran</h2>
                 <div class="flex fixed space-x-4 right-4">
                     <button id="pengeluaran-rill-button"
-                        class="bg-green-500 text-white px-4 py-2 rounded-lg shadow-xl hover:bg-green-600 transition-colors">
+                        class="bg-green-500 text-white px-4 py-2 rounded-3xl shadow-xl hover:bg-green-600 dark:shadow-md dark:bg-green-800 dark:hover:bg-green-900 dark:shadow-green-500 transition-colors">
                         <i class="fas fa-file-invoice-dollar mr-2"></i>Pengeluaran Rill
                     </button>
                     <button id="buat-bukti-button"
-                        class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-xl hover:bg-sky-600 transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Buat Bukti Bayar
+                        class="bg-sky-500 text-white px-4 py-2 rounded-3xl shadow-xl hover:bg-sky-600 dark:shadow-md dark:bg-sky-800 dark:hover:bg-sky-900 dark:shadow-sky-500 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Bukti Bayar
                     </button>
                 </div>
             </div>
 
             <!-- Kontainer Tab -->
-            <div class="bg-white w-full dark:bg-slate-800 rounded-lg shadow-md">
+            <div class="bg-white w-full dark:bg-slate-800 rounded-2xl shadow-md">
                 <!-- Navigasi Tab -->
                 <div class="border-b border-gray-200 p-0 dark:border-gray-700">
                     <ul class="flex flex-wrap -mb-px text-center" id="payment-tabs" role="tablist">
@@ -184,7 +184,7 @@
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
                                     <!-- Header tabel bukti pembayaran yang sudah ada -->
-                                    <tr class="bg-blue-50">
+                                    <tr class="bg-blue-50 dark:bg-gray-600">
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             No.</th>
@@ -218,7 +218,7 @@
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr class="bg-blue-50">
+                                    <tr class="bg-blue-50 dark:bg-gray-600">
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             No</th>
@@ -280,7 +280,7 @@
                             Anggaran</label>
                         <select id="anggaran_id" name="anggaran_id" required
                             class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-                            <option value="">-- Pilih Anggaran --</option>
+                            <option value="" class="dark:text-white">-- Pilih Anggaran --</option>
                         </select>
                     </div>
                     <div>

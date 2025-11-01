@@ -279,7 +279,6 @@
                     const tooltipWidth = (endHeader.offsetLeft + endHeader.offsetWidth) - leftPosition;
 
                     monthTooltip.style.left = `${leftPosition + 5}px`;
-                    // monthTooltip.style.width = `${tooltipWidth + 130}px`;
 
                     targetPanel.appendChild(monthTooltip);
                 }
@@ -308,7 +307,7 @@
                 };
                 newTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
 
-                newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 43}px`;
+                newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 4}px`;
                 newTooltip.style.width = `340px`;
                 newTooltip.style.zIndex = 10;
                 newTooltip.title = event.maksud_perjalanan;
@@ -325,7 +324,7 @@
 
                 // PERUBAHAN: Logika penempatan tooltip disederhanakan untuk Day View.
                 if (isDayView && dayHeaders[0]) {
-                    newTooltip.style.left = `${dayHeaders[0].offsetLeft - 13}px`;
+                    newTooltip.style.left = `${dayHeaders[0].offsetLeft + 5}px`;
                     targetPanel.appendChild(newTooltip);
                 }
             } else if (isWeekView) {
@@ -391,11 +390,19 @@
 
                 const cols = 7; // Selalu 7 kolom untuk Day dan Week view
                 for (let j = 0; j < cols; j++) {
-                    row1.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
-                    row2.insertCell().className = 'note-agenda-row-top font-inter border dark:border-gray-700';
-                }
-            }
+                    // PERBAIKAN: Hitung tanggal kolom berdasarkan awal minggu (startOfWeek)
+                    const columnDate = new Date(startOfWeek);
+                    columnDate.setDate(startOfWeek.getDate() + j);
+                    let cellClasses = 'time-agenda-row-top font-inter border dark:border-gray-700';
 
+                    // PERBAIKAN: Tambahkan kelas highlight jika kolom ini adalah tanggal yang aktif, KECUALI di mode Day View
+                    if (!isDayView && columnDate.toDateString() === currentDate.toDateString()) {
+                        cellClasses += ' bg-[#E9EAFE] dark:bg-slate-700 opacity-50'; // style highlight untuk tanggal aktif
+                    }
+                    row1.insertCell().className = cellClasses;
+                    row2.insertCell().className = cellClasses;
+                };
+            }
             // Setelah baris dibuat, render event di atasnya
             visibleEvents.forEach((event, index) => {
                 renderEvent(event, index);
@@ -406,7 +413,7 @@
             const eventRowCount = Math.max(visibleEvents.length, 4);
             const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
 
-            for (let i = 0; i < eventRowCount; i++) {
+            for (let i = 0; i < eventRowCount; i++) {    //Membuat row-td pada tbody
                 const row1 = monthPanelBody.insertRow();
                 const row2 = monthPanelBody.insertRow();
                 row1.className = 'h-[41px]';
@@ -417,11 +424,19 @@
                 cellNo.className = 'month-agenda pr-2 pl-2 font-semibold border border-solid dark:border-gray-700 items-center justify-center text-center text-nowrap dark:text-gray-400 align-middle';
                 cellNo.textContent = i + 1;
 
-                for (let j = 0; j < daysInMonth; j++) {
-                    row1.insertCell().className = 'month-agenda-row-top font-inter border dark:border-gray-700';
-                    row2.insertCell().className = 'month-agenda-row-top font-inter border dark:border-gray-700';
-                }
-            }
+                for (let j = 1; j <= daysInMonth; j++) {
+                    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), j);
+                    let cellClasses = 'month-agenda-row-top font-inter border dark:border-gray-700';
+
+                    // PERBAIKAN: Tambahkan kelas highlight jika kolom ini adalah tanggal yang aktif
+                    if (date.toDateString() === currentDate.toDateString()) {
+                        cellClasses += ' bg-[#E9EAFE] dark:bg-slate-700 opacity-50'; // style highlight untuk tanggal aktif
+                    };
+
+                    row1.insertCell().className = cellClasses;
+                    row2.insertCell().className = cellClasses;
+                };
+            };
 
             // Render event di atas baris yang baru dibuat
             visibleEvents.forEach((event, index) => {
@@ -530,7 +545,7 @@
                 `;
                 sideEventsList.innerHTML += eventHtml;
             });
-        }
+        };
     };
 
     /**
@@ -640,6 +655,8 @@
         thNo.textContent = 'NO';
         monthPanelHeader.appendChild(thNo);
 
+        // const tbodyTd = document.getElementById('month-agenda-rows');
+
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -650,10 +667,21 @@
             const dayName = dayNames[date.getDay()];
 
             const th = document.createElement('th');
-            th.className = 'p-1 w-8 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold text-center font-sans';
-            th.innerHTML = `${i}<br><span class="text-xs font-normal">${dayName}</span>`;
+            let thClasses = 'p-1 w-8 border dark:border-gray-700 text-[#969696] dark:text-gray-400 font-semibold text-center font-sans';
+            let dayNumberSpanClasses = 'text-mainNavy dark:text-gray-300 font-medium font-inter';
+            let dayNameSpanClasses = 'text-xs font-normal';
+
+
+            // Check if this day is the currently selected day
+            if (date.toDateString() === currentDate.toDateString()) {
+                thClasses += ' bg-[#E9EAFE] dark:bg-slate-700'; // Apply active background to the th
+                dayNumberSpanClasses = 'text-white font-medium font-inter p-1 bg-purpleCustom rounded-full'; // Apply active text style to the day number
+            };
+
+            th.className = thClasses;
+            th.innerHTML = `<span class="${dayNumberSpanClasses}">${String(i).padStart(2, '0')}</span><br><span class="${dayNameSpanClasses}">${dayName}</span>`;
             monthPanelHeader.appendChild(th);
-        }
+        };
     };
 
     /**
@@ -683,15 +711,15 @@
         const dayName = currentDate.toLocaleDateString('id-ID', { weekday: 'long' });
         const dayNumber = currentDate.getDate();
 
-        // Isi konten navigasi
+        // Isi konten navigasi untuk mode day 
         thNav.innerHTML = `
             <div class="text-left items-center pb-4 bg-white dark:bg-slate-800 border border-[#e8e8e8] dark:border-gray-700 flex justify-start space-x-6 px-4">
                 <div class="items-center space-x-2">
-                    <span class=" py-3 leading-10 dark:bg-slate-700 pl-3 text-[#969696] dark:text-gray-400 font-semibold font-sans">
+                    <span class=" py-3 leading-10 pl-3 pt-0 text-[#969696] dark:text-gray-400 font-semibold font-sans">
                         ${dayName} 
                     </span><br>
                     <span class=" text-white font-medium text-[18px] font-inter p-2 bg-purpleCustom rounded-full">
-                        ${dayNumber}
+                        ${String(dayNumber).padStart(2, '0')}
                     </span>
                 </div>
             </div>

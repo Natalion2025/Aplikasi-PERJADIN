@@ -40,7 +40,6 @@
         }
 
         header {
-            position: sticky;
             top: 0;
             z-index: 30;
             margin-left: 280px;
@@ -85,16 +84,16 @@
     <!-- Konten utama -->
     <div class="main-content">
         <!-- Header -->
-        <header class="header-container w-[985px] fixed" id="header-container">
+        <header class="header-container w-[1000px] fixed" id="header-container">
             <!-- Header content akan dimuat di sini -->
         </header>
 
         <!-- Konten Kalender -->
-        <main class="pb-6 bg-[#f5f9fc] dark:bg-gray-800">
+        <main class="pb-6 bg-[#f5f9fc] dark:bg-gray-800 overflow-x-hidden">
             <div class="mt-0 flex space-x-2">
                 <!-- Bagian Header Kalender Mini -->
                 <div id="side-calendar-content"
-                    class="left-menu-light h-[100vh] w-[280px] bg-gradient-to-r from-red-900 from-2% via-yellow-900 via-10% to-dark-blue to-80% p-4">
+                    class="left-menu-light max-h-screen rounded-tr-xl rounded-br-xl w-[280px] bg-gradient-to-r from-red-900 from-2% via-yellow-900 via-10% to-dark-blue to-80% p-4">
                     <div class="date flex text-white font-poppins items-center justify-between">
                         <div class="title">
                             <div id="side-calendar-month-year" class="text-nowrap text-[20px]">January 2025
@@ -261,7 +260,8 @@
                                 </thead>
                                 <!-- Grid Agenda -->
                                 <tbody
-                                    class="bg-white dark:bg-slate-800 border border-solid border-[#e8e8e8] dark:border-gray-700">
+                                    class="bg-white dark:bg-slate-800 border border-solid border-[#e8e8e8] dark:border-gray-700"
+                                    id="tbody-day">
                                     <!-- Baris akan di-generate oleh JavaScript -->
                                 </tbody>
                             </table>

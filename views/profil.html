@@ -68,7 +68,7 @@
         <!-- Konten -->
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Profil Saya</h2>
-            <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md max-w-4xl mx-auto">
+            <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-md max-w-4xl mx-auto">
                 <!-- PERBAIKAN: Mengubah ID form menjadi 'profile-form' -->
                 <form id="profile-form">
                     <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
@@ -88,7 +88,7 @@
                                 <label for="username"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
                                 <input type="text" id="username" name="username" required
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
                                 <label for="nama_lengkap"
@@ -96,26 +96,26 @@
                                     Lengkap</label>
                                 <!-- PERBAIKAN: Menambahkan field 'name' untuk kompatibilitas dengan backend -->
                                 <input type="text" id="nama_lengkap" name="nama_lengkap" required
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
                                 <label for="nip"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">NIP</label>
                                 <input type="text" id="nip" name="nip"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
                                 <label for="jabatan"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jabatan</label>
                                 <input type="text" id="jabatan" name="jabatan"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
                                 <label for="role"
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Peran
                                     (Role)</label>
                                 <input type="text" id="role" name="role" readonly
-                                    class="mt-1 block w-full px-3 py-2 border-slate-300 dark:border-gray-600 rounded-md shadow-sm bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-gray-400 cursor-not-allowed">
+                                    class="mt-1 block w-full px-3 py-2 border-slate-300 dark:border-gray-600 rounded-xl shadow-sm bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-gray-400 cursor-not-allowed">
                             </div>
                         </div>
 
@@ -129,7 +129,7 @@
                                     class="w-40 h-40 rounded-full object-cover mb-4 border-4 border-white dark:border-slate-600 shadow-lg">
                                 <input type="file" id="foto_profil" name="foto_profil" class="hidden" accept="image/*">
                                 <label for="foto_profil"
-                                    class="cursor-pointer bg-white dark:bg-slate-600 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-slate-500 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    class="cursor-pointer bg-white dark:bg-slate-600 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-slate-500 py-2 px-4 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
                                     Pilih Foto...
                                 </label>
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Maks. 5MB (JPG, PNG, GIF)</p>
@@ -149,7 +149,7 @@
                                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password
                                     Baru</label>
                                 <input type="password" id="new_password" name="new_password" autocomplete="new-password"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                             <div>
                                 <label for="confirm_password"
@@ -157,7 +157,7 @@
                                     Password Baru</label>
                                 <input type="password" id="confirm_password" name="confirm_password"
                                     autocomplete="new-password"
-                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                    class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
                             </div>
                         </div>
                     </div>
@@ -165,7 +165,7 @@
                     <!-- Tombol Simpan -->
                     <div class="flex justify-end mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button type="submit"
-                            class="bg-indigo-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                            class="bg-sky-500 text-white px-6 py-2 rounded-3xl shadow-xl hover:bg-sky-600 dark:bg-indigo-800 dark:hover:bg-indigo-900 dark:shadow-indigo-500 transition-colors">
                             Simpan Perubahan
                         </button>
                     </div>

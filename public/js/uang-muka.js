@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         table.className = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
         table.innerHTML = `
             <thead class="bg-gray-50 dark:bg-gray-700">
-                <tr class="bg-blue-50">
+                <tr class="bg-blue-50 dark:bg-gray-600 dark:text-white">
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nomor SPT</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>

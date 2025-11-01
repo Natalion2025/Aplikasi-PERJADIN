@@ -561,14 +561,14 @@
 
         tabs.forEach(tab => {
             tab.setAttribute('aria-selected', 'false');
-            tab.classList.remove('bg-green-100', 'text-green-700', 'dark:text-indigo-500', 'dark:border-indigo-500');
-            tab.classList.add('border-transparent', 'dark:hover:text-gray-300');
+            tab.classList.remove('bg-green-100', 'dark:bg-sky-900', 'text-green-800');
+            tab.classList.add('border-transparent', 'dark:hover:text-gray-300', 'dark:border', 'dark:text-gray-300', 'dark:border-gray-700');
         });
         panels.forEach(panel => panel.classList.add('hidden'));
 
         selectedTab.setAttribute('aria-selected', 'true');
-        selectedTab.classList.add('bg-green-100', 'text-green-700', 'dark:text-indigo-500', 'dark:border-indigo-500');
-        selectedTab.classList.remove('dark:hover:text-gray-300');
+        selectedTab.classList.add('bg-green-100', 'dark:bg-sky-900', 'text-green-800', 'dark:text-gray-300');
+        selectedTab.classList.remove('dark:hover:text-gray-300', 'dark:border', 'dark:border-gray-700');
         selectedPanel.classList.remove('hidden');
     };
 
