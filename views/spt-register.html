@@ -79,7 +79,7 @@
 
             <!-- Kontainer Tab -->
             <div class="w-full bg-white rounded-2xl shadow-md  dark:bg-slate-800">
-                <!-- Navigasi Tab -->
+                <!-- Navigasi Tab dan Filter -->
                 <div class="justify-between flex items-center p-0 border-b border-gray-200 dark:border-gray-700">
                     <ul class="flex flex-wrap -mb-px text-center" id="register-tabs" role="tablist">
                         <li class="me-2" role="presentation">
@@ -97,6 +97,18 @@
                             </button>
                         </li>
                     </ul>
+                    <!-- FITUR BARU: Filter Jumlah Tampilan -->
+                    <div class="pr-4">
+                        <label for="page-limit-select"
+                            class="text-sm font-medium text-gray-700 dark:text-gray-400 mr-2">Tampilkan:</label>
+                        <select id="page-limit-select"
+                            class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                            <option value="5">5</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
                 </div>
                 <!-- Konten Tab -->
                 <div id="register-tab-content">
@@ -131,6 +143,10 @@
                                     class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 </tbody>
                             </table>
+                            <!-- PERBAIKAN: Tambahkan container untuk pagination di sini -->
+                            <div id="spt-pagination-container">
+                                <!-- Tombol "Sebelumnya" dan "Berikutnya" akan muncul di sini -->
+                            </div>
                         </div>
                     </div>
                     <!-- Panel 2: Register SPPD -->
@@ -162,6 +178,10 @@
                                     class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 </tbody>
                             </table>
+                            <!-- PERBAIKAN: Ubah ID agar unik untuk paginasi SPPD -->
+                            <div id="sppd-pagination-container">
+                                <!-- Tombol "Sebelumnya" dan "Berikutnya" akan muncul di sini -->
+                            </div>
                         </div>
                     </div>
                 </div>

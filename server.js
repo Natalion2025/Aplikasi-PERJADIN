@@ -1093,8 +1093,13 @@ app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, asyn
 
 // GET: Mengambil semua data SPT untuk ditampilkan di register
 app.get('/api/spt', isApiAuthenticated, async (req, res) => {
+    // PERBAIKAN: Ubah default limit menjadi 5 untuk konsistensi paginasi.
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
-        const sql = `
+        const sptsSql = `
             SELECT 
                 s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id, s.keterangan,
                 s.tanggal_berangkat, s.tanggal_kembali, s.status,
@@ -1109,16 +1114,16 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
             LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
             LEFT JOIN pegawai pg ON s.pejabat_pemberi_tugas_id = pg.id
             WHERE s.status != 'dibatalkan' -- Hanya tampilkan SPT yang belum dibatalkan
-            ORDER BY s.tanggal_surat DESC, s.id DESC;
-        `;
-        const spts = await dbAll(sql);
+            ORDER BY s.tanggal_surat DESC, s.id DESC
+        ` + (limit > 0 ? ' LIMIT ? OFFSET ?' : ''); // Tambahkan LIMIT jika nilainya lebih dari 0
+        const params = limit > 0 ? [limit, offset] : [];
+        const spts = await dbAll(sptsSql, params);
 
         for (const spt of spts) {
             // Ambil semua pegawai yang ditugaskan
-            const pegawaiSql = `
-                SELECT pg.nama_lengkap, pg.nip FROM spt_pegawai sp
-                JOIN pegawai pg ON sp.pegawai_id = pg.id
-                WHERE sp.spt_id = ?
+            const pegawaiSql = `SELECT pg.nama_lengkap, pg.nip FROM spt_pegawai sp 
+            JOIN pegawai pg ON sp.pegawai_id = pg.id 
+            WHERE sp.spt_id = ?
             `;
             const pegawaiRows = await dbAll(pegawaiSql, [spt.id]);
             spt.pegawai = pegawaiRows.map(p => p.nama_lengkap);
@@ -1127,12 +1132,32 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
             const canceledPegawaiSql = `
                 SELECT p.nama_lengkap FROM pembatalan_spt ps
                 JOIN pegawai p ON ps.pegawai_id = p.id
-                WHERE ps.spt_id = ?`;
+                WHERE ps.spt_id = ? `;
             const canceledPegawaiRows = await dbAll(canceledPegawaiSql, [spt.id]);
             spt.pegawai_dibatalkan = canceledPegawaiRows.map(p => p.nama_lengkap);
         }
 
-        res.json(spts);
+        // Jika limit adalah 0 (atau nilai falsy lainnya dari query), kembalikan semua data.
+        // Ini digunakan oleh halaman kalender.
+        if (!req.query.limit) {
+            return res.json(spts);
+        }
+
+        // Jika ada limit, kembalikan objek dengan paginasi (untuk register)
+        const totalSql = "SELECT COUNT(*) as total FROM spt WHERE status != 'dibatalkan'";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        res.json({
+            data: spts,
+            pagination: {
+                page,
+                limit,
+                totalItems,
+                totalPages
+            }
+        });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil daftar SPT:', err);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -1144,16 +1169,16 @@ app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
             SELECT
-                ps.id,
-                s.nomor_surat,
-                ps.tanggal_pembatalan,
-                ps.alasan,
-                p.nama_lengkap as pegawai_nama
+        ps.id,
+            s.nomor_surat,
+            ps.tanggal_pembatalan,
+            ps.alasan,
+            p.nama_lengkap as pegawai_nama
             FROM pembatalan_spt ps
             JOIN spt s ON ps.spt_id = s.id
             JOIN pegawai p ON ps.pegawai_id = p.id
             ORDER BY ps.tanggal_pembatalan DESC
-        `;
+            `;
         const canceledSpts = await dbAll(sql);
         res.json(canceledSpts);
     } catch (err) {
@@ -1179,7 +1204,7 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
             JOIN pegawai p ON sp.pegawai_id = p.id
             WHERE sp.spt_id = ?
             ORDER BY sp.urutan ASC
-        `;
+                `;
         const pegawaiRows = await dbAll(pegawaiSql, [req.params.id]);
         spt.pegawai = pegawaiRows;
 
@@ -1188,13 +1213,13 @@ app.get('/api/spt/:id', isApiAuthenticated, async (req, res) => {
             SELECT p.id as pegawai_id, p.nama_lengkap FROM pembatalan_spt ps
             JOIN pegawai p ON ps.pegawai_id = p.id
             WHERE ps.spt_id = ?
-        `;
+            `;
         const canceledPegawaiRows = await dbAll(canceledPegawaiSql, [req.params.id]);
         spt.pegawai_dibatalkan = canceledPegawaiRows;
 
         res.json(spt);
     } catch (err) {
-        console.error(`[API ERROR] Gagal mengambil SPT id ${req.params.id}:`, err);
+        console.error(`[API ERROR] Gagal mengambil SPT id ${req.params.id}: `, err);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -1219,12 +1244,39 @@ app.post('/api/spt', isApiAuthenticated, async (req, res) => {
         return res.status(400).json({ message: 'Harus ada minimal satu pegawai yang ditugaskan (bukan pengikut).' });
     }
 
+    // Validasi jadwal bentrok untuk setiap pegawai
+    for (const pegawaiItem of pegawai) {
+        const pegawaiId = pegawaiItem.id;
+        const overlapSql = `
+            SELECT s.nomor_surat, p.nama_lengkap
+            FROM spt s
+            JOIN spt_pegawai sp ON s.id = sp.spt_id
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            WHERE sp.pegawai_id = ?
+            AND s.status = 'aktif'
+        AND(
+            (? BETWEEN s.tanggal_berangkat AND s.tanggal_kembali) OR
+                (?BETWEEN s.tanggal_berangkat AND s.tanggal_kembali) OR
+                    (s.tanggal_berangkat BETWEEN ? AND ?)
+              )
+            LIMIT 1;
+`;
+        const conflictingSpt = await dbGet(overlapSql, [pegawaiId, tanggal_berangkat, tanggal_kembali, tanggal_berangkat, tanggal_kembali]);
+
+        if (conflictingSpt) {
+            return res.status(409).json({
+                message: `Nama ${conflictingSpt.nama_lengkap} sedang menjalankan tugas kedinasan dengan ST nomor ${conflictingSpt.nomor_surat}. Alternatif pilih nama pegawai yang lain.`
+            });
+        }
+    }
+
+
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        const sptSql = `INSERT INTO spt (
-            nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const sptSql = `INSERT INTO spt(
+    nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat, tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan
+) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const sptResult = await runQuery(sptSql, [
             nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat || 'Nanga Pinoh', tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan || ''
@@ -1239,10 +1291,10 @@ app.post('/api/spt', isApiAuthenticated, async (req, res) => {
 
         // Buat SPPD otomatis untuk setiap pegawai yang BUKAN pengikut
         const pelaksanaTugas = pegawai.filter(p => p.pengikut === '0' || p.pengikut === 0);
-        const sppdSql = `INSERT INTO sppd (spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?, ?)`;
+        const sppdSql = `INSERT INTO sppd(spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES(?, ?, ?, ?)`;
         let sppdCounter = 1;
         for (const pelaksana of pelaksanaTugas) {
-            const nomorSppd = `090/${newSptId}.${sppdCounter++}/SPD/${new Date(tanggal_surat).getFullYear()}`;
+            const nomorSppd = `090 / ${newSptId}.${sppdCounter++} /SPD/${new Date(tanggal_surat).getFullYear()} `;
             await runQuery(sppdSql, [newSptId, pelaksana.id, nomorSppd, tanggal_surat]);
         }
 
@@ -1286,12 +1338,40 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
         return res.status(400).json({ message: 'Harus ada minimal satu pegawai yang ditugaskan (bukan pengikut).' });
     }
 
+    // Validasi jadwal bentrok untuk setiap pegawai, kecuali untuk SPT yang sedang diedit
+    for (const pegawaiItem of pegawai) {
+        const pegawaiId = pegawaiItem.id;
+        const overlapSql = `
+            SELECT s.nomor_surat, p.nama_lengkap
+            FROM spt s
+            JOIN spt_pegawai sp ON s.id = sp.spt_id
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            WHERE sp.pegawai_id = ?
+    AND s.id != ? --Abaikan SPT yang sedang diedit
+              AND s.status = 'aktif'
+AND(
+    (? BETWEEN s.tanggal_berangkat AND s.tanggal_kembali) OR
+        (?BETWEEN s.tanggal_berangkat AND s.tanggal_kembali) OR
+            (s.tanggal_berangkat BETWEEN ? AND ?)
+              )
+            LIMIT 1;
+`;
+        const conflictingSpt = await dbGet(overlapSql, [pegawaiId, id, tanggal_berangkat, tanggal_kembali, tanggal_berangkat, tanggal_kembali]);
+
+        if (conflictingSpt) {
+            return res.status(409).json({
+                message: `Nama ${conflictingSpt.nama_lengkap} sedang menjalankan tugas kedinasan dengan ST nomor ${conflictingSpt.nomor_surat}. Alternatif pilih nama pegawai yang lain.`
+            });
+        }
+    }
+
+
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        const sptSql = `UPDATE spt SET 
-            nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?, maksud_perjalanan = ?, lokasi_tujuan = ?, tempat_berangkat = ?, tanggal_berangkat = ?, tanggal_kembali = ?, lama_perjalanan = ?, sumber_dana = ?, kendaraan = ?, anggaran_id = ?, keterangan = ?
-            WHERE id = ?`;
+        const sptSql = `UPDATE spt SET
+nomor_surat = ?, tanggal_surat = ?, dasar_surat = ?, pejabat_pemberi_tugas_id = ?, maksud_perjalanan = ?, lokasi_tujuan = ?, tempat_berangkat = ?, tanggal_berangkat = ?, tanggal_kembali = ?, lama_perjalanan = ?, sumber_dana = ?, kendaraan = ?, anggaran_id = ?, keterangan = ?
+    WHERE id = ? `;
 
         await runQuery(sptSql, [
             nomor_surat, tanggal_surat, dasar_surat, pejabat_pemberi_tugas_id, maksud_perjalanan, lokasi_tujuan, tempat_berangkat || 'Nanga Pinoh', tanggal_berangkat, tanggal_kembali, lama_perjalanan, sumber_dana, kendaraan, anggaran_id, keterangan || '', id
@@ -1308,10 +1388,10 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
         await runQuery('DELETE FROM sppd WHERE spt_id = ?', [id]);
 
         const pelaksanaTugas = pegawai.filter(p => p.pengikut === '0' || p.pengikut === 0);
-        const sppdSql = `INSERT INTO sppd (spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES (?, ?, ?, ?)`;
+        const sppdSql = `INSERT INTO sppd(spt_id, pegawai_id, nomor_sppd, tanggal_sppd) VALUES(?, ?, ?, ?)`;
         let sppdCounter = 1;
         for (const pelaksana of pelaksanaTugas) {
-            const nomorSppd = `090/${id}.${sppdCounter++}/SPD/${new Date(tanggal_surat).getFullYear()}`;
+            const nomorSppd = `090 / ${id}.${sppdCounter++} /SPD/${new Date(tanggal_surat).getFullYear()} `;
             await runQuery(sppdSql, [id, pelaksana.id, nomorSppd, tanggal_surat]);
         }
 
@@ -1319,14 +1399,14 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
         const laporanTerkait = await dbGet('SELECT id FROM laporan_perjadin WHERE spt_id = ?', [id]);
         if (laporanTerkait) {
             console.log(`[SYNC] Laporan ID ${laporanTerkait.id} ditemukan untuk SPT ID ${id}. Melakukan sinkronisasi...`);
-            const lamaDanTanggal = `${lama_perjalanan} hari, dari ${new Date(tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} s/d ${new Date(tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+            const lamaDanTanggal = `${lama_perjalanan} hari, dari ${new Date(tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} s / d ${new Date(tanggal_kembali).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} `;
 
             const syncSql = `UPDATE laporan_perjadin SET
-                dasar_perjalanan = ?,
-                tujuan_perjalanan = ?,
-                lama_dan_tanggal_perjalanan = ?,
-                tempat_dikunjungi = ?
-                WHERE id = ?`;
+dasar_perjalanan = ?,
+    tujuan_perjalanan = ?,
+    lama_dan_tanggal_perjalanan = ?,
+    tempat_dikunjungi = ?
+        WHERE id = ? `;
             await runQuery(syncSql, [dasar_surat, maksud_perjalanan, lamaDanTanggal, lokasi_tujuan, laporanTerkait.id]);
             console.log(`[SYNC] Laporan ID ${laporanTerkait.id} berhasil disinkronkan.`);
         }
@@ -1345,7 +1425,7 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
             });
         }
 
-        console.error(`[API ERROR] Gagal memperbarui SPT id ${id}:`, err);
+        console.error(`[API ERROR] Gagal memperbarui SPT id ${id}: `, err);
         res.status(500).json({ message: 'Gagal memperbarui SPT.', error: err.message });
     }
 });
@@ -1353,11 +1433,28 @@ app.put('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, 
 // DELETE: Menghapus SPT
 app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req, res) => {
     const { id } = req.params;
+
+    // Cek apakah ada uang muka (panjar) terkait sebelum menghapus
+    const panjarCheckSql = "SELECT COUNT(*) as count FROM panjar WHERE spt_id = ?";
+    const panjar = await dbGet(panjarCheckSql, [id]);
+
+    if (panjar && panjar.count > 0) {
+        return res.status(409).json({ message: 'Hapus register/kembalikan uang muka dulu atau perbaiki/edit item Surat Tugas saja.' });
+    }
+
+    // Cek apakah ada bukti pembayaran terkait sebelum menghapus
+    const paymentCheckSql = "SELECT COUNT(*) as count FROM pembayaran WHERE spt_id = ?";
+    const payment = await dbGet(paymentCheckSql, [id]);
+
+    if (payment && payment.count > 0) {
+        return res.status(409).json({ message: 'Hapus bukti bayar terlebih dahulu atau perbaiki/edit item Surat Tugas saja.' });
+    }
+
     try {
         await runQuery('BEGIN TRANSACTION');
 
         // PERBAIKAN: Hapus laporan terkait terlebih dahulu
-        console.log(`[DELETE] Mencari dan menghapus laporan terkait untuk SPT ID: ${id}`);
+        console.log(`[DELETE] Mencari dan menghapus laporan terkait untuk SPT ID: ${id} `);
         await runQuery('DELETE FROM laporan_perjadin WHERE spt_id = ?', [id]);
 
         // Hapus SPT (ini akan otomatis menghapus data di spt_pegawai dan sppd karena ON DELETE CASCADE)
@@ -1369,7 +1466,7 @@ app.delete('/api/spt/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (re
         res.json({ message: 'Data SPT berhasil dihapus.' });
     } catch (err) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback saat hapus SPT:', rbErr));
-        console.error(`[API ERROR] Gagal menghapus SPT id ${id}:`, err);
+        console.error(`[API ERROR] Gagal menghapus SPT id ${id}: `, err);
         res.status(500).json({ message: 'Gagal menghapus SPT.', error: err.message });
     }
 });
@@ -1390,18 +1487,18 @@ app.post('/api/spt/cancel', isApiAuthenticated, isApiAdminOrSuperAdmin, async (r
         await runQuery(insertSql, [spt_id, pegawai_id, tempat_pembatalan, tanggal_pembatalan, alasan, rincian_biaya, parseFloat(nominal_biaya) || 0]);
 
         // 2. Hitung jumlah total pegawai di SPT ini
-        const totalPegawaiSql = `SELECT COUNT(*) as total FROM spt_pegawai WHERE spt_id = ?`;
+        const totalPegawaiSql = `SELECT COUNT(*) as total FROM spt_pegawai WHERE spt_id = ? `;
         const totalPegawaiResult = await dbGet(totalPegawaiSql, [spt_id]);
         const totalPegawai = totalPegawaiResult.total;
 
         // 3. Hitung jumlah pegawai yang sudah dibatalkan di SPT ini
-        const totalPembatalanSql = `SELECT COUNT(DISTINCT pegawai_id) as total FROM pembatalan_spt WHERE spt_id = ?`;
+        const totalPembatalanSql = `SELECT COUNT(DISTINCT pegawai_id) as total FROM pembatalan_spt WHERE spt_id = ? `;
         const totalPembatalanResult = await dbGet(totalPembatalanSql, [spt_id]);
         const totalPembatalan = totalPembatalanResult.total;
 
         // 4. Jika jumlah pembatalan SAMA DENGAN jumlah total pegawai, barulah ubah status SPT menjadi 'dibatalkan'
         if (totalPegawai > 0 && totalPegawai === totalPembatalan) {
-            console.log(`[LOGIC] Semua pelaksana di SPT ID ${spt_id} telah dibatalkan. Mengubah status SPT menjadi 'dibatalkan'.`);
+            console.log(`[LOGIC] Semua pelaksana di SPT ID ${spt_id} telah dibatalkan.Mengubah status SPT menjadi 'dibatalkan'.`);
             await runQuery("UPDATE spt SET status = 'dibatalkan' WHERE id = ?", [spt_id]);
         }
 
@@ -1423,7 +1520,7 @@ app.get('/api/pembatalan/by-spt/:spt_id', isApiAuthenticated, async (req, res) =
         const canceledPegawaiIds = rows.map(row => row.pegawai_id);
         res.json(canceledPegawaiIds);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil pembatalan untuk SPT ID ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil pembatalan untuk SPT ID ${spt_id}: `, error);
         res.status(500).json({ message: "Gagal mengambil data pembatalan.", error: error.message });
     }
 });
@@ -1439,7 +1536,7 @@ app.get('/api/pembatalan/:id', isApiAuthenticated, async (req, res) => {
         }
         res.json(pembatalan);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil pembatalan id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil pembatalan id ${req.params.id}: `, error);
         res.status(500).json({ message: "Gagal mengambil data pembatalan.", error: error.message });
     }
 });
@@ -1454,7 +1551,7 @@ app.put('/api/pembatalan/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
     }
 
     try {
-        const sql = `UPDATE pembatalan_spt SET spt_id = ?, pegawai_id = ?, tempat_pembatalan = ?, tanggal_pembatalan = ?, alasan = ?, rincian_biaya = ?, nominal_biaya = ? WHERE id = ?`;
+        const sql = `UPDATE pembatalan_spt SET spt_id = ?, pegawai_id = ?, tempat_pembatalan = ?, tanggal_pembatalan = ?, alasan = ?, rincian_biaya = ?, nominal_biaya = ? WHERE id = ? `;
         const result = await runQuery(sql, [spt_id, pegawai_id, tempat_pembatalan, tanggal_pembatalan, alasan, rincian_biaya, parseFloat(nominal_biaya) || 0, id]);
 
         if (result.changes === 0) {
@@ -1463,7 +1560,7 @@ app.put('/api/pembatalan/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
 
         res.json({ message: 'Data pembatalan berhasil diperbarui.' });
     } catch (error) {
-        console.error(`[API ERROR] Gagal memperbarui pembatalan id ${id}:`, error);
+        console.error(`[API ERROR] Gagal memperbarui pembatalan id ${id}: `, error);
         res.status(500).json({ message: 'Gagal memperbarui data.', error: error.message });
     }
 });
@@ -1490,7 +1587,7 @@ app.delete('/api/pembatalan/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, as
         res.json({ message: 'Data pembatalan berhasil dihapus dan status SPT telah dikembalikan.' });
     } catch (error) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback saat hapus pembatalan:', rbErr));
-        console.error(`[API ERROR] Gagal menghapus pembatalan id ${id}:`, error);
+        console.error(`[API ERROR] Gagal menghapus pembatalan id ${id}: `, error);
         res.status(500).json({ message: error.message || 'Gagal menghapus data pembatalan.' });
     }
 });
@@ -1500,14 +1597,14 @@ app.get('/api/cetak/pembatalan/:id', isApiAuthenticated, async (req, res) => {
     const { id } = req.params;
     try {
         // 1. Ambil data pembatalan
-        const pembatalanSql = `SELECT * FROM pembatalan_spt WHERE id = ?`;
+        const pembatalanSql = `SELECT * FROM pembatalan_spt WHERE id = ? `;
         const pembatalan = await dbGet(pembatalanSql, [id]);
         if (!pembatalan) {
             return res.status(404).json({ message: 'Data pembatalan tidak ditemukan.' });
         }
 
         // 2. Ambil data SPT terkait
-        const sptSql = `SELECT * FROM spt WHERE id = ?`;
+        const sptSql = `SELECT * FROM spt WHERE id = ? `;
         const spt = await dbGet(sptSql, [pembatalan.spt_id]);
         if (!spt) {
             return res.status(404).json({ message: 'Data SPT terkait tidak ditemukan.' });
@@ -1515,27 +1612,27 @@ app.get('/api/cetak/pembatalan/:id', isApiAuthenticated, async (req, res) => {
 
         // 3. Ambil data pejabat yang memberi tugas
         // Coba cari di tabel 'pejabat' dulu, jika tidak ada, cari di 'pegawai' (untuk Sekda, dll)
-        let pejabatPemberiTugas = await dbGet(`SELECT nama, nip, jabatan FROM pejabat WHERE id = ?`, [spt.pejabat_pemberi_tugas_id]);
+        let pejabatPemberiTugas = await dbGet(`SELECT nama, nip, jabatan FROM pejabat WHERE id = ? `, [spt.pejabat_pemberi_tugas_id]);
         if (!pejabatPemberiTugas) {
-            pejabatPemberiTugas = await dbGet(`SELECT nama_lengkap as nama, nip, jabatan FROM pegawai WHERE id = ?`, [spt.pejabat_pemberi_tugas_id]);
+            pejabatPemberiTugas = await dbGet(`SELECT nama_lengkap as nama, nip, jabatan FROM pegawai WHERE id = ? `, [spt.pejabat_pemberi_tugas_id]);
         }
         if (!pejabatPemberiTugas) {
             return res.status(404).json({ message: 'Pejabat pemberi tugas tidak ditemukan.' });
         }
 
         // 4. Ambil data pegawai yang dibatalkan tugasnya
-        const pelaksanaSql = `SELECT nama_lengkap, nip, jabatan FROM pegawai WHERE id = ?`;
+        const pelaksanaSql = `SELECT nama_lengkap, nip, jabatan FROM pegawai WHERE id = ? `;
         const pelaksana = await dbGet(pelaksanaSql, [pembatalan.pegawai_id]);
         if (!pelaksana) {
             return res.status(404).json({ message: 'Data pegawai yang dibatalkan tidak ditemukan.' });
         }
 
         // 5. Ambil data SPPD terkait (jika ada)
-        const sppdSql = `SELECT nomor_sppd, tanggal_sppd FROM sppd WHERE spt_id = ? AND pegawai_id = ?`;
+        const sppdSql = `SELECT nomor_sppd, tanggal_sppd FROM sppd WHERE spt_id = ? AND pegawai_id = ? `;
         const sppd = await dbGet(sppdSql, [pembatalan.spt_id, pembatalan.pegawai_id]);
 
         // 6. Ambil data Anggaran terkait
-        const anggaranSql = `SELECT mata_anggaran_kode FROM anggaran WHERE id = ?`;
+        const anggaranSql = `SELECT mata_anggaran_kode FROM anggaran WHERE id = ? `;
         const anggaran = await dbGet(anggaranSql, [spt.anggaran_id]);
 
         // 7. Ambil data Pengguna Anggaran (Kepala Dinas)
@@ -1559,7 +1656,7 @@ app.get('/api/cetak/pembatalan/:id', isApiAuthenticated, async (req, res) => {
         res.json(responseData);
 
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data cetak untuk pembatalan id ${id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data cetak untuk pembatalan id ${id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
@@ -1569,33 +1666,33 @@ app.get('/api/cetak/visum/:spt_id', isApiAuthenticated, async (req, res) => {
     const { spt_id } = req.params;
     try {
         const sql = `
-            SELECT
-                s.tempat_berangkat,
-                s.lokasi_tujuan,
-                s.tanggal_berangkat,
-                s.tanggal_kembali,
-                -- Data Kepala Dinas (diambil dari tabel pegawai)
-                kadis.nama_lengkap as kadis_nama,
-                kadis.nip as kadis_nip,
-                kadis.jabatan as kadis_jabatan,
-                -- Data PPTK dari anggaran terkait
-                pptk.nama_lengkap as pptk_nama,
-                pptk.nip as pptk_nip,
-                pptk.jabatan as pptk_jabatan
+SELECT
+s.tempat_berangkat,
+    s.lokasi_tujuan,
+    s.tanggal_berangkat,
+    s.tanggal_kembali,
+    --Data Kepala Dinas(diambil dari tabel pegawai)
+kadis.nama_lengkap as kadis_nama,
+    kadis.nip as kadis_nip,
+    kadis.jabatan as kadis_jabatan,
+    --Data PPTK dari anggaran terkait
+pptk.nama_lengkap as pptk_nama,
+    pptk.nip as pptk_nip,
+    pptk.jabatan as pptk_jabatan
             FROM spt s
-            -- Subquery untuk mencari Kepala Dinas secara dinamis
-            CROSS JOIN (SELECT * FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1) as kadis
+--Subquery untuk mencari Kepala Dinas secara dinamis
+            CROSS JOIN(SELECT * FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1) as kadis
             LEFT JOIN anggaran a ON s.anggaran_id = a.id
             LEFT JOIN pegawai pptk ON a.pptk_id = pptk.id
             WHERE s.id = ?
-        `;
+    `;
         const data = await dbGet(sql, [spt_id]);
         if (!data) {
             return res.status(404).json({ message: 'Data SPT atau data terkait tidak ditemukan.' });
         }
         res.json(data);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data cetak visum untuk SPT ID ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data cetak visum untuk SPT ID ${spt_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
@@ -1604,26 +1701,41 @@ app.get('/api/cetak/visum/:spt_id', isApiAuthenticated, async (req, res) => {
 
 // GET: Mengambil semua data SPPD untuk register
 app.get('/api/sppd', isApiAuthenticated, async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5; // Batasi 5 item per halaman
+    const offset = (page - 1) * limit;
+
     try {
-        const sql = `
-            SELECT 
-                sp.id, sp.nomor_sppd, sp.tanggal_sppd, sp.spt_id,
-                s.nomor_surat,
-                p.nama_lengkap as pegawai_nama,
-                p.nip as pegawai_nip,
-                -- PERBAIKAN: Cek apakah ada entri pembatalan untuk pegawai ini di SPT ini
+        const totalSql = "SELECT COUNT(*) as total FROM sppd";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const sppdSql = `
+SELECT
+sp.id, sp.nomor_sppd, sp.tanggal_sppd, sp.spt_id,
+    s.nomor_surat,
+    p.nama_lengkap as pegawai_nama,
+    p.nip as pegawai_nip,
+    --PERBAIKAN: Cek apakah ada entri pembatalan untuk pegawai ini di SPT ini
                 CASE WHEN ps.id IS NOT NULL THEN 1 ELSE 0 END as is_canceled
             FROM sppd sp
             JOIN spt s ON sp.spt_id = s.id
             JOIN pegawai p ON sp.pegawai_id = p.id
-            -- Gabungkan dengan tabel pembatalan untuk memeriksa status
+--Gabungkan dengan tabel pembatalan untuk memeriksa status
             LEFT JOIN pembatalan_spt ps ON ps.spt_id = sp.spt_id AND ps.pegawai_id = sp.pegawai_id
             ORDER BY sp.tanggal_sppd DESC, sp.id DESC
-        `;
-        const rows = await dbAll(sql, []);
+LIMIT ? OFFSET ?
+    `;
+        const rows = await dbAll(sppdSql, [limit, offset]);
         res.json({
-            "message": "success",
-            "data": rows
+            data: rows,
+            pagination: {
+                page,
+                limit,
+                totalItems,
+                totalPages
+            }
         });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data SPPD:', err);
@@ -1637,19 +1749,19 @@ app.get('/api/sppd/:id', isApiAuthenticated, async (req, res) => {
         const { id } = req.params;
 
         const sql = `
-            SELECT 
-                sp.*, 
-                s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan,
-                s.tanggal_berangkat, s.tanggal_kembali, s.kendaraan, s.lama_perjalanan,
-                p.nama_lengkap as pegawai_nama, p.nip as pegawai_nip, p.pangkat, p.golongan, p.jabatan,
-                pj.nama as pejabat_nama, pj.jabatan as pejabat_jabatan, pj.nip as pejabat_nip
+            SELECT
+sp.*,
+    s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan,
+    s.tanggal_berangkat, s.tanggal_kembali, s.kendaraan, s.lama_perjalanan,
+    p.nama_lengkap as pegawai_nama, p.nip as pegawai_nip, p.pangkat, p.golongan, p.jabatan,
+    pj.nama as pejabat_nama, pj.jabatan as pejabat_jabatan, pj.nip as pejabat_nip
             FROM sppd sp
             JOIN spt s ON sp.spt_id = s.id
             LEFT JOIN spt_pegawai spg ON s.id = spg.spt_id AND spg.is_pengikut = 0
             LEFT JOIN pegawai p ON spg.pegawai_id = p.id
             LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
             WHERE sp.id = ?
-        `;
+    `;
 
         const sppdData = await dbGet(sql, [id]);
 
@@ -1662,7 +1774,7 @@ app.get('/api/sppd/:id', isApiAuthenticated, async (req, res) => {
             FROM spt_pegawai sp
             JOIN pegawai p ON sp.pegawai_id = p.id
             WHERE sp.spt_id = ? AND sp.is_pengikut = 1
-        `;
+    `;
         const pengikut = await dbAll(pengikutSql, [sppdData.spt_id]);
 
         res.json({
@@ -1714,11 +1826,11 @@ app.post('/api/sppd/auto-create', isApiAuthenticated, async (req, res) => {
 
         const currentYear = new Date().getFullYear();
         const countSppd = await dbGet("SELECT COUNT(*) as count FROM sppd WHERE strftime('%Y', tanggal_sppd) = ?", [currentYear.toString()]);
-        const nomorSppd = `800/${countSppd.count + 1}/SETDA/${currentYear}`;
+        const nomorSppd = `800 / ${countSppd.count + 1} /SETDA/${currentYear} `;
 
         const insertSql = `
-            INSERT INTO sppd (nomor_sppd, tanggal_sppd, spt_id) 
-            VALUES (?, datetime('now'), ?)
+            INSERT INTO sppd(nomor_sppd, tanggal_sppd, spt_id)
+VALUES(?, datetime('now'), ?)
         `;
         const result = await runQuery(insertSql, [nomorSppd, spt_id]);
 
@@ -1765,7 +1877,7 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 
         // Untuk setiap SPPD, ambil detail pegawai yang bersangkutan
         for (const sppd of sppdList) {
-            const pegawaiSql = `SELECT * FROM pegawai WHERE id = ?`;
+            const pegawaiSql = `SELECT * FROM pegawai WHERE id = ? `;
             const pegawai = await dbGet(pegawaiSql, [sppd.pegawai_id]);
             sppd.pegawai = pegawai || { nama_lengkap: 'Data Pegawai Tidak Ditemukan' };
         }
@@ -1790,14 +1902,14 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         // Ambil data Pengguna Anggaran (Kepala Dinas)
         let penggunaAnggaran = await dbGet("SELECT nama_lengkap FROM pegawai WHERE jabatan = 'Kepala Dinas' LIMIT 1");
         if (!penggunaAnggaran) {
-            console.warn(`[WARN] Data Pengguna Anggaran (Kepala Dinas) tidak ditemukan.`);
+            console.warn(`[WARN] Data Pengguna Anggaran(Kepala Dinas) tidak ditemukan.`);
             penggunaAnggaran = { nama_lengkap: 'Kepala Dinas (Data tidak ditemukan)' };
         }
 
         // PERMINTAAN: Penandatangan SPPD harus Kepala Dinas.
         let penandatanganSppd = await dbGet("SELECT nama_lengkap as nama, nip, jabatan FROM pegawai WHERE jabatan LIKE '%Kepala Dinas%' LIMIT 1");
         if (!penandatanganSppd) {
-            console.warn(`[WARN] Data Penandatangan SPPD (Kepala Dinas) tidak ditemukan.`);
+            console.warn(`[WARN] Data Penandatangan SPPD(Kepala Dinas) tidak ditemukan.`);
             penandatanganSppd = { nama: '(Nama Kepala Dinas)', nip: '(NIP Kepala Dinas)', jabatan: 'Kepala Dinas' };
         }
 
@@ -1806,13 +1918,13 @@ app.get('/api/sppd/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
             FROM spt_pegawai sp
             JOIN pegawai p ON sp.pegawai_id = p.id
             WHERE sp.spt_id = ? AND sp.is_pengikut = 1
-        `;
+    `;
         const pengikut = await dbAll(pengikutSql, [spt_id]);
 
         res.json({ sppdList, spt, pejabat, pengikut, anggaran, penggunaAnggaran, penandatanganSppd });
 
     } catch (err) {
-        console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}:`, err);
+        console.error(`[API ERROR] Gagal mengambil SPPD untuk SPT id ${req.params.spt_id}: `, err);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -1900,7 +2012,7 @@ app.put('/api/user/profile', isApiAuthenticated, uploadProfileImage.single('foto
         }
 
         updateParams.push(userId);
-        const userUpdateSql = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+        const userUpdateSql = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ? `;
         await runQuery(userUpdateSql, updateParams);
 
         await runQuery('COMMIT', []);
@@ -1978,7 +2090,7 @@ app.get('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
         }
         res.json(user);
     } catch (err) {
-        console.error(`[API ERROR] Gagal mengambil pengguna id ${req.params.id}:`, err);
+        console.error(`[API ERROR] Gagal mengambil pengguna id ${req.params.id}: `, err);
         res.status(500).json({ message: "Gagal mengambil data pengguna.", error: err.message });
     }
 });
@@ -2029,7 +2141,7 @@ app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
         }
         params.push(userIdToUpdate);
 
-        const sql = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+        const sql = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ? `;
         const result = await runQuery(sql, params);
 
         if (result.changes === 0) {
@@ -2039,7 +2151,7 @@ app.put('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (req
         res.json({ message: 'Pengguna berhasil diperbarui.' });
 
     } catch (err) {
-        console.error(`[API ERROR] Gagal memperbarui pengguna id ${userIdToUpdate}:`, err);
+        console.error(`[API ERROR] Gagal memperbarui pengguna id ${userIdToUpdate}: `, err);
         res.status(500).json({ message: 'Gagal memperbarui pengguna.', error: err.message });
     }
 });
@@ -2075,7 +2187,7 @@ app.delete('/api/users/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async (
         }
         res.json({ message: 'Pengguna berhasil dihapus.' });
     } catch (err) {
-        console.error(`[API ERROR] Gagal menghapus pengguna id ${userIdToDelete}:`, err);
+        console.error(`[API ERROR] Gagal menghapus pengguna id ${userIdToDelete}: `, err);
         res.status(500).json({ message: 'Gagal menghapus pengguna.', error: err.message });
     }
 });
@@ -2124,17 +2236,17 @@ app.get('/api/dashboard/stats', isApiAuthenticated, async (req, res) => {
             SELECT COUNT(*) as perjalananBulanIni FROM sppd 
             JOIN spt ON sppd.spt_id = spt.id 
             WHERE strftime('%Y-%m', spt.tanggal_berangkat) = strftime('%Y-%m', 'now')
-        `;
+    `;
         const sqlPerjalananPerBulan = `
-            SELECT
-                strftime('%Y-%m', s.tanggal_berangkat) as bulan,
-                COUNT(*) as jumlah
+SELECT
+strftime('%Y-%m', s.tanggal_berangkat) as bulan,
+    COUNT(*) as jumlah
             FROM sppd sp
             JOIN spt s ON sp.spt_id = s.id
             WHERE s.tanggal_berangkat >= date('now', '-12 months')
             GROUP BY bulan
             ORDER BY bulan ASC
-        `;
+    `;
         const [totalRow, bulanIniRow, perjalananBulananData] = await Promise.all([
             dbGet(sqlTotal),
             dbGet(sqlBulanIni),
@@ -2201,7 +2313,7 @@ const runQueryWithRetry = (sql, params = []) => new Promise((resolve, reject) =>
     const tryQuery = (retries = 5) => {
         db.run(sql, params, function (err) {
             if (err && err.code === 'SQLITE_BUSY' && retries > 0) {
-                console.warn(`[DB WARN] Database sibuk, mencoba lagi... Sisa percobaan: ${retries - 1}`);
+                console.warn(`[DB WARN] Database sibuk, mencoba lagi... Sisa percobaan: ${retries - 1} `);
                 setTimeout(() => tryQuery(retries - 1), 100); // Tunggu 100ms sebelum mencoba lagi
             } else if (err) reject(err);
             else resolve(this);
@@ -2382,8 +2494,8 @@ app.post('/api/standar-biaya/upload', isApiAuthenticated, isApiAdminOrSuperAdmin
 
         for (const data of standarBiayaData) {
             const sql = `INSERT INTO standar_biaya
-                (tipe_biaya, uraian, provinsi, satuan, gol_a, gol_b, gol_c, gol_d, besaran, biaya_kontribusi) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    (tipe_biaya, uraian, provinsi, satuan, gol_a, gol_b, gol_c, gol_d, besaran, biaya_kontribusi)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
             await runQuery(sql, [
                 data.tipe_biaya,
@@ -2446,7 +2558,7 @@ app.get('/api/standar-biaya/template/:tipe', (req, res) => {
     if (fs.existsSync(filePath)) {
         res.download(filePath, fileName);
     } else {
-        console.error(`[DOWNLOAD ERROR] Template tidak ditemukan di path: ${filePath}`);
+        console.error(`[DOWNLOAD ERROR] Template tidak ditemukan di path: ${filePath} `);
         res.status(404).send(`Template untuk tipe ${tipeBiaya} tidak ditemukan.`);
     }
 });
@@ -2455,7 +2567,7 @@ app.get('/api/standar-biaya/template/:tipe', (req, res) => {
 app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (req, res) => {
     const { spt_id } = req.params;
     try {
-        const spt = await dbGet(`SELECT lokasi_tujuan, tempat_berangkat FROM spt WHERE id = ?`, [spt_id]);
+        const spt = await dbGet(`SELECT lokasi_tujuan, tempat_berangkat FROM spt WHERE id = ? `, [spt_id]);
         if (!spt) {
             return res.status(404).json({ message: 'Data SPT tidak ditemukan.' });
         }
@@ -2465,7 +2577,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
             FROM spt_pegawai sp
             JOIN pegawai p ON sp.pegawai_id = p.id
             WHERE sp.spt_id = ?
-        `;
+    `;
         const pegawaiList = await dbAll(pegawaiSql, [spt_id]);
 
         const locationsData = require('./public/data/locations.json');
@@ -2506,7 +2618,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
             let query = '';
             // Bersihkan query dari kata-kata umum dan spasi berlebih
             const cleanLokasiQuery = lokasiQuery.replace(/kabupaten|kota|kab\.?/gi, '').trim();
-            let params = [`%${cleanLokasiQuery}%`];
+            let params = [`% ${cleanLokasiQuery}% `];
 
             if (tipeBiaya === 'B') { // Dalam kota
                 // Cari kecocokan pada uraian yang sudah dibersihkan juga
@@ -2516,7 +2628,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
                 // PERBAIKAN: Tangani kasus khusus untuk Jakarta
                 const lokasiLower = cleanLokasiQuery.toLowerCase();
                 if (lokasiLower.includes('dki') || lokasiLower.includes('jakarta')) {
-                    console.log(`[DEBUG] Kueri Jakarta terdeteksi. Mengubah pencarian menjadi '%JAKARTA%'`);
+                    console.log(`[DEBUG] Kueri Jakarta terdeteksi.Mengubah pencarian menjadi '%JAKARTA%'`);
                     params = ['%JAKARTA%'];
                 }
             } else return null; // Tipe biaya tidak valid untuk akomodasi
@@ -2525,7 +2637,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
             if (!result) {
                 // Jika tidak ketemu, coba cari dengan query yang lebih umum tanpa pembersihan
                 const fallbackQuery = tipeBiaya === 'B' ? `SELECT * FROM standar_biaya WHERE tipe_biaya = 'B' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))` : `SELECT * FROM standar_biaya WHERE tipe_biaya = 'E' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
-                result = await dbGet(fallbackQuery, [`%${lokasiQuery}%`]);
+                result = await dbGet(fallbackQuery, [`% ${lokasiQuery}% `]);
             }
 
             return result;
@@ -2552,7 +2664,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
 
         if (!standarAkomodasi) {
             // PERBAIKAN: Jika masih tidak ditemukan, berikan fallback ke standar biaya pertama yang ada daripada 404
-            console.warn(`[WARN] Standar biaya akomodasi untuk "${spt.lokasi_tujuan}" tidak ditemukan. Menggunakan fallback...`);
+            console.warn(`[WARN] Standar biaya akomodasi untuk "${spt.lokasi_tujuan}" tidak ditemukan.Menggunakan fallback...`);
             standarAkomodasi = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'E' OR tipe_biaya = 'B' ORDER BY id LIMIT 1`);
             if (!standarAkomodasi) {
                 return res.status(404).json({ message: `Standar biaya akomodasi untuk lokasi "${spt.lokasi_tujuan}" tidak ditemukan, dan tidak ada data standar biaya fallback yang tersedia.` });
@@ -2570,7 +2682,7 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
         res.json(accommodationStandards);
 
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil standar akomodasi untuk SPT ID ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil standar akomodasi untuk SPT ID ${spt_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
@@ -2588,7 +2700,7 @@ app.get('/api/laporan/signers/by-spt/:spt_id', isApiAuthenticated, async (req, r
         const signerIds = JSON.parse(laporan.penandatangan_ids);
         res.json(signerIds);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil penandatangan untuk SPT ID ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil penandatangan untuk SPT ID ${spt_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -2597,9 +2709,9 @@ app.get('/api/laporan/signers/by-spt/:spt_id', isApiAuthenticated, async (req, r
 app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
-            SELECT 
-                l.id, l.judul, l.tanggal_laporan, l.spt_id,
-                s.nomor_surat
+SELECT
+l.id, l.judul, l.tanggal_laporan, l.spt_id,
+    s.nomor_surat
             FROM laporan_perjadin l
             JOIN spt s ON l.spt_id = s.id
             ORDER BY l.tanggal_laporan DESC
@@ -2618,10 +2730,10 @@ app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
 app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
     const { spt_id } = req.params;
     try {
-        const sqlLaporan = `SELECT * FROM laporan_perjadin WHERE spt_id = ?`;
+        const sqlLaporan = `SELECT * FROM laporan_perjadin WHERE spt_id = ? `;
         const laporan = await dbGet(sqlLaporan, [spt_id]);
 
-        const spt = await dbGet(`SELECT lokasi_tujuan, tempat_berangkat FROM spt WHERE id = ?`, [spt_id]);
+        const spt = await dbGet(`SELECT lokasi_tujuan, tempat_berangkat FROM spt WHERE id = ? `, [spt_id]);
         if (!spt) {
             return res.status(404).json({ message: 'Data SPT terkait tidak ditemukan.' });
         }
@@ -2682,8 +2794,8 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         const pegawaiSql = `
             SELECT id, nama_lengkap, nip, jabatan, golongan
             FROM pegawai 
-            WHERE id IN (${placeholders})
-        `;
+            WHERE id IN(${placeholders})
+    `;
         const penerimaFromDb = await dbAll(pegawaiSql, penandatanganIds);
 
         // =================================================================
@@ -2749,22 +2861,22 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
                 }
             }
 
-            console.log(`[DEBUG LOKASI] Jenis lokasi tidak dikenali untuk: ${lokasi}`);
+            console.log(`[DEBUG LOKASI] Jenis lokasi tidak dikenali untuk: ${lokasi} `);
             return { jenis: 'tidak_diketahui', nama: lokasi };
         };
 
         const infoLokasi = cariJenisLokasi(lokasiTujuan);
-        console.log(`[LOKASI INFO] Untuk SPT ${spt_id}:`, infoLokasi);
+        console.log(`[LOKASI INFO] Untuk SPT ${spt_id}: `, infoLokasi);
 
         const cariStandarBiaya = async (tipeBiaya, lokasiQuery, isDalamKota) => {
-            console.log(`[DEBUG STANDAR BIAYA] Mencari tipe ${tipeBiaya} untuk: "${lokasiQuery.trim()}" (dalam kota: ${isDalamKota})`);
+            console.log(`[DEBUG STANDAR BIAYA] Mencari tipe ${tipeBiaya} untuk: "${lokasiQuery.trim()}"(dalam kota: ${isDalamKota})`);
             let result = null;
             if (tipeBiaya === 'A') {
                 const queries = [
                     `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) = TRIM(UPPER(?))`,
                     `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))`
                 ];
-                const searchTerms = [lokasiQuery, `%${lokasiQuery}%`];
+                const searchTerms = [lokasiQuery, `% ${lokasiQuery}% `];
                 for (let i = 0; i < queries.length; i++) {
                     result = await dbGet(queries[i], [searchTerms[i]]);
                     if (result) break;
@@ -2790,7 +2902,7 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
                 }
                 if (!result) {
                     const fallbackQuery = `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
-                    result = await dbGet(fallbackQuery, [`%${provinsiQuery}%`]);
+                    result = await dbGet(fallbackQuery, [`% ${provinsiQuery}% `]);
                 }
             }
             return result;
@@ -2800,7 +2912,7 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         if (infoLokasi.jenis === 'desa' || infoLokasi.jenis === 'kecamatan') {
             const namaKecamatan = infoLokasi.jenis === 'desa' ? infoLokasi.group : infoLokasi.nama;
             const namaKecamatanClean = namaKecamatan.replace('Kecamatan', '').trim();
-            console.log(`[INFO] Perjalanan Dalam Kota (Desa/Kecamatan) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${namaKecamatanClean}`);
+            console.log(`[INFO] Perjalanan Dalam Kota(Desa / Kecamatan) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${namaKecamatanClean} `);
             standarBiayaHarian = await cariStandarBiaya('A', namaKecamatanClean, true);
             isDalamKota = true;
             lokasiUntukQuery = namaKecamatanClean;
@@ -2811,17 +2923,17 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
                 (infoLokasi.nama.toLowerCase().includes('jakarta') && tempatBerangkat.toLowerCase().includes('jakarta'));
             const provinsiTujuan = (infoLokasi.provinsi || '').trim();
             if (isSameRegion) {
-                console.log(`[INFO] Perjalanan Dalam Kota (Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${infoLokasi.nama}`);
+                console.log(`[INFO] Perjalanan Dalam Kota(Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'A' untuk: ${infoLokasi.nama} `);
                 standarBiayaHarian = await cariStandarBiaya('A', infoLokasi.nama, true);
                 isDalamKota = true;
             } else {
-                console.log(`[INFO] Perjalanan Luar Daerah (Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${provinsiTujuan}`);
+                console.log(`[INFO] Perjalanan Luar Daerah(Kabupaten) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${provinsiTujuan} `);
                 standarBiayaHarian = await cariStandarBiaya('C', provinsiTujuan, false);
                 isDalamKota = false;
             }
             lokasiUntukQuery = isDalamKota ? infoLokasi.nama.trim() : provinsiTujuan;
         } else if (infoLokasi.jenis === 'provinsi') {
-            console.log(`[INFO] Perjalanan Luar Daerah (Provinsi) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${infoLokasi.nama.trim()}`);
+            console.log(`[INFO] Perjalanan Luar Daerah(Provinsi) terdeteksi untuk SPT ID: ${spt_id}. Mencari Tipe Biaya 'C' untuk: ${infoLokasi.nama.trim()} `);
             standarBiayaHarian = await cariStandarBiaya('C', infoLokasi.nama.trim(), false);
             isDalamKota = false;
             lokasiUntukQuery = infoLokasi.nama.trim();
@@ -2868,19 +2980,19 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         // === LOGIKA BARU: Ambil Biaya Representasi untuk Kepala Dinas (FINAL) ===
         // =================================================================
         const biayaRepresentasiEselonII = await dbGet(
-            `SELECT * FROM standar_biaya WHERE tipe_biaya = 'D' AND (TRIM(UPPER(uraian)) = 'PEJABAT ESELON II' OR TRIM(UPPER(uraian)) LIKE '%ESELON II%')`
+            `SELECT * FROM standar_biaya WHERE tipe_biaya = 'D' AND(TRIM(UPPER(uraian)) = 'PEJABAT ESELON II' OR TRIM(UPPER(uraian)) LIKE '%ESELON II%')`
         );
 
         let representasiInfo = null;
         if (!biayaRepresentasiEselonII) {
-            console.warn(`[WARN] Standar Biaya Representasi (Tipe D, Eselon II) tidak ditemukan di database. Biaya representasi tidak akan diterapkan.`);
+            console.warn(`[WARN] Standar Biaya Representasi(Tipe D, Eselon II) tidak ditemukan di database.Biaya representasi tidak akan diterapkan.`);
             representasiInfo = {
                 uraian: 'Biaya Representasi (Eselon II)',
                 harga: 0,
                 satuan: 'OH'
             };
         } else {
-            console.log(`[DEBUG REPRESENTASI] Standar biaya representasi ditemukan:`, biayaRepresentasiEselonII);
+            console.log(`[DEBUG REPRESENTASI] Standar biaya representasi ditemukan: `, biayaRepresentasiEselonII);
             representasiInfo = {
                 uraian: biayaRepresentasiEselonII.uraian || 'Biaya Representasi (Eselon II)',
                 harga: isDalamKota ? (biayaRepresentasiEselonII.biaya_kontribusi || 0) : (biayaRepresentasiEselonII.besaran || 0),
@@ -2915,7 +3027,7 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 
                 if (p && p.jabatan && p.jabatan.toLowerCase().includes('kepala dinas')) {
                     p.biaya_representasi = representasiInfo;
-                    console.log(`[DEBUG REPRESENTASI] Info representasi untuk ${p.nama_lengkap}: Harga = ${representasiInfo.harga}`);
+                    console.log(`[DEBUG REPRESENTASI] Info representasi untuk ${p.nama_lengkap}: Harga = ${representasiInfo.harga} `);
                 }
 
                 return p;
@@ -2924,7 +3036,7 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         res.json({ penerima, pengeluaran });
 
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil laporan by-spt-id ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil laporan by - spt - id ${spt_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -2933,12 +3045,12 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 // GET: Mengambil data satu laporan untuk edit/cetak
 app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
     try {
-        const sql = `SELECT * FROM laporan_perjadin WHERE id = ?`;
+        const sql = `SELECT * FROM laporan_perjadin WHERE id = ? `;
         const laporan = await dbGet(sql, [req.params.id]);
         if (!laporan) return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
 
         // Ambil lampiran dan data pegawai untuk cetak
-        const lampiranSql = `SELECT * FROM laporan_lampiran WHERE laporan_id = ?`;
+        const lampiranSql = `SELECT * FROM laporan_lampiran WHERE laporan_id = ? `;
         laporan.lampiran = await dbAll(lampiranSql, [req.params.id]);
 
         // Ambil semua pegawai (pelaksana dan pengikut) dari SPT terkait
@@ -2948,8 +3060,8 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
                 FROM spt_pegawai sp
                 JOIN pegawai p ON sp.pegawai_id = p.id
                 WHERE sp.spt_id = ?
-                ORDER BY sp.urutan ASC
-            `;
+    ORDER BY sp.urutan ASC
+        `;
             laporan.pegawai = await dbAll(pegawaiSql, [laporan.spt_id]);
 
             // ANOMALI FIX: Ambil juga data pegawai yang dibatalkan untuk SPT ini
@@ -2958,7 +3070,7 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
                 SELECT p.id as pegawai_id, p.nama_lengkap FROM pembatalan_spt ps
                 JOIN pegawai p ON ps.pegawai_id = p.id
                 WHERE ps.spt_id = ?
-            `;
+    `;
             laporan.pegawai_dibatalkan = await dbAll(canceledPegawaiSql, [laporan.spt_id]);
         }
 
@@ -2969,7 +3081,7 @@ app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
         laporan.lain_lain = await dbAll('SELECT * FROM laporan_lain_lain WHERE laporan_id = ?', [req.params.id]);
         res.json(laporan);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil laporan id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -2984,7 +3096,7 @@ const laporanUpload = multer({
         },
         filename: (req, file, cb) => {
             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, `lampiran-${uniqueSuffix}${path.extname(file.originalname)}`);
+            cb(null, `lampiran - ${uniqueSuffix}${path.extname(file.originalname)} `);
         }
     })
 });
@@ -2997,7 +3109,7 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
         await runQuery('BEGIN TRANSACTION');
 
         // Hapus kolom biaya lama dari tabel utama
-        const laporanSql = `INSERT INTO laporan_perjadin (spt_id, tanggal_laporan, tempat_laporan, judul, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, kesimpulan, penandatangan_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const laporanSql = `INSERT INTO laporan_perjadin(spt_id, tanggal_laporan, tempat_laporan, judul, dasar_perjalanan, tujuan_perjalanan, lama_dan_tanggal_perjalanan, deskripsi_kronologis, tempat_dikunjungi, hasil_dicapai, kesimpulan, penandatangan_ids) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const result = await runQuery(laporanSql, [
             data.spt_id, data.tanggal_laporan, data.tempat_laporan, data.judul, data.dasar_perjalanan, data.tujuan_perjalanan,
@@ -3056,12 +3168,95 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
     }
 });
 
+// --- FUNGSI BARU: Untuk menghitung ulang dan memperbarui pembayaran terkait ---
+/**
+ * Menghitung ulang dan memperbarui nominal bukti pembayaran yang terkait dengan SPT.
+ * Fungsi ini dipanggil setelah laporan perjalanan dinas diperbarui.
+ * @param {number} sptId - ID dari SPT yang laporannya baru saja diperbarui.
+ */
+const recalculateAndUpdatePayment = async (sptId) => {
+    console.log(`[SYNC-PAYMENT] Memulai sinkronisasi pembayaran untuk SPT ID: ${sptId}`);
+    try {
+        // 1. Cek apakah ada bukti pembayaran yang terkait dengan SPT ini
+        const payment = await dbGet("SELECT id, panjar_data FROM pembayaran WHERE spt_id = ?", [sptId]);
+        if (!payment) {
+            console.log(`[SYNC-PAYMENT] Tidak ada bukti pembayaran ditemukan untuk SPT ID: ${sptId}. Proses dihentikan.`);
+            return;
+        }
+
+        // 2. Jika ada, ambil data laporan yang sudah diperbarui (menggunakan logika yang sama dengan API)
+        const laporan = await dbGet(`SELECT * FROM laporan_perjadin WHERE spt_id = ?`, [sptId]);
+        if (!laporan) {
+            console.log(`[SYNC-PAYMENT] Tidak ada laporan ditemukan untuk SPT ID: ${sptId}. Tidak dapat menghitung ulang.`);
+            return;
+        }
+
+        // Ambil data pengeluaran yang sudah dinormalisasi
+        const [transportasi, akomodasi, kontribusi, lainLain] = await Promise.all([
+            dbAll('SELECT * FROM laporan_transportasi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_akomodasi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_kontribusi WHERE laporan_id = ?', [laporan.id]),
+            dbAll('SELECT * FROM laporan_lain_lain WHERE laporan_id = ?', [laporan.id])
+        ]);
+
+        // Ambil data penandatangan dari laporan
+        const penandatanganIds = JSON.parse(laporan.penandatangan_ids || '[]');
+        if (penandatanganIds.length === 0) {
+            console.log(`[SYNC-PAYMENT] Tidak ada penandatangan di laporan. Nominal diatur ke 0.`);
+            await runQuery("UPDATE pembayaran SET nominal_bayar = 0 WHERE id = ?", [payment.id]);
+            return;
+        }
+
+        // Ambil detail pegawai penandatangan
+        const placeholders = penandatanganIds.map(() => '?').join(',');
+        const penerimaFromDb = await dbAll(`SELECT id, nama_lengkap, nip, jabatan, golongan FROM pegawai WHERE id IN (${placeholders})`, penandatanganIds);
+
+        // 3. Hitung ulang total biaya (mirip logika di /api/laporan/by-spt/:spt_id)
+        let grandTotalDibayar = 0;
+        const panjarMap = new Map(JSON.parse(payment.panjar_data || '[]').map(p => [p.pegawai_id.toString(), p.nilai_panjar]));
+
+        for (const penerima of penerimaFromDb) {
+            let totalBiayaPegawai = 0;
+
+            // Kalkulasi Uang Harian (perlu fungsi helper atau logika inline)
+            // Untuk sementara, kita asumsikan uang harian sudah termasuk dalam rincian lain
+            // atau kita bisa mereplikasi logika pencarian standar biaya di sini.
+            // Untuk kesederhanaan, kita akan menjumlahkan dari tabel rincian saja.
+
+            const totalTransportasi = transportasi.filter(t => t.pegawai_id === penerima.id).reduce((sum, item) => sum + (item.nominal || 0), 0);
+            const totalAkomodasi = akomodasi.filter(a => a.pegawai_id === penerima.id).reduce((sum, item) => sum + (item.nominal || 0), 0);
+            const totalKontribusi = kontribusi.filter(k => k.pegawai_id === penerima.id).reduce((sum, item) => sum + (item.nominal || 0), 0);
+            const totalLainLain = lainLain.filter(l => l.pegawai_id === penerima.id).reduce((sum, item) => sum + (item.nominal || 0), 0);
+
+            totalBiayaPegawai = totalTransportasi + totalAkomodasi + totalKontribusi + totalLainLain;
+
+            // Ambil panjar untuk pegawai ini
+            const panjarPegawai = panjarMap.get(penerima.id.toString()) || 0;
+
+            // Hitung jumlah yang harus dibayar untuk pegawai ini
+            const jumlahDibayarPegawai = totalBiayaPegawai - panjarPegawai;
+            grandTotalDibayar += jumlahDibayarPegawai;
+        }
+
+        // 4. Update tabel pembayaran dengan nominal baru
+        console.log(`[SYNC-PAYMENT] Nominal baru dihitung: ${grandTotalDibayar}. Memperbarui pembayaran ID: ${payment.id}`);
+        await runQuery("UPDATE pembayaran SET nominal_bayar = ? WHERE id = ?", [grandTotalDibayar, payment.id]);
+
+        console.log(`[SYNC-PAYMENT] Sinkronisasi pembayaran untuk SPT ID: ${sptId} berhasil.`);
+
+    } catch (error) {
+        console.error(`[SYNC-PAYMENT-ERROR] Gagal menyinkronkan pembayaran untuk SPT ID ${sptId}:`, error);
+        // Error di sini tidak boleh menghentikan respons utama ke pengguna, jadi kita hanya log.
+    }
+};
+
 
 // PUT: Memperbarui laporan yang ada
 app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 10), async (req, res) => {
     const { id } = req.params;
     const { pegawai, ...data } = req.body;
     const deletedFiles = data.deleted_files ? JSON.parse(data.deleted_files) : [];
+    let sptIdForSync = null; // Variabel untuk menyimpan spt_id
 
     try { // PERUBAHAN: Logika update ke tabel-tabel baru
         await runQuery('BEGIN TRANSACTION');
@@ -3069,7 +3264,7 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
         // 1. Hapus file lama yang diminta untuk dihapus
         if (deletedFiles.length > 0) {
             const placeholders = deletedFiles.map(() => '?').join(',');
-            const filesToDelete = await dbAll(`SELECT file_path FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
+            const filesToDelete = await dbAll(`SELECT file_path FROM laporan_lampiran WHERE id IN(${placeholders})`, deletedFiles);
 
             for (const file of filesToDelete) {
                 const oldFilePath = path.join(__dirname, 'public', file.file_path);
@@ -3077,7 +3272,13 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
                     fs.unlinkSync(oldFilePath);
                 }
             }
-            await runQuery(`DELETE FROM laporan_lampiran WHERE id IN (${placeholders})`, deletedFiles);
+            await runQuery(`DELETE FROM laporan_lampiran WHERE id IN(${placeholders})`, deletedFiles);
+        }
+
+        // Ambil spt_id sebelum update, untuk sinkronisasi nanti
+        const oldLaporan = await dbGet("SELECT spt_id FROM laporan_perjadin WHERE id = ?", [id]);
+        if (oldLaporan) {
+            sptIdForSync = oldLaporan.spt_id;
         }
 
         // 2. Update data laporan utama
@@ -3104,7 +3305,7 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
             id
         ];
 
-        await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+        await runQuery(`UPDATE laporan_perjadin SET ${updateFields.join(', ')} WHERE id = ? `, updateValues);
 
         // 3. Hapus semua data pengeluaran lama dan masukkan yang baru
         await runQuery('DELETE FROM laporan_transportasi WHERE laporan_id = ?', [id]);
@@ -3148,6 +3349,11 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
         }
 
         await runQuery('COMMIT');
+
+        // --- PERUBAHAN: Panggil fungsi sinkronisasi setelah commit berhasil ---
+        if (sptIdForSync) {
+            await recalculateAndUpdatePayment(sptIdForSync);
+        }
         res.json({ message: 'Laporan berhasil diperbarui.' });
     } catch (error) {
         if (req.files && req.files.length > 0) {
@@ -3184,7 +3390,7 @@ app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
         }
         res.json({ message: 'Laporan berhasil dihapus.' });
     } catch (error) {
-        console.error(`[API ERROR] Gagal menghapus laporan id ${id}:`, error);
+        console.error(`[API ERROR] Gagal menghapus laporan id ${id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3197,18 +3403,18 @@ app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
 app.get('/api/panjar', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
-            SELECT 
-                p.id,
-                p.tanggal_panjar,
-                p.spt_id,
-                s.nomor_surat,
-                pelaksana.nama_lengkap as pelaksana_nama,
-                (SELECT SUM(pr.jumlah) FROM panjar_rincian pr WHERE pr.panjar_id = p.id) as total_biaya
+SELECT
+p.id,
+    p.tanggal_panjar,
+    p.spt_id,
+    s.nomor_surat,
+    pelaksana.nama_lengkap as pelaksana_nama,
+    (SELECT SUM(pr.jumlah) FROM panjar_rincian pr WHERE pr.panjar_id = p.id) as total_biaya
             FROM panjar p
             JOIN spt s ON p.spt_id = s.id
             JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
             ORDER BY p.tanggal_panjar DESC, p.id DESC
-        `;
+    `;
         const panjarList = await dbAll(sql);
         res.json(panjarList);
     } catch (error) {
@@ -3227,7 +3433,7 @@ app.get('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
         panjar.rincian = await dbAll("SELECT * FROM panjar_rincian WHERE panjar_id = ?", [req.params.id]);
         res.json(panjar);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil panjar id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil panjar id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3243,11 +3449,11 @@ app.post('/api/panjar', isApiAuthenticated, async (req, res) => {
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        const panjarSql = `INSERT INTO panjar (tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id) VALUES (?, ?, ?, ?, ?, ?)`;
+        const panjarSql = `INSERT INTO panjar(tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id) VALUES(?, ?, ?, ?, ?, ?)`;
         const panjarResult = await runQuery(panjarSql, [tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id]);
         const newPanjarId = panjarResult.lastID;
 
-        const rincianSql = `INSERT INTO panjar_rincian (panjar_id, uraian, jumlah, keterangan) VALUES (?, ?, ?, ?)`;
+        const rincianSql = `INSERT INTO panjar_rincian(panjar_id, uraian, jumlah, keterangan) VALUES(?, ?, ?, ?)`;
         for (const item of rincian) {
             const jumlah = parseFloat(item.jumlah) || 0;
             if (item.uraian && jumlah > 0) {
@@ -3276,12 +3482,12 @@ app.put('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
     try {
         await runQuery('BEGIN TRANSACTION');
 
-        const panjarSql = `UPDATE panjar SET tempat = ?, tanggal_panjar = ?, spt_id = ?, bendahara_id = ?, pelaksana_id = ?, pejabat_id = ? WHERE id = ?`;
+        const panjarSql = `UPDATE panjar SET tempat = ?, tanggal_panjar = ?, spt_id = ?, bendahara_id = ?, pelaksana_id = ?, pejabat_id = ? WHERE id = ? `;
         await runQuery(panjarSql, [tempat, tanggal_panjar, spt_id, bendahara_id, pelaksana_id, pejabat_id, id]);
 
         await runQuery('DELETE FROM panjar_rincian WHERE panjar_id = ?', [id]);
 
-        const rincianSql = `INSERT INTO panjar_rincian (panjar_id, uraian, jumlah, keterangan) VALUES (?, ?, ?, ?)`;
+        const rincianSql = `INSERT INTO panjar_rincian(panjar_id, uraian, jumlah, keterangan) VALUES(?, ?, ?, ?)`;
         for (const item of rincian) {
             const jumlah = parseFloat(item.jumlah) || 0;
             if (item.uraian && jumlah > 0) {
@@ -3293,7 +3499,7 @@ app.put('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
         res.json({ message: 'Data uang muka berhasil diperbarui!', panjarId: id });
     } catch (err) {
         await runQuery('ROLLBACK').catch(rbErr => console.error('[API ERROR] Gagal rollback:', rbErr));
-        console.error(`[API ERROR] Gagal memperbarui panjar id ${id}:`, err);
+        console.error(`[API ERROR] Gagal memperbarui panjar id ${id}: `, err);
         res.status(500).json({ message: 'Gagal memperbarui data.', error: err.message });
     }
 });
@@ -3307,7 +3513,7 @@ app.delete('/api/panjar/:id', isApiAuthenticated, async (req, res) => {
         }
         res.json({ message: 'Data uang muka berhasil dihapus.' });
     } catch (err) {
-        console.error(`[API ERROR] Gagal menghapus panjar id ${req.params.id}:`, err);
+        console.error(`[API ERROR] Gagal menghapus panjar id ${req.params.id}: `, err);
         res.status(500).json({ message: 'Gagal menghapus data.', error: err.message });
     }
 });
@@ -3317,12 +3523,12 @@ app.get('/api/panjar/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
     const { spt_id } = req.params;
     try {
         const sql = `
-            SELECT 
-                p.pelaksana_id,
-                (SELECT SUM(pr.jumlah) FROM panjar_rincian pr WHERE pr.panjar_id = p.id) as total_panjar
+SELECT
+p.pelaksana_id,
+    (SELECT SUM(pr.jumlah) FROM panjar_rincian pr WHERE pr.panjar_id = p.id) as total_panjar
             FROM panjar p
             WHERE p.spt_id = ?
-        `;
+    `;
         const panjarData = await dbAll(sql, [spt_id]);
         // Mengubah array menjadi map untuk kemudahan akses di frontend: { pelaksana_id: total_panjar }
         const panjarMap = panjarData.reduce((acc, item) => {
@@ -3331,7 +3537,7 @@ app.get('/api/panjar/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
         }, {});
         res.json(panjarMap);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data panjar untuk SPT ID ${spt_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data panjar untuk SPT ID ${spt_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3340,12 +3546,12 @@ app.get('/api/panjar/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
 app.get('/api/panjar/by-spt/:spt_id/pegawai/:pegawai_id', isApiAuthenticated, async (req, res) => {
     const { spt_id, pegawai_id } = req.params;
     try {
-        const panjar = await dbGet(`SELECT id FROM panjar WHERE spt_id = ? AND pelaksana_id = ?`, [spt_id, pegawai_id]);
+        const panjar = await dbGet(`SELECT id FROM panjar WHERE spt_id = ? AND pelaksana_id = ? `, [spt_id, pegawai_id]);
         if (!panjar) {
             return res.status(404).json({ message: 'Tidak ada data uang muka untuk pegawai ini.' });
         }
 
-        const rincianItems = await dbAll(`SELECT uraian, jumlah FROM panjar_rincian WHERE panjar_id = ?`, [panjar.id]);
+        const rincianItems = await dbAll(`SELECT uraian, jumlah FROM panjar_rincian WHERE panjar_id = ? `, [panjar.id]);
         if (rincianItems.length === 0) {
             return res.status(404).json({ message: 'Rincian uang muka tidak ditemukan.' });
         }
@@ -3355,7 +3561,7 @@ app.get('/api/panjar/by-spt/:spt_id/pegawai/:pegawai_id', isApiAuthenticated, as
 
         res.json({ uraian, total });
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data panjar untuk SPT ${spt_id} & Pegawai ${pegawai_id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data panjar untuk SPT ${spt_id} & Pegawai ${pegawai_id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3364,32 +3570,32 @@ app.get('/api/panjar/by-spt/:spt_id/pegawai/:pegawai_id', isApiAuthenticated, as
 app.get('/api/cetak/panjar/:id', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
-            SELECT p.*, 
-                   s.nomor_surat, 
-                   -- Logika baru untuk mengambil nomor SPPD:
-                   -- 1. Coba cari SPPD yang cocok dengan pelaksana.
-                   -- 2. Jika tidak ada (karena dia pengikut), ambil SPPD pertama yang ditemukan dari SPT yang sama.
-                   COALESCE(
-                       (SELECT spd1.nomor_sppd FROM sppd spd1 WHERE spd1.spt_id = p.spt_id AND spd1.pegawai_id = p.pelaksana_id),
-                       (SELECT spd2.nomor_sppd FROM sppd spd2 WHERE spd2.spt_id = p.spt_id LIMIT 1)
+            SELECT p.*,
+    s.nomor_surat,
+    --Logika baru untuk mengambil nomor SPPD:
+--1. Coba cari SPPD yang cocok dengan pelaksana.
+                   --2. Jika tidak ada(karena dia pengikut), ambil SPPD pertama yang ditemukan dari SPT yang sama.
+    COALESCE(
+        (SELECT spd1.nomor_sppd FROM sppd spd1 WHERE spd1.spt_id = p.spt_id AND spd1.pegawai_id = p.pelaksana_id),
+    (SELECT spd2.nomor_sppd FROM sppd spd2 WHERE spd2.spt_id = p.spt_id LIMIT 1)
                    ) as nomor_sppd,
-                   pelaksana.nama_lengkap as pelaksana_nama, pelaksana.nip as pelaksana_nip, pelaksana.jabatan as pelaksana_jabatan,
-                   bendahara.nama_lengkap as bendahara_nama, bendahara.nip as bendahara_nip,
-                   pejabat.nama_lengkap as pejabat_nama, pejabat.nip as pejabat_nip, pejabat.jabatan as pejabat_jabatan
+    pelaksana.nama_lengkap as pelaksana_nama, pelaksana.nip as pelaksana_nip, pelaksana.jabatan as pelaksana_jabatan,
+    bendahara.nama_lengkap as bendahara_nama, bendahara.nip as bendahara_nip,
+    pejabat.nama_lengkap as pejabat_nama, pejabat.nip as pejabat_nip, pejabat.jabatan as pejabat_jabatan
             FROM panjar p
             JOIN spt s ON p.spt_id = s.id
             JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
             JOIN pegawai bendahara ON p.bendahara_id = bendahara.id
             JOIN pegawai pejabat ON p.pejabat_id = pejabat.id
             WHERE p.id = ?
-        `;
+    `;
         const panjar = await dbGet(sql, [req.params.id]);
         if (!panjar) return res.status(404).json({ message: 'Data tidak ditemukan.' });
 
         panjar.rincian = await dbAll("SELECT * FROM panjar_rincian WHERE panjar_id = ?", [req.params.id]);
         res.json(panjar);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data cetak panjar id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data cetak panjar id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3403,9 +3609,9 @@ const generateNomorBukti = async () => {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const prefix = `KWT/${year}/${month}/`;
+    const prefix = `KWT / ${year} /${month}/`;
 
-    const lastPayment = await dbGet("SELECT nomor_bukti FROM pembayaran WHERE nomor_bukti LIKE ? ORDER BY id DESC LIMIT 1", [`${prefix}%`]);
+    const lastPayment = await dbGet("SELECT nomor_bukti FROM pembayaran WHERE nomor_bukti LIKE ? ORDER BY id DESC LIMIT 1", [`${prefix}% `]);
 
     let nextNumber = 1;
     if (lastPayment) {
@@ -3413,7 +3619,7 @@ const generateNomorBukti = async () => {
         nextNumber = lastNumber + 1;
     }
 
-    return `${prefix}${String(nextNumber).padStart(4, '0')}`;
+    return `${prefix}${String(nextNumber).padStart(4, '0')} `;
 };
 
 // GET: Mengambil semua data pembayaran
@@ -3431,17 +3637,33 @@ app.get('/api/pembayaran', isApiAuthenticated, async (req, res) => {
 // GET: Mengambil satu data pembayaran untuk edit
 app.get('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     try {
-        const sql = `SELECT * FROM pembayaran WHERE id = ?`;
+        const sql = `SELECT * FROM pembayaran WHERE id = ? `;
         const pembayaran = await dbGet(sql, [req.params.id]);
         if (!pembayaran) {
             return res.status(404).json({ message: 'Data pembayaran tidak ditemukan.' });
         }
         res.json(pembayaran);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil pembayaran id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil pembayaran id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
+
+// API BARU: Memeriksa apakah bukti pembayaran sudah ada untuk SPT tertentu
+app.get('/api/pembayaran/check/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const sql = "SELECT COUNT(*) as count FROM pembayaran WHERE spt_id = ?";
+        const result = await dbGet(sql, [spt_id]);
+        const exists = result && result.count > 0;
+        res.json({ exists: exists });
+    } catch (error) {
+        console.error(`[API ERROR] Gagal memeriksa pembayaran untuk SPT ID ${spt_id}:`, error);
+        // Mengembalikan exists: false agar tidak memblokir UI jika terjadi error server
+        res.status(500).json({ exists: false, message: 'Gagal memeriksa status pembayaran.' });
+    }
+});
+
 
 // PUT: Memperbarui bukti pembayaran
 app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
@@ -3456,11 +3678,11 @@ app.put('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
         const anggaranIdAngka = parseInt(data.anggaran_id, 10);
         const sptIdAngka = parseInt(data.spt_id, 10);
 
-        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ?, pptk_id = ? WHERE id = ?`;
+        const sql = `UPDATE pembayaran SET anggaran_id = ?, spt_id = ?, nama_penerima = ?, uraian_pembayaran = ?, nominal_bayar = ?, panjar_data = ?, pptk_id = ? WHERE id = ? `;
         await runQuery(sql, [anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, nominalBayarAngka, data.panjar_data, data.pptk_id, id]);
         res.json({ message: 'Bukti pembayaran berhasil diperbarui!' });
     } catch (error) {
-        console.error(`[API ERROR] Gagal memperbarui bukti pembayaran id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal memperbarui bukti pembayaran id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
@@ -3477,7 +3699,7 @@ app.post('/api/pembayaran', isApiAuthenticated, async (req, res) => {
         const anggaranIdAngka = parseInt(data.anggaran_id, 10);
         const sptIdAngka = parseInt(data.spt_id, 10);
 
-        const sql = `INSERT INTO pembayaran (nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data, pptk_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO pembayaran(nomor_bukti, tanggal_bukti, anggaran_id, spt_id, nama_penerima, uraian_pembayaran, nominal_bayar, panjar_data, pptk_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         await runQuery(sql, [nomorBukti, tanggalBukti, anggaranIdAngka, sptIdAngka, data.nama_penerima, data.uraian_pembayaran, data.nominal_bayar, data.panjar_data, data.pptk_id]);
 
         res.status(201).json({ message: 'Bukti pembayaran berhasil disimpan!' });
@@ -3502,11 +3724,11 @@ app.delete('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 app.get('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
     try {
         const sql = `
-            SELECT 
-                pr.id,
-                pr.uraian,
-                pr.jumlah,
-                p.nama_lengkap as nama_pegawai
+SELECT
+pr.id,
+    pr.uraian,
+    pr.jumlah,
+    p.nama_lengkap as nama_pegawai
             FROM pengeluaran_riil pr
             JOIN pegawai p ON pr.pegawai_id = p.id
             ORDER BY pr.created_at DESC
@@ -3528,7 +3750,7 @@ app.post('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
     }
 
     try {
-        const sql = `INSERT INTO pengeluaran_riil (spt_id, pegawai_id, uraian, jumlah) VALUES (?, ?, ?, ?)`;
+        const sql = `INSERT INTO pengeluaran_riil(spt_id, pegawai_id, uraian, jumlah) VALUES(?, ?, ?, ?)`;
         const result = await runQuery(sql, [spt_id, pegawai_id, uraian, parseFloat(jumlah) || 0]);
         res.status(201).json({ message: 'Data pengeluaran riil berhasil disimpan!', id: result.lastID });
     } catch (error) {
@@ -3540,14 +3762,14 @@ app.post('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
 // GET: Mengambil satu data pengeluaran riil untuk edit
 app.get('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
     try {
-        const sql = `SELECT * FROM pengeluaran_riil WHERE id = ?`;
+        const sql = `SELECT * FROM pengeluaran_riil WHERE id = ? `;
         const item = await dbGet(sql, [req.params.id]);
         if (!item) {
             return res.status(404).json({ message: 'Data pengeluaran riil tidak ditemukan.' });
         }
         res.json(item);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil pengeluaran riil id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil pengeluaran riil id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 });
@@ -3562,14 +3784,14 @@ app.put('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
     }
 
     try {
-        const sql = `UPDATE pengeluaran_riil SET spt_id = ?, pegawai_id = ?, uraian = ?, jumlah = ? WHERE id = ?`;
+        const sql = `UPDATE pengeluaran_riil SET spt_id = ?, pegawai_id = ?, uraian = ?, jumlah = ? WHERE id = ? `;
         const result = await runQuery(sql, [spt_id, pegawai_id, uraian, parseFloat(jumlah) || 0, id]);
         if (result.changes === 0) {
             return res.status(404).json({ message: 'Data tidak ditemukan untuk diperbarui.' });
         }
         res.json({ message: 'Data pengeluaran riil berhasil diperbarui.' });
     } catch (error) {
-        console.error(`[API ERROR] Gagal memperbarui pengeluaran riil id ${id}:`, error);
+        console.error(`[API ERROR] Gagal memperbarui pengeluaran riil id ${id}: `, error);
         res.status(500).json({ message: 'Gagal memperbarui data.', error: error.message });
     }
 });
@@ -3583,7 +3805,7 @@ app.delete('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => 
         }
         res.json({ message: 'Data pengeluaran riil berhasil dihapus.' });
     } catch (err) {
-        console.error(`[API ERROR] Gagal menghapus pengeluaran riil id ${req.params.id}:`, err);
+        console.error(`[API ERROR] Gagal menghapus pengeluaran riil id ${req.params.id}: `, err);
         res.status(500).json({ message: 'Gagal menghapus data.', error: err.message });
     }
 });
@@ -3592,22 +3814,22 @@ app.delete('/api/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => 
 app.get('/api/cetak/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) => {
     try {
         // 1. Ambil data pengeluaran riil utama untuk mendapatkan spt_id dan pegawai_id
-        const mainRiilSql = `SELECT * FROM pengeluaran_riil WHERE id = ?`;
+        const mainRiilSql = `SELECT * FROM pengeluaran_riil WHERE id = ? `;
         const mainRiil = await dbGet(mainRiilSql, [req.params.id]);
         if (!mainRiil) {
             return res.status(404).json({ message: 'Data pengeluaran riil tidak ditemukan.' });
         }
 
         // 2. Ambil SEMUA item pengeluaran riil untuk pegawai dan SPT yang sama
-        const allRiilSql = `SELECT uraian, jumlah FROM pengeluaran_riil WHERE spt_id = ? AND pegawai_id = ?`;
+        const allRiilSql = `SELECT uraian, jumlah FROM pengeluaran_riil WHERE spt_id = ? AND pegawai_id = ? `;
         const allRiilItems = await dbAll(allRiilSql, [mainRiil.spt_id, mainRiil.pegawai_id]);
 
         // 3. Ambil data SPT
-        const sptSql = `SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ?`;
+        const sptSql = `SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ? `;
         const spt = await dbGet(sptSql, [mainRiil.spt_id]);
 
         // 4. Ambil data Pelaksana (yang membuat pernyataan)
-        const pelaksanaSql = `SELECT nama_lengkap, nip, jabatan FROM pegawai WHERE id = ?`;
+        const pelaksanaSql = `SELECT nama_lengkap, nip, jabatan FROM pegawai WHERE id = ? `;
         const pelaksana = await dbGet(pelaksanaSql, [mainRiil.pegawai_id]);
 
         // 5. Ambil data Pengguna Anggaran (Kepala Dinas)
@@ -3624,7 +3846,7 @@ app.get('/api/cetak/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) 
 
         res.json(responseData);
     } catch (error) {
-        console.error(`[API ERROR] Gagal mengambil data cetak pengeluaran riil id ${req.params.id}:`, error);
+        console.error(`[API ERROR] Gagal mengambil data cetak pengeluaran riil id ${req.params.id}: `, error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.', error: error.message });
     }
 });
@@ -3639,16 +3861,16 @@ app.get('/api/cetak/pembayaran/:id', isApiAuthenticated, async (req, res) => {
     const { id } = req.params;
     try {
         // 1. Ambil data utama pembayaran
-        const pembayaran = await dbGet(`SELECT * FROM pembayaran WHERE id = ?`, [id]);
+        const pembayaran = await dbGet(`SELECT * FROM pembayaran WHERE id = ? `, [id]);
         if (!pembayaran) {
             return res.status(404).json({ message: 'Data pembayaran tidak ditemukan.' });
         }
 
         // 2. Ambil data anggaran terkait
-        const anggaran = await dbGet(`SELECT * FROM anggaran WHERE id = ?`, [pembayaran.anggaran_id]);
+        const anggaran = await dbGet(`SELECT * FROM anggaran WHERE id = ? `, [pembayaran.anggaran_id]);
 
         // 3. Ambil data SPT terkait
-        const spt = await dbGet(`SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ?`, [pembayaran.spt_id]);
+        const spt = await dbGet(`SELECT nomor_surat, tanggal_surat FROM spt WHERE id = ? `, [pembayaran.spt_id]);
 
         // 4. Ambil data rincian dari laporan (sama seperti di modal)
         const laporanResponse = await fetch(`http://localhost:${PORT}/api/laporan/by-spt/${pembayaran.spt_id}`, {

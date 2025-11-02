@@ -19,8 +19,13 @@
 
     // Elemen spesifik untuk halaman Register SPT
     const sptTableBody = document.getElementById('spt-table-body');
+    const pageLimitSelect = document.getElementById('page-limit-select'); // Ambil elemen dropdown baru
+    let currentPageLimit = 5; // Nilai default
+    const sptPaginationContainer = document.getElementById('spt-pagination-container');
+    let currentSptPage = 1;
     let currentUserRole = 'user'; // Default role
     const sppdTableBody = document.getElementById('sppd-table-body');
+    const sppdPaginationContainer = document.getElementById('sppd-pagination-container');
 
     // Elemen untuk Tab
     const sptTab = document.getElementById('spt-tab');
@@ -144,17 +149,67 @@
         });
     };
 
-    const loadSptList = async () => {
+    const renderPagination = (container, pagination, loadFunction) => {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems } = pagination;
+        // PERBAIKAN: Gunakan currentPageLimit dinamis
+        if (totalItems <= currentPageLimit) {
+            return; // Tidak perlu paginasi jika item lebih sedikit dari limit
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Halaman <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span>
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end';
+
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        prevButton.addEventListener('click', () => loadFunction(page - 1));
+
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        nextButton.addEventListener('click', () => loadFunction(page + 1));
+
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(nextButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
+    };
+
+    const loadSptList = async (page = 1) => {
         // Guard clause: Jangan jalankan jika elemen tabel tidak ada di halaman ini
         if (!sptTableBody) {
             console.log("Melewati loadSptList karena 'spt-table-body' tidak ada di halaman ini.");
             return;
         }
 
+        currentSptPage = page;
         sptTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        if (sptPaginationContainer) sptPaginationContainer.innerHTML = '';
+
         try {
             const [sptRes, sessionRes] = await Promise.all([
-                fetch('/api/spt'),
+                fetch(`/api/spt?page=${page}&limit=${currentPageLimit}`),
                 fetch('/api/user/session')
             ]);
 
@@ -163,10 +218,18 @@
                 currentUserRole = sessionData.user.role;
             }
 
-            if (!sptRes.ok) throw new Error('Gagal memuat data SPT.');
-            const data = await sptRes.json();
-            renderSptList(data, currentUserRole);
-            allSptData = data; // Simpan data untuk digunakan di modal panjar
+            if (!sptRes.ok) {
+                const errorData = await sptRes.json();
+                throw new Error(errorData.message || 'Gagal memuat data SPT.');
+            }
+            const result = await sptRes.json();
+            renderSptList(result.data, currentUserRole);
+            renderPagination(sptPaginationContainer, result.pagination, loadSptList);
+
+            // Ambil semua data SPT tanpa paginasi untuk modal panjar (jika diperlukan)
+            const allSptRes = await fetch('/api/spt?limit=1000'); // Ambil semua
+            if (allSptRes.ok) allSptData = (await allSptRes.json()).data;
+
         } catch (error) {
             if (!sptTableBody) return; // Cek lagi untuk menghindari error jika user pindah halaman
             sptTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
@@ -216,14 +279,19 @@
         });
     };
 
-    const loadSppdList = async () => {
+    const loadSppdList = async (page = 1) => {
         if (!sppdTableBody) return;
         sppdTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data SPPD...</td></tr>`;
+        if (sppdPaginationContainer) sppdPaginationContainer.innerHTML = '';
         try {
-            const response = await fetch('/api/sppd');
-            if (!response.ok) throw new Error('Gagal memuat data SPPD.');
+            const response = await fetch(`/api/sppd?page=${page}&limit=${currentPageLimit}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal memuat data SPPD.');
+            }
             const result = await response.json();
             renderSppdList(result.data);
+            renderPagination(sppdPaginationContainer, result.pagination, loadSppdList);
         } catch (error) {
             sppdTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
@@ -251,12 +319,12 @@
         panjarForm.reset(); // Pindahkan reset ke sini
 
         await loadPanjarDropdowns(); // Muat semua opsi dropdown
-        panjarSptSelect.dispatchEvent(new Event('change')); // Trigger change untuk reset pelaksana
 
         if (data && data.id) { // Periksa apakah ada data dan ID (mode edit)
             // === MODE EDIT ===
             document.getElementById('panjar-id').value = data.id;
             document.getElementById('panjar_tempat').value = data.tempat;
+            panjarSptSelect.disabled = true; // Nonaktifkan pilihan SPT saat edit
             document.getElementById('panjar_tanggal').value = data.tanggal_panjar;
             panjarSptSelect.value = data.spt_id;
 
@@ -282,6 +350,8 @@
         } else {
             // === MODE TAMBAH BARU ===
             // PERBAIKAN: Atur nilai default SETELAH form di-reset.
+            panjarSptSelect.disabled = false; // Aktifkan pilihan SPT saat tambah baru
+            panjarSptSelect.dispatchEvent(new Event('change')); // Trigger change untuk reset pelaksana
             document.getElementById('panjar_tempat').value = 'Nanga Pinoh';
             addRincianBiayaRow(); // Tambah satu baris rincian default
         }
@@ -299,10 +369,10 @@
     const loadPanjarDropdowns = async () => {
         // Jika tidak ada data SPT yang dimuat (misal di halaman uang-muka), fetch datanya.
         if (allSptData.length === 0) {
-            try {
-                const response = await fetch('/api/spt');
+            try { // Ambil semua data SPT tanpa paginasi
+                const response = await fetch('/api/spt?limit=1000');
                 if (!response.ok) throw new Error('Gagal memuat data SPT untuk modal.');
-                allSptData = await response.json();
+                allSptData = (await response.json()).data;
             } catch (error) {
                 console.error(error);
             }
@@ -519,6 +589,37 @@
         });
     }
 
+    // --- LOGIKA MODAL NOTIFIKASI HAPUS ---
+    const createDeletionAlertModal = () => {
+        const modalId = 'deletion-alert-modal';
+        if (document.getElementById(modalId)) return; // Jangan buat jika sudah ada
+
+        const modalHtml = `
+            <div id="${modalId}" class="fixed inset-0 bg-gray-900 bg-opacity-60 z-[1001] hidden items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-auto flex flex-col">
+                    <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                        <h3 class="text-xl font-semibold text-white">Peringatan</h3>
+                        <button id="close-deletion-alert-modal" class="text-gray-300 hover:text-white">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p id="deletion-alert-message" class="text-gray-700 dark:text-gray-300"></p>
+                    </div>
+                    <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                        <button id="ok-deletion-alert-button" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">Oke</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const modal = document.getElementById(modalId);
+        document.getElementById('close-deletion-alert-modal').addEventListener('click', () => modal.classList.add('hidden'));
+        document.getElementById('ok-deletion-alert-button').addEventListener('click', () => modal.classList.add('hidden'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+    };
+
     // Event delegation untuk tombol hapus
     if (sptTableBody) {
         sptTableBody.addEventListener('click', async (event) => {
@@ -530,14 +631,35 @@
                     try {
                         const response = await fetch(`/api/spt/${id}`, { method: 'DELETE' });
                         const result = await response.json();
-                        if (!response.ok) throw new Error(result.message);
+                        if (!response.ok) {
+                            // Lemparkan error dengan status untuk ditangkap di blok catch
+                            const error = new Error(result.message || 'Gagal menghapus data.');
+                            error.status = response.status;
+                            throw error;
+                        }
                         alert(result.message);
-                        loadSptList(); // Muat ulang data setelah berhasil
+                        loadSptList(currentSptPage); // Muat ulang halaman saat ini
                     } catch (error) {
-                        alert(`Gagal menghapus: ${error.message}`);
+                        if (error.status === 409) { // 409 Conflict: SPT tidak bisa dihapus
+                            const modal = document.getElementById('deletion-alert-modal');
+                            document.getElementById('deletion-alert-message').textContent = error.message;
+                            modal.classList.remove('hidden');
+                        } else {
+                            alert(`Gagal menghapus: ${error.message}`);
+                        }
                     }
                 }
             }
+        });
+    }
+
+    // --- PERBAIKAN: Event listener untuk dropdown Filter batas halaman ---
+    if (pageLimitSelect) {
+        pageLimitSelect.addEventListener('change', (e) => {
+            currentPageLimit = parseInt(e.target.value, 10);
+            // Muat ulang kedua daftar dengan batas halaman yang baru, mulai dari halaman pertama
+            loadSptList(1);
+            loadSppdList(1);
         });
     }
 
@@ -551,7 +673,7 @@
     // Inisialisasi: Memuat daftar SPT saat halaman dibuka
     // Hanya panggil jika kita berada di halaman yang benar
     if (sptTableBody) {
-        loadSptList();
+        loadSptList(1);
     }
 
     // Fungsi untuk mengalihkan tab
@@ -573,5 +695,6 @@
     };
 
     setupTabs();
-    loadSppdList();
+    loadSppdList(1);
+    createDeletionAlertModal(); // Buat modal saat halaman dimuat
 })();
