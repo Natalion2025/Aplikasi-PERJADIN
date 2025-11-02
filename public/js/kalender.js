@@ -122,11 +122,18 @@
      */
     const fetchEvents = async () => {
         try {
-            const response = await fetch('/api/spt');
+            // PERBAIKAN: Minta semua data SPT tanpa paginasi dengan menambahkan ?limit=0
+            const response = await fetch('/api/spt?limit=0');
             if (!response.ok) {
                 throw new Error('Gagal memuat data perjalanan dinas.');
             }
-            allEvents = await response.json();
+            const result = await response.json();
+            // PERBAIKAN: Ekstrak array 'data' dari respons API.
+            allEvents = result.data || result; // Fallback jika API mengembalikan array langsung
+            // PASTIKAN allEvents adalah array
+            if (!Array.isArray(allEvents)) {
+                throw new Error("Format data event tidak valid. Diharapkan sebuah array.");
+            }
             console.log("[Kalender] Data SPT dimuat:", allEvents); // Debugging
             // Setelah data berhasil diambil, render ulang tampilan kalender
             updateCalendarDisplay();

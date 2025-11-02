@@ -142,6 +142,38 @@
         uangHarianAnalysisContainer.innerHTML = '';
     };
 
+    // --- PERUBAHAN: Fungsi untuk menampilkan modal notifikasi ---
+    const showInfoModal = (title, message) => {
+        // Hapus modal lama jika ada untuk mencegah duplikasi
+        const oldModal = document.getElementById('info-modal-pembayaran');
+        if (oldModal) {
+            oldModal.remove();
+        }
+
+        const modalHtml = `
+            <div id="info-modal-pembayaran" class="fixed inset-0 bg-gray-900 bg-opacity-60 z-[1001] flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-auto flex flex-col animate-fadeIn">
+                    <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                        <h3 class="text-xl font-semibold text-white">${title}</h3>
+                        <button id="close-info-modal-btn" class="text-gray-300 hover:text-white">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p class="text-gray-700 dark:text-gray-300">${message}</p>
+                    </div>
+                    <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                        <button id="ok-info-modal-btn" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">Oke</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        document.getElementById('close-info-modal-btn').addEventListener('click', () => document.getElementById('info-modal-pembayaran').remove());
+        document.getElementById('ok-info-modal-btn').addEventListener('click', () => document.getElementById('info-modal-pembayaran').remove());
+    };
+
     // Variabel untuk menyimpan data SPT lengkap
     let sptDataMap = new Map();
     // Variabel untuk menyimpan data Anggaran lengkap
@@ -157,7 +189,7 @@
         try {
             const [anggaranRes, sptRes, pegawaiRes] = await Promise.all([
                 fetch('/api/anggaran'),
-                fetch('/api/spt'),
+                fetch('/api/spt?limit=1000'), // PERBAIKAN: Minta hingga 1000 SPT untuk memastikan semua data termuat
                 fetch('/api/pegawai')
             ]);
 
@@ -177,10 +209,13 @@
             });
 
             if (!sptRes.ok) throw new Error('Gagal memuat data SPT.');
-            const sptList = await sptRes.json();
+            const sptResult = await sptRes.json();
+            // PERBAIKAN: Ekstrak array 'data' dari respons API yang dipaginasi.
+            const sptList = sptResult.data || sptResult; // Fallback jika API mengembalikan array langsung
+
             sptDataMap.clear();
             sptSelect.innerHTML = '<option value="">-- Pilih SPT --</option>';
-            sptList.forEach(spt => {
+            sptList.forEach(spt => { // Sekarang sptList dijamin sebuah array
                 const option = new Option(spt.nomor_surat, spt.id);
                 sptSelect.appendChild(option);
                 pengeluaranSptSelect.appendChild(option.cloneNode(true)); // Clone untuk modal pengeluaran riil
@@ -475,7 +510,7 @@
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    alert(result.message || 'Belum ada laporan yang dibuat untuk SPT ini. Nama penerima tidak dapat diisi otomatis.');
+                    showInfoModal('Informasi', 'Belum ada laporan yang dibuat untuk SPT ini. Buatlah laporan perjalanan dinas terlebih dahulu.');
                     namaPenerimaTextarea.value = '';
                     clearRincian();
                     uangHarianInfoContainer.classList.add('hidden');

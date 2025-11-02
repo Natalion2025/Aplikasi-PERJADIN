@@ -509,9 +509,6 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
-        const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
-
         const selectedSignerIds = Array.from(penandatanganContainer.querySelectorAll('input[name="penandatangan_ids"]:checked'))
             .map(cb => cb.value);
 
@@ -545,7 +542,11 @@
             return; // Hentikan proses simpan
         }
 
+        // --- PERBAIKAN FINAL: Kumpulkan data form SEBELUM validasi ---
         const formData = new FormData();
+        const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
+        const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
+        const submitButton = form.querySelector('button[type="submit"]');
 
         // Ambil data form biasa
         formData.append('spt_id', sptSelect.value);
@@ -559,21 +560,16 @@
         formData.append('tempat_dikunjungi', tempatDikunjungiEl.value);
         formData.append('hasil_dicapai', document.getElementById('hasil_dicapai').value);
         formData.append('kesimpulan', document.getElementById('kesimpulan').value);
-
-        // Simpan penandatangan_ids sebagai string JSON
         formData.append('penandatangan_ids', JSON.stringify(selectedSignerIds));
 
         // Kumpulkan data pengeluaran dari setiap pegawai
         document.querySelectorAll('.pengeluaran-pegawai-item').forEach(pegawaiItem => {
             const pegawaiId = pegawaiItem.dataset.pegawaiId;
-
-            // PERUBAHAN: Kumpulkan data sebagai array
             pegawaiItem.querySelectorAll('.transport-item').forEach((item, index) => {
                 formData.append(`pegawai[${pegawaiId}][transportasi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
                 formData.append(`pegawai[${pegawaiId}][transportasi][${index}][perusahaan]`, item.querySelector('[name$="[perusahaan]"]').value);
                 formData.append(`pegawai[${pegawaiId}][transportasi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
             });
-
             pegawaiItem.querySelectorAll('.akomodasi-item').forEach((item, index) => {
                 formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
                 formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][nama]`, item.querySelector('[name$="[nama]"]').value);
@@ -581,12 +577,10 @@
                 formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][malam]`, item.querySelector('[name$="[malam]"]').value);
                 formData.append(`pegawai[${pegawaiId}][akomodasi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
             });
-
             pegawaiItem.querySelectorAll('.kontribusi-item').forEach((item, index) => {
                 formData.append(`pegawai[${pegawaiId}][kontribusi][${index}][jenis]`, item.querySelector('[name$="[jenis]"]').value);
                 formData.append(`pegawai[${pegawaiId}][kontribusi][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
             });
-
             pegawaiItem.querySelectorAll('.lain-lain-item').forEach((item, index) => {
                 formData.append(`pegawai[${pegawaiId}][lain_lain][${index}][uraian]`, item.querySelector('[name$="[uraian]"]').value);
                 formData.append(`pegawai[${pegawaiId}][lain_lain][${index}][nominal]`, parseCurrency(item.querySelector('[name$="[nominal]"]').value));
@@ -596,18 +590,34 @@
         if (isEditMode) {
             formData.append('deleted_files', JSON.stringify(deletedFiles));
         }
+        newFiles.forEach(file => formData.append('lampiran', file));
 
-        // Tambahkan file baru
-        newFiles.forEach(file => {
-            formData.append('lampiran', file);
-        });
+        // --- PERBAIKAN: Pindahkan deklarasi variabel ke sini, sebelum digunakan ---
+        const url = isEditMode ? `/api/laporan/${laporanId}` : '/api/laporan';
+        const method = isEditMode ? 'PUT' : 'POST';
 
-        const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Menyimpan...';
 
-        const url = isEditMode ? `/api/laporan/${laporanId}` : '/api/laporan';
-        const method = isEditMode ? 'PUT' : 'POST';
+        // --- PERUBAHAN: Validasi sebelum menyimpan ---
+        if (isEditMode) {
+            const sptId = formData.get('spt_id'); // Ambil dari formData yang sudah dibuat
+            try {
+                const checkRes = await fetch(`/api/pembayaran/check/by-spt/${sptId}`);
+                const checkData = await checkRes.json();
+                if (checkRes.ok && checkData.exists) {
+                    // Tampilkan modal dan hentikan proses
+                    showBlockerModal("Aksi Diblokir", "Hapus terlebih dahulu daftar bukti bayar terkait");
+                    // Kembalikan kondisi tombol simpan
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Simpan Perubahan';
+                    return; // Hentikan eksekusi fungsi submit
+                }
+            } catch (checkError) {
+                // Jika pengecekan gagal, log error tapi biarkan proses lanjut agar tidak memblokir pengguna
+                console.warn("Peringatan: Pengecekan bukti bayar gagal, proses penyimpanan dilanjutkan.", checkError);
+            }
+        }
 
         try {
             const response = await fetch(url, {

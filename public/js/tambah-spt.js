@@ -268,6 +268,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // --- Fungsi untuk membuat modal notifikasi konflik ---
+    const createConflictAlertModal = (message) => {
+        const modalId = 'conflict-alert-modal';
+        // Hapus modal lama jika ada untuk memastikan pesan selalu baru
+        document.getElementById(modalId)?.remove();
+
+        const modalHtml = `
+            <div id="${modalId}" class="fixed inset-0 bg-gray-900 bg-opacity-60 z-[1001] flex items-center justify-center p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md mx-auto flex flex-col animate-fadeIn">
+                    <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
+                        <h3 class="text-xl font-semibold text-white">Peringatan Jadwal Bentrok</h3>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p class="text-gray-700 dark:text-gray-300">${message}</p>
+                    </div>
+                    <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+                        <button id="ok-conflict-alert-button" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">Oke</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        document.getElementById('ok-conflict-alert-button').addEventListener('click', () => document.getElementById(modalId).remove());
+    };
+
     // --- Fungsi untuk menambah baris pegawai ---
     tambahPegawaiBtn.addEventListener('click', () => addPegawaiRow());
 
@@ -346,16 +372,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: JSON.stringify(formData),
             });
 
-            const result = await response.json();
             if (!response.ok) {
-                throw new Error(result.message || 'Terjadi kesalahan saat menyimpan data.');
+                // Buat error kustom yang menyertakan status dan respons
+                const error = new Error('Gagal menyimpan data.');
+                error.response = response; // Lampirkan seluruh respons
+                throw error;
             }
 
+            const result = await response.json();
             alert(`Surat Perintah Tugas berhasil ${isEditMode ? 'diperbarui' : 'disimpan'}!`);
             window.location.href = '/spt';
         } catch (error) {
             console.error('Error saat menyimpan SPT:', error);
-            alert(`Gagal menyimpan: ${error.message}`);
+            // Cek apakah error berasal dari server dengan status 409 (Conflict)
+            if (error.response && error.response.status === 409) {
+                const result = await error.response.json(); // Ambil pesan error dari body respons
+                createConflictAlertModal(result.message);
+            } else {
+                alert(`Gagal menyimpan: ${error.message || 'Terjadi kesalahan yang tidak diketahui.'}`);
+            }
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = isEditMode ? 'Simpan Perubahan' : 'Simpan SPT';
