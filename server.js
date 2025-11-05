@@ -988,31 +988,58 @@ app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
 
 // GET all anggaran
 app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit, 10) || 5; // FIX: Gunakan radix 10
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
+        const totalSql = "SELECT COUNT(*) as total FROM anggaran";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
         const sql = `
-            SELECT
-                a.*,
-                COALESCE(SUM(p.nominal_bayar), 0) as realisasi,
-                pptk.nama_lengkap as pptk_nama
-            FROM
-                anggaran a
-            LEFT JOIN
-                pembayaran p ON a.id = p.anggaran_id
-            LEFT JOIN
-                pegawai pptk ON a.pptk_id = pptk.id
-            GROUP BY
-                a.id
-            ORDER BY
-                a.id DESC
-        `;
-        const rows = await dbAll(sql, []);
+        SELECT
+            a.*,
+            pptk.nama_lengkap as pptk_nama,
+            (
+                -- Hitung total dari bukti pembayaran
+                COALESCE((SELECT SUM(p.nominal_bayar) FROM pembayaran p WHERE p.anggaran_id = a.id), 0) +
+                -- Hitung total dari pengeluaran riil melalui SPT
+                COALESCE((
+                    SELECT SUM(pr.jumlah)
+                    FROM pengeluaran_riil pr
+                    JOIN spt s ON pr.spt_id = s.id
+                    WHERE s.anggaran_id = a.id
+                ), 0)
+            ) as realisasi
+        FROM
+            anggaran a
+        LEFT JOIN
+            pegawai pptk ON a.pptk_id = pptk.id
+        GROUP BY
+            a.id
+        ORDER BY
+            a.mata_anggaran_kode ASC
+        ` + (limit > 0 ? 'LIMIT ? OFFSET ?' : ''); // FIX: Hanya terapkan LIMIT jika > 0
+
+        const params = [];
+        if (limit > 0) {
+            params.push(limit, offset);
+        }
+        const rows = await dbAll(sql, params);
 
         // Hitung sisa anggaran untuk setiap baris
         rows.forEach(row => {
             row.sisa = row.nilai_anggaran - row.realisasi;
         });
 
-        res.json(rows);
+        res.json({
+            data: rows,
+            pagination: {
+                page, limit, totalItems, totalPages
+            }
+        });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data anggaran:', err);
         res.status(500).json({ message: err.message });
@@ -1166,7 +1193,16 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
 
 // GET: Mengambil semua SPT yang dibatalkan (DIPINDAHKAN KE ATAS)
 app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
+        const totalSql = "SELECT COUNT(*) as total FROM pembatalan_spt";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
         const sql = `
             SELECT
         ps.id,
@@ -1178,9 +1214,13 @@ app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
             JOIN spt s ON ps.spt_id = s.id
             JOIN pegawai p ON ps.pegawai_id = p.id
             ORDER BY ps.tanggal_pembatalan DESC
-            `;
-        const canceledSpts = await dbAll(sql);
-        res.json(canceledSpts);
+            LIMIT ? OFFSET ?
+        `;
+        const canceledSpts = await dbAll(sql, [limit, offset]);
+        res.json({
+            data: canceledSpts,
+            pagination: { page, limit, totalItems, totalPages }
+        });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil daftar SPT yang dibatalkan:', err);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -2689,6 +2729,21 @@ app.get('/api/spt/:spt_id/accommodation-standards', isApiAuthenticated, async (r
 
 // --- Rute API Laporan Perjalanan Dinas ---
 
+// API BARU: Cek apakah laporan sudah ada untuk SPT tertentu
+app.get('/api/laporan/check/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const sql = "SELECT COUNT(*) as count FROM laporan_perjadin WHERE spt_id = ?";
+        const result = await dbGet(sql, [spt_id]);
+        const exists = result && result.count > 0;
+        res.json({ exists });
+    } catch (error) {
+        console.error(`[API ERROR] Gagal memeriksa laporan untuk SPT ID ${spt_id}:`, error);
+        res.status(500).json({ message: 'Gagal memeriksa status laporan.' });
+    }
+});
+
+
 // API BARU: Mengambil ID penandatangan laporan berdasarkan SPT ID
 app.get('/api/laporan/signers/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
     const { spt_id } = req.params;
@@ -2707,7 +2762,16 @@ app.get('/api/laporan/signers/by-spt/:spt_id', isApiAuthenticated, async (req, r
 
 // GET: Mengambil semua laporan untuk register
 app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
+        const totalSql = "SELECT COUNT(*) as total FROM pembatalan_spt"; // FIX: Hitung dari tabel yang benar
+        const totalResult = await dbGet(totalSql); // FIX: Jalankan query yang sudah diperbaiki
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
         const sql = `
 SELECT
 l.id, l.judul, l.tanggal_laporan, l.spt_id,
@@ -2715,9 +2779,14 @@ l.id, l.judul, l.tanggal_laporan, l.spt_id,
             FROM laporan_perjadin l
             JOIN spt s ON l.spt_id = s.id
             ORDER BY l.tanggal_laporan DESC
+            LIMIT ? OFFSET ?
         `;
-        const laporan = await dbAll(sql);
-        res.json(laporan);
+        const laporan = await dbAll(sql, [limit, offset]);
+
+        res.json({
+            data: laporan,
+            pagination: { page, limit, totalItems, totalPages }
+        });
     } catch (error) {
         console.error('[API ERROR] Gagal mengambil daftar laporan:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -3401,7 +3470,16 @@ app.delete('/api/laporan/:id', isApiAuthenticated, async (req, res) => {
 
 // GET: Mengambil semua data panjar
 app.get('/api/panjar', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
+        const totalSql = "SELECT COUNT(*) as total FROM panjar";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
         const sql = `
 SELECT
 p.id,
@@ -3414,9 +3492,13 @@ p.id,
             JOIN spt s ON p.spt_id = s.id
             JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
             ORDER BY p.tanggal_panjar DESC, p.id DESC
+            LIMIT ? OFFSET ?
     `;
-        const panjarList = await dbAll(sql);
-        res.json(panjarList);
+        const panjarList = await dbAll(sql, [limit, offset]);
+        res.json({
+            data: panjarList,
+            pagination: { page, limit, totalItems, totalPages }
+        });
     } catch (error) {
         console.error('[API ERROR] Gagal mengambil data panjar:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -3624,10 +3706,30 @@ const generateNomorBukti = async () => {
 
 // GET: Mengambil semua data pembayaran
 app.get('/api/pembayaran', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
-        const sql = `SELECT * FROM pembayaran ORDER BY tanggal_bukti DESC, id DESC`;
-        const pembayaran = await dbAll(sql);
-        res.json(pembayaran);
+        const totalSql = "SELECT COUNT(*) as total FROM pembayaran";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const sql = `
+            SELECT
+                p.*,
+                s.nomor_surat,
+                s.tanggal_surat
+            FROM pembayaran p
+            LEFT JOIN spt s ON p.spt_id = s.id
+            ORDER BY p.tanggal_bukti DESC, p.id DESC
+            LIMIT ? OFFSET ?`;
+        const pembayaran = await dbAll(sql, [limit, offset]);
+        res.json({
+            data: pembayaran,
+            pagination: { page, limit, totalItems, totalPages }
+        });
     } catch (error) {
         console.error('[API ERROR] Gagal mengambil data pembayaran:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -3722,19 +3824,36 @@ app.delete('/api/pembayaran/:id', isApiAuthenticated, async (req, res) => {
 
 // GET: Mengambil semua data pengeluaran riil
 app.get('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
+    const limit = parseInt(req.query.limit) || 5;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
     try {
+        // Hitung total item untuk paginasi
+        const totalSql = "SELECT COUNT(*) as total FROM pengeluaran_riil";
+        const totalResult = await dbGet(totalSql);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Ambil data sesuai halaman dan limit
         const sql = `
-SELECT
-pr.id,
-    pr.uraian,
-    pr.jumlah,
-    p.nama_lengkap as nama_pegawai
+            SELECT
+                pr.id,
+                pr.uraian,
+                pr.jumlah,
+                p.nama_lengkap as nama_pegawai
             FROM pengeluaran_riil pr
             JOIN pegawai p ON pr.pegawai_id = p.id
             ORDER BY pr.created_at DESC
+            LIMIT ? OFFSET ?
         `;
-        const rows = await dbAll(sql);
-        res.json(rows);
+        const rows = await dbAll(sql, [limit, offset]);
+
+        // Kembalikan data dalam format paginasi
+        res.json({
+            data: rows,
+            pagination: { page, limit, totalItems, totalPages }
+        });
     } catch (error) {
         console.error('[API ERROR] Gagal mengambil data pengeluaran riil:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });

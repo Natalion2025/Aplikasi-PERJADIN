@@ -7,30 +7,21 @@
     <title>Cetak Bukti Pembayaran</title>
     <link rel="stylesheet" href="/css/output.css">
     <style>
-        @media print {
-            body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
-            .no-print {
-                display: none;
-            }
-
-            @page {
-                size: A4;
-                margin: 2cm;
-            }
+        body {
+            font-family: 'arial', Times, serif;
+            background-color: #fff;
+            color: #000;
         }
 
-        .print-container {
-            max-width: 21cm;
-            margin: auto;
-            padding: 2cm;
+        .page-container {
+            width: 21cm;
+            min-height: 29.7cm;
+            padding: 1cm;
+            margin: 1cm auto;
+            border: 1px #D3D3D3 solid;
+            border-radius: 5px;
             background: white;
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 12pt;
-            color: black;
+            box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
         }
 
         table {
@@ -69,11 +60,31 @@
         .signature-box {
             height: 80px;
         }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            .page-container {
+                margin-top: -1cm;
+                padding: 1cm;
+                width: 21cm;
+                min-height: 29.7cm;
+                box-shadow: none;
+                border: none;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-gray-100">
-    <div id="print-area" class="print-container">
+    <div id="print-area" class="page-container">
         <div id="loader" class="text-center p-8">Memuat data...</div>
     </div>
 

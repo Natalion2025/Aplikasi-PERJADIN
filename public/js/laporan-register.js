@@ -1,6 +1,11 @@
 (function () {
     const laporanTableBody = document.getElementById('laporan-table-body');
     const pembatalanTableBody = document.getElementById('pembatalan-table-body');
+    const laporanPaginationContainer = document.getElementById('laporan-pagination-container');
+    const pembatalanPaginationContainer = document.getElementById('pembatalan-pagination-container');
+    const pageLimitSelect = document.getElementById('page-limit-select');
+
+    let currentPageLimit = 5;
 
     // Elemen untuk Modal Pembatalan
     const openPembatalanBtn = document.getElementById('pembatalan-tugas-btn');
@@ -42,7 +47,96 @@
         return isNaN(number) ? '' : new Intl.NumberFormat('id-ID').format(number);
     };
 
-    const renderLaporanList = (laporanList) => {
+    // Fungsi render paginasi generik
+    const renderPagination = (container, pagination, loadFunction) => {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems } = pagination;
+        if (totalItems <= currentPageLimit) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end';
+
+        // Tombol navigasi 'Pertama'
+        const firstButton = document.createElement('button');
+        firstButton.textContent = 'Pertama';
+        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            firstButton.disabled = true;
+            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        firstButton.addEventListener('click', () => loadFunction(1));
+
+        // Tombol navigasi 'Sebelumnya'
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        prevButton.addEventListener('click', () => loadFunction(page - 1));
+
+        // Tombol navigasi nomor halaman
+        // Container untuk tombol nomor halaman
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.className = 'inline-flex items-center';
+
+
+
+        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
+        for (let i = 1; i <= totalPages; i++) {
+            const pageNumberButton = document.createElement('button');
+            pageNumberButton.textContent = `${i}`;
+            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
+            pageNumberButton.addEventListener('click', () => loadFunction(i));
+            pageNumbersContainer.appendChild(pageNumberButton);
+        };
+
+
+
+        // Tombol navigasi 'Berikutnya'
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        nextButton.addEventListener('click', () => loadFunction(page + 1));
+
+        // Tombol navigasi 'Terakhir'
+        const lastButton = document.createElement('button');
+        lastButton.textContent = 'Terakhir';
+        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            lastButton.disabled = true;
+            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        lastButton.addEventListener('click', () => loadFunction(totalPages));
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(pageNumbersContainer);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
+    };
+
+
+    const renderLaporanList = (laporanList, pagination) => {
         laporanTableBody.innerHTML = ''; // Kosongkan tabel
 
         if (!laporanList || laporanList.length === 0) {
@@ -73,20 +167,27 @@
             `;
             laporanTableBody.appendChild(row);
         });
+        renderPagination(laporanPaginationContainer, pagination, loadLaporanData);
     };
 
-    const loadLaporanData = async () => {
+    const loadLaporanData = async (page = 1) => {
+        if (!laporanTableBody) {
+            console.log("Melewati loadLaporanData karena 'laporan-table-body' tidak ada di halaman ini.");
+            return;
+        }
+
+        laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
         try {
-            const response = await fetch('/api/laporan');
+            const response = await fetch(`/api/laporan?page=${page}&limit=${currentPageLimit}`);
             if (!response.ok) throw new Error('Gagal memuat daftar laporan.');
-            const data = await response.json();
-            renderLaporanList(data);
+            const result = await response.json();
+            renderLaporanList(result.data, result.pagination);
         } catch (error) {
-            laporanTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+            laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
 
-    const renderCanceledSptList = (canceledList) => {
+    const renderCanceledSptList = (canceledList, pagination) => {
         pembatalanTableBody.innerHTML = ''; // Kosongkan tabel
 
         if (!canceledList || canceledList.length === 0) {
@@ -122,19 +223,23 @@
             `;
             pembatalanTableBody.appendChild(row);
         });
+        renderPagination(pembatalanPaginationContainer, pagination, loadCanceledSptData); // FIX: Memanggil fungsi renderPagination
     };
 
-    const loadCanceledSptData = async () => {
+    const loadCanceledSptData = async (page = 1) => {
+        pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
         try {
-            const response = await fetch('/api/spt/canceled');
+            const response = await fetch(`/api/spt/canceled?page=${page}&limit=${currentPageLimit}`);
             if (!response.ok) throw new Error('Gagal memuat daftar pembatalan.');
-            const data = await response.json();
-            renderCanceledSptList(data);
+            const result = await response.json();
+            renderCanceledSptList(result.data, result.pagination);
         } catch (error) {
             // PERBAIKAN: Sesuaikan colspan karena ada kolom baru
-            pembatalanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+            pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
+
+
 
     // --- LOGIKA UNTUK TAB ---
 
@@ -159,7 +264,10 @@
         };
 
         laporanTab.addEventListener('click', () => switchTab(laporanTab, laporanPanel));
-        pembatalanTab.addEventListener('click', () => switchTab(pembatalanTab, pembatalanPanel));
+        pembatalanTab.addEventListener('click', () => {
+            switchTab(pembatalanTab, pembatalanPanel);
+            loadCanceledSptData(1); // Muat data saat tab diaktifkan
+        });
 
         // Set state awal
         switchTab(laporanTab, laporanPanel);
@@ -469,6 +577,12 @@
                     .catch(errPromise => errPromise.then(err => alert(`Gagal menghapus: ${err.message}`)));
             }
         }
+    });
+
+    pageLimitSelect.addEventListener('change', (e) => {
+        currentPageLimit = parseInt(e.target.value, 10);
+        loadLaporanData(1);
+        loadCanceledSptData(1);
     });
 
     setupTabs();

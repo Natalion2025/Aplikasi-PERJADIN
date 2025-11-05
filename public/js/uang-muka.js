@@ -2,6 +2,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Definisikan elemen modal panjar di sini juga agar bisa diakses
     const listContainer = document.getElementById('uang-muka-list-container');
+    const paginationContainer = document.getElementById('uangMuka-pagination-container');
+    const pageLimitSelect = document.getElementById('page-limit-select');
+
+    let currentPageLimit = 5;
+    let currentPage = 1;
 
     // Fungsi untuk memformat mata uang
     const formatCurrency = (value) => {
@@ -16,7 +21,93 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    const renderUangMukaList = (data) => {
+    // Fungsi render paginasi generik
+    const renderPagination = (container, pagination, loadFunction) => {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems } = pagination;
+        if (totalItems <= currentPageLimit) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end';
+
+        // Tombol navigasi 'Pertama'
+        const firstButton = document.createElement('button');
+        firstButton.textContent = 'Pertama';
+        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            firstButton.disabled = true;
+            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        firstButton.addEventListener('click', () => loadFunction(1));
+
+        // Tombol navigasi 'Sebelumnya'
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        prevButton.addEventListener('click', () => loadFunction(page - 1));
+
+        // Tombol navigasi nomor halaman
+        // Container untuk tombol nomor halaman
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.className = 'inline-flex items-center';
+
+        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
+        for (let i = 1; i <= totalPages; i++) {
+            const pageNumberButton = document.createElement('button');
+            pageNumberButton.textContent = `${i}`;
+            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
+            pageNumberButton.addEventListener('click', () => loadFunction(i));
+            pageNumbersContainer.appendChild(pageNumberButton);
+        }
+
+        // Tombol navigasi 'Berikutnya'
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        nextButton.addEventListener('click', () => loadFunction(page + 1));
+
+        // Tombol navigasi 'Terakhir'
+        const lastButton = document.createElement('button');
+        lastButton.textContent = 'Terakhir';
+        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            lastButton.disabled = true;
+            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        lastButton.addEventListener('click', () => loadFunction(totalPages));
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(pageNumbersContainer);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
+    };
+
+    const renderUangMukaList = (data, pagination) => {
+        listContainer.innerHTML = ''; // Kosongkan kontainer utama
+
         if (!data || data.length === 0) {
             listContainer.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 py-8">Belum ada data uang muka yang dibuat.</p>`;
             return;
@@ -57,17 +148,19 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.appendChild(row);
         });
 
-        listContainer.innerHTML = '';
         listContainer.appendChild(table);
+        renderPagination(paginationContainer, pagination, loadUangMuka);
     };
 
     // Jadikan fungsi ini global agar bisa dipanggil dari spt-register.js
-    window.loadUangMuka = async () => {
+    window.loadUangMuka = async (page = 1) => {
+        currentPage = page;
+        listContainer.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 py-8">Memuat data...</p>`;
         try {
-            const response = await fetch('/api/panjar');
+            const response = await fetch(`/api/panjar?page=${page}&limit=${currentPageLimit}`);
             if (!response.ok) throw new Error('Gagal memuat data uang muka.');
-            const data = await response.json();
-            renderUangMukaList(data);
+            const result = await response.json();
+            renderUangMukaList(result.data, result.pagination);
         } catch (error) {
             listContainer.innerHTML = `<p class="text-center text-red-500 py-8">${error.message}</p>`;
         }
@@ -114,6 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (button.classList.contains('print-btn')) {
             window.open(`/cetak/panjar/${id}`, '_blank');
         }
+    });
+
+    pageLimitSelect.addEventListener('change', (e) => {
+        currentPageLimit = parseInt(e.target.value, 10);
+        loadUangMuka(1); // Muat ulang dari halaman pertama
     });
 
     loadUangMuka();

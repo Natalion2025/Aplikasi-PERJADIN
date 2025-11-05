@@ -1,0 +1,15 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Database files
+database/*.db
+database/*.db-journal
+sessions.db
+
+# User-uploaded files
+public/uploads/
+
+# Environment variables
+.env

@@ -74,45 +74,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         const printContent = `
             <h3 class="text-center font-bold text-lg uppercase">KWITANSI (TANDA BUKTI PEMBAYARAN)</h3>
             <br>
-            <table class="no-border" style="margin-bottom: 1rem;">
+            <table class="no-border text-nowrap" style="margin-bottom: 1rem;">
                 <tr>
                     <td class="no-border" style="width: 70%;"></td>
                     <td class="no-border" style="width: 15%;">No. BKU</td>
-                    <td class="no-border" style="width: 15%;">: ${data.pembayaran.nomor_bukti}</td>
+                    <td class="no-border" style="width: 15%;">: .........................</td>
                 </tr>
                 <tr>
                     <td class="no-border"></td>
                     <td class="no-border">Tanggal BKU</td>
+                    <td class="no-border">: .........................</td>
+                </tr>
+                <tr>
+                    <td class="no-border" style="width: 70%;"></td>
+                    <td class="no-border" style="width: 15%;">No. Bukti</td>
+                    <td class="no-border" style="width: 15%;">: ${data.pembayaran.nomor_bukti}</td>
+                </tr>
+                <tr>
+                    <td class="no-border"></td>
+                    <td class="no-border">Tanggal Bukti</td>
                     <td class="no-border">: ${formatDate(data.pembayaran.tanggal_bukti)}</td>
                 </tr>
             </table>
 
             <table class="no-border" style="margin-bottom: 1rem;">
                 <tr>
-                    <td class="no-border" style="width: 25%;">Program</td>
-                    <td class="no-border" style="width: 75%;">: ${data.anggaran.program || '-'}</td>
+                    <td class="no-border">Program</td>
+                    <td class="no-border">:</td>
+                    <td class="no-border">${data.anggaran.program || '-'}</td>
                 </tr>
                 <tr>
                     <td class="no-border">Kegiatan</td>
-                    <td class="no-border">: ${data.anggaran.kegiatan || '-'}</td>
+                    <td class="no-border">:</td>
+                    <td class="no-border">${data.anggaran.kegiatan || '-'}</td>
                 </tr>
                  <tr>
-                    <td class="no-border">Sub Kegiatan</td>
-                    <td class="no-border">: ${data.anggaran.sub_kegiatan || '-'}</td>
+                    <td class="no-border text-nowrap">Sub Kegiatan</td>
+                    <td class="no-border">:</td>
+                    <td class="no-border">${data.anggaran.sub_kegiatan || '-'}</td>
                 </tr>
                 <tr>
-                    <td class="no-border">Kode Rekening</td>
-                    <td class="no-border">: ${data.anggaran.mata_anggaran_kode || '-'}</td>
+                    <td class="no-border text-nowrap">Kode Rekening</td>
+                    <td class="no-border">:</td>
+                    <td class="no-border">${data.anggaran.mata_anggaran_kode || '-'}</td>
                 </tr>
                  <tr>
-                    <td class="no-border">Nama Anggaran</td>
-                    <td class="no-border">: ${data.anggaran.mata_anggaran_nama || '-'}</td>
+                    <td class="no-border text-nowrap">Nama Anggaran</td>
+                    <td class="no-border">:</td>
+                    <td class="no-border">${data.anggaran.mata_anggaran_nama || '-'}</td>
                 </tr>
             </table>
 
-            <p>Sudah terima dari Bendahara Pengeluaran Sekretariat Daerah Kabupaten Melawi uang sebesar <strong>Rp ${formatCurrency(data.pembayaran.nominal_bayar)}</strong></p>
+            <p>Sudah terima dari Bendahara Pengeluaran Dinas Komunikasi dan Informatika Kab. Melawi uang sebesar <strong>Rp ${formatCurrency(data.pembayaran.nominal_bayar)}</strong></p>
             <p><em>(${data.terbilang})</em></p>
-            <p>Untuk pembayaran belanja perjalanan dinas an. ${data.pembayaran.nama_penerima.split('\n')[0]} dan kawan-kawan, sesuai dengan SPT Nomor: ${data.spt.nomor_surat} tanggal ${formatDate(data.spt.tanggal_surat)}.</p>
+            <p>Untuk ${data.pembayaran.uraian_pembayaran} kepada ${data.pembayaran.nama_penerima.split('\n')[0]} dan kawan-kawan, sesuai dengan Surat Tugas Nomor: ${data.spt.nomor_surat} tanggal ${formatDate(data.spt.tanggal_surat)}, dengan rincian di bawah ini:</p>
             <br>
 
             <p class="font-bold">RINCIAN PENGELUARAN:</p>

@@ -44,6 +44,14 @@
     const buktiBayarPanel = document.getElementById('bukti-bayar-panel');
     const pengeluaranRillPanel = document.getElementById('pengeluaran-rill-panel');
 
+    // Elemen Paginasi
+    const pembayaranPaginationContainer = document.getElementById('pembayaran-pagination-container');
+    const pengeluaranRillPaginationContainer = document.getElementById('pengeluaran-rill-pagination-container');
+
+    const pageLimitSelect = document.getElementById('page-limit-select');
+    let currentPageLimit = 5;
+    let currentPage = 1;
+
     const formatCurrency = (value) => {
         const numberString = String(value || '').replace(/[^0-9-]/g, '');
         const number = parseFloat(numberString);
@@ -188,7 +196,7 @@
     const loadDropdownOptions = async () => {
         try {
             const [anggaranRes, sptRes, pegawaiRes] = await Promise.all([
-                fetch('/api/anggaran'),
+                fetch('/api/anggaran?limit=0'), // FIX: Minta semua data anggaran tanpa paginasi
                 fetch('/api/spt?limit=1000'), // PERBAIKAN: Minta hingga 1000 SPT untuk memastikan semua data termuat
                 fetch('/api/pegawai')
             ]);
@@ -198,7 +206,9 @@
             if (pptkTomSelect) pptkTomSelect.destroy();
 
             // Proses Data Anggaran
-            const anggaranList = await anggaranRes.json();
+            const anggaranResult = await anggaranRes.json();
+            // FIX: Ekstrak array 'data' dari respons. Fallback ke respons langsung jika formatnya berbeda.
+            const anggaranList = anggaranResult.data || anggaranResult;
             anggaranDataMap.clear(); // Kosongkan map sebelum diisi
             anggaranSelect.innerHTML = '<option value="">-- Pilih Anggaran --</option>';
             anggaranList.forEach(a => {
@@ -566,11 +576,96 @@
     };
 
 
+    // Fungsi render paginasi generik
+    const renderPagination = (container, pagination, loadFunction) => {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems } = pagination;
+        if (totalItems <= currentPageLimit) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end';
+
+        // Tombol navigasi 'Pertama'
+        const firstButton = document.createElement('button');
+        firstButton.textContent = 'Pertama';
+        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            firstButton.disabled = true;
+            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        firstButton.addEventListener('click', () => loadFunction(1));
+
+        // Tombol navigasi 'Sebelumnya'
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        prevButton.addEventListener('click', () => loadFunction(page - 1));
+
+        // Tombol navigasi nomor halaman
+        // Container untuk tombol nomor halaman
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.className = 'inline-flex items-center';
+
+        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
+        for (let i = 1; i <= totalPages; i++) {
+            const pageNumberButton = document.createElement('button');
+            pageNumberButton.textContent = `${i}`;
+            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
+            pageNumberButton.addEventListener('click', () => loadFunction(i));
+            pageNumbersContainer.appendChild(pageNumberButton);
+        }
+
+        // Tombol navigasi 'Berikutnya'
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        nextButton.addEventListener('click', () => loadFunction(page + 1));
+
+        // Tombol navigasi 'Terakhir'
+        const lastButton = document.createElement('button');
+        lastButton.textContent = 'Terakhir';
+        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            lastButton.disabled = true;
+            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        lastButton.addEventListener('click', () => loadFunction(totalPages));
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(pageNumbersContainer);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
+    };
+
+
     // Merender daftar pembayaran ke dalam tabel
     const renderPembayaranList = (pembayaranList) => {
         pembayaranTableBody.innerHTML = '';
 
-        if (pembayaranList.length === 0) {
+        if (!pembayaranList || pembayaranList.length === 0) {
             pembayaranTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada data pembayaran.</td></tr>`;
             return;
         }
@@ -578,23 +673,24 @@
         pembayaranList.forEach((p, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="pl-6 pr-3 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-3 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${p.nomor_surat}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${new Date(p.tanggal_surat).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                </td>
+                <td class="px-3 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">${p.nomor_bukti}</div>
+                    <div class="text-sm font-semibold text-gray-500 dark:text-gray-300">${new Date(p.tanggal_bukti).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    ${new Date(p.tanggal_bukti).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </td>
-                <td class="px-6 py-4 w-2/5">
+                <td class="px-3 py-4 w-2/5">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${p.nama_penerima}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">${p.uraian_pembayaran}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     ${formatCurrency(p.nominal_bayar)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-3 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${p.id}" class="print-btn text-blue-600 hover:text-blue-900" title="Cetak Bukti">
                         <i class="fas fa-print"></i>
                     </button>
@@ -611,15 +707,28 @@
     };
 
     // Memuat data pembayaran dari server
-    const loadPembayaran = async () => {
+    const loadPembayaran = async (page = 1) => {
+
+        // Guard clause: Jangan jalankan jika elemen tabel tidak ada di halaman ini
+        if (!pembayaranTableBody) {
+            console.log("Melewati loadPembayaran karena 'pembayaran-table-body' tidak ada di halaman ini.");
+            return;
+        }
+
+        currentPage = page;
+        pembayaranTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
+
+        if (!pembayaranPaginationContainer) pembayaranPaginationContainer.innerHTML = '';
+
         try {
-            const response = await fetch('/api/pembayaran');
+            const response = await fetch(`/api/pembayaran?page=${page}&limit=${currentPageLimit}`);
             if (!response.ok) throw new Error('Gagal memuat data pembayaran.');
-            const pembayaranList = await response.json();
-            renderPembayaranList(pembayaranList);
+            const result = await response.json();
+            renderPembayaranList(result.data); // FIX: Hanya kirim data list
+            renderPagination(pembayaranPaginationContainer, result.pagination, loadPembayaran); // FIX: Panggil renderPagination di sini
         } catch (error) {
             console.error('Error:', error);
-            pembayaranTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+            pembayaranTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
 
@@ -755,7 +864,7 @@
             }
         } else {
             // Mode Tambah Baru
-            modalTitle.textContent = 'Tambah Pengeluaran Riil';
+            modalTitle.textContent = 'Tambah Pengeluaran Rell';
             pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
             pengeluaranPelaksanaSelect.disabled = true;
         }
@@ -776,6 +885,22 @@
 
         if (!sptId) {
             pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
+            return;
+        }
+
+        // PERBAIKAN: Cek apakah laporan sudah dibuat untuk SPT ini
+        try {
+            const checkResponse = await fetch(`/api/laporan/check/by-spt/${sptId}`);
+            const checkResult = await checkResponse.json();
+            if (!checkResponse.ok || !checkResult.exists) {
+                showInfoModal('Laporan Belum Dibuat', 'Laporan terkait Surat Tugas yang dipilih belum dibuat. Buat laporan terlebih dahulu.');
+                // Reset dropdown dan hentikan proses
+                e.target.value = '';
+                pengeluaranPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
+                return;
+            }
+        } catch (error) {
+            alert('Gagal memverifikasi status laporan. Silakan coba lagi.');
             return;
         }
 
@@ -831,13 +956,25 @@
 
     // --- LOGIKA TAB PENGELUARAN RILL ---
 
-    const loadPengeluaranRill = async () => {
+    const loadPengeluaranRill = async (page = 1) => {
+        if (!pengeluaranRillTableBody) {
+            console.log("Melewati loadPengeluaranRill karena 'pengeluaran-riil-table-body' tidak ada di halaman ini.");
+            return;
+        }
+
+        currentPage = page;
         pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        if (!pengeluaranRillPaginationContainer) pengeluaranRillPaginationContainer.innerHTML = '';
+
         try {
-            const response = await fetch('/api/pengeluaran-riil');
-            if (!response.ok) throw new Error('Gagal memuat data pengeluaran riil.');
-            const data = await response.json();
-            renderPengeluaranRill(data);
+            const response = await fetch(`/api/pengeluaran-riil?page=${page}&limit=${currentPageLimit}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal memuat data pengeluaran riil.');
+            }
+            const result = await response.json();
+            renderPengeluaranRill(result.data);
+            renderPagination(pengeluaranRillPaginationContainer, result.pagination, loadPengeluaranRill);
         } catch (error) {
             pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
@@ -892,6 +1029,15 @@
     document.getElementById('pengeluaran_jumlah').addEventListener('input', (e) => {
         e.target.value = formatInputCurrency(e.target.value);
     });
+
+    if (pageLimitSelect) {
+        pageLimitSelect.addEventListener('change', (e) => {
+            currentPageLimit = parseInt(e.target.value, 10);
+            loadPembayaran(1);
+            loadPengeluaranRill(1);
+            // Jika tab pengeluaran riil punya paginasi, panggil load-nya juga di sini
+        });
+    }
 
     // Event delegation untuk tombol aksi di tabel pengeluaran riil
     pengeluaranRillTableBody.addEventListener('click', async (event) => {

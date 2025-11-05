@@ -12,6 +12,12 @@
 
     // Elemen List/Tabel
     const anggaranTableBody = document.getElementById('anggaran-table-body');
+    const paginationContainer = document.getElementById('anggaran-pagination-container');
+    const pageLimitSelect = document.getElementById('page-limit-select');
+
+    let currentPageLimit = 5;
+    let currentPage = 1;
+
 
     let currentUserRole = 'user'; // Default role
 
@@ -65,8 +71,94 @@
         anggaranIdInput.value = '';
     };
 
+    // Fungsi render paginasi generik
+    const renderPagination = (container, pagination, loadFunction) => {
+        if (!container) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems } = pagination;
+        if (totalItems <= currentPageLimit) return;
+
+        // Untuk menampilkan informasi halaman dan tombol navigasi
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end';
+
+        // Tombol navigasi 'Pertama'
+        const firstButton = document.createElement('button');
+        firstButton.textContent = 'Pertama';
+        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            firstButton.disabled = true;
+            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        firstButton.addEventListener('click', () => loadFunction(1));
+
+        // Tombol navigasi 'Sebelumnya'
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        prevButton.addEventListener('click', () => loadFunction(page - 1));
+
+        // Tombol navigasi nomor halaman
+        // Container untuk tombol nomor halaman
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.className = 'inline-flex items-center';
+
+        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
+        for (let i = 1; i <= totalPages; i++) {
+            const pageNumberButton = document.createElement('button');
+            pageNumberButton.textContent = `${i}`;
+            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
+            pageNumberButton.addEventListener('click', () => loadFunction(i));
+            pageNumbersContainer.appendChild(pageNumberButton);
+        }
+
+        // Tombol navigasi 'Berikutnya'
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        nextButton.addEventListener('click', () => loadFunction(page + 1));
+
+        // Tombol navigasi 'Terakhir'
+        const lastButton = document.createElement('button');
+        lastButton.textContent = 'Terakhir';
+        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            lastButton.disabled = true;
+            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+        }
+        lastButton.addEventListener('click', () => loadFunction(totalPages));
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(pageNumbersContainer);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
+    };
+
+
     // Fungsi untuk merender daftar anggaran ke dalam tabel
-    const renderAnggaranList = (anggaranList) => {
+    const renderAnggaranList = (anggaranList, pagination) => {
         anggaranTableBody.innerHTML = ''; // Kosongkan tabel
 
         if (anggaranList.length === 0) {
@@ -135,15 +227,18 @@
                 thead.appendChild(actionHeader);
             }
         }
+
+        renderPagination(paginationContainer, pagination, loadAnggaran);
     };
 
     // Fungsi untuk memuat data anggaran dari server
-    const loadAnggaran = async () => {
+    const loadAnggaran = async (page = 1) => {
+        currentPage = page;
         try {
-            // Ambil data sesi dan data anggaran secara bersamaan
+            // Ambil data sesi, anggaran, dan pegawai secara bersamaan
             const [sessionRes, anggaranRes, pegawaiRes] = await Promise.all([
                 fetch('/api/user/session'),
-                fetch('/api/anggaran'),
+                fetch(`/api/anggaran?page=${page}&limit=${currentPageLimit}`),
                 fetch('/api/pegawai') // Ambil data pegawai untuk dropdown PPTK
             ]);
 
@@ -160,8 +255,8 @@
 
             if (!anggaranRes.ok) throw new Error('Gagal memuat data anggaran.');
 
-            const anggaranList = await anggaranRes.json();
-            renderAnggaranList(anggaranList);
+            const result = await anggaranRes.json();
+            renderAnggaranList(result.data, result.pagination);
 
             // Isi dropdown PPTK
             if (pegawaiRes.ok) {
@@ -270,6 +365,13 @@
             e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
         }
     });
+
+    if (pageLimitSelect) {
+        pageLimitSelect.addEventListener('change', (e) => {
+            currentPageLimit = parseInt(e.target.value, 10);
+            loadAnggaran(1);
+        });
+    }
 
     // Inisialisasi halaman
     loadAnggaran();

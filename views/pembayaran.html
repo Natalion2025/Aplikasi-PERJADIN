@@ -146,7 +146,7 @@
                 <div class="flex fixed space-x-4 right-4">
                     <button id="pengeluaran-rill-button"
                         class="bg-green-500 text-white px-4 py-2 rounded-3xl shadow-xl hover:bg-green-600 dark:shadow-md dark:bg-green-800 dark:hover:bg-green-900 dark:shadow-green-500 transition-colors">
-                        <i class="fas fa-file-invoice-dollar mr-2"></i>Pengeluaran Rill
+                        <i class="fas fa-file-invoice-dollar mr-2"></i>Pengeluaran Rell
                     </button>
                     <button id="buat-bukti-button"
                         class="bg-sky-500 text-white px-4 py-2 rounded-3xl shadow-xl hover:bg-sky-600 dark:shadow-md dark:bg-sky-800 dark:hover:bg-sky-900 dark:shadow-sky-500 transition-colors">
@@ -158,7 +158,7 @@
             <!-- Kontainer Tab -->
             <div class="bg-white w-full dark:bg-slate-800 rounded-2xl shadow-md">
                 <!-- Navigasi Tab -->
-                <div class="border-b border-gray-200 p-0 dark:border-gray-700">
+                <div class="border-b flex items-center justify-between border-gray-200 p-0 dark:border-gray-700">
                     <ul class="flex flex-wrap -mb-px text-center" id="payment-tabs" role="tablist">
                         <li class="me-2" role="presentation">
                             <button
@@ -172,9 +172,20 @@
                                 class="inline-block p-4 uppercase font-semibold border-b-2 rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
                                 id="pengeluaran-rill-tab" type="button" role="tab"
                                 aria-controls="pengeluaran-rill-panel" aria-selected="false">Daftar Bukti Pengeluaran
-                                Riil</button>
+                                Rell</button>
                         </li>
                     </ul>
+                    <div class="pr-4">
+                        <label for="page-limit-select"
+                            class="text-sm font-medium text-gray-700 dark:text-gray-400 mr-2">Tampilkan:</label>
+                        <select id="page-limit-select"
+                            class="rounded-md border-gray-300 text-sm text-gray-700 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-gray-600 dark:text-white">
+                            <option value="5">5</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
                 </div>
                 <!-- Konten Tab -->
                 <div id="payment-tab-content" class="pt-3 px-4">
@@ -186,22 +197,22 @@
                                     <!-- Header tabel bukti pembayaran yang sudah ada -->
                                     <tr class="bg-blue-50 dark:bg-gray-600">
                                         <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            class="pl-6 pr-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             No.</th>
                                         <th scope="col"
-                                            class="px-6 py-3 text-nowrap text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Nomor Bukti</th>
+                                            class="px-3 py-3 text-nowrap text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No & Tgl ST</th>
                                         <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Tanggal</th>
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No & Tgl Bukti</th>
                                         <th scope="col"
-                                            class="w-2/5 px-6 py-3 text-left text-xs text-nowrap font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            Penerima & Uraian</th>
+                                            class="w-2/5 px-3 py-3 text-left text-xs text-nowrap font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Penerima</th>
                                         <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                             Nominal</th>
                                         <th scope="col"
-                                            class="relative px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                            class="relative pl-3 pr-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                             <span class="">Aksi</span>
                                         </th>
                                     </tr>
@@ -210,6 +221,10 @@
                                     class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
                                 </tbody>
                             </table>
+                            <!-- PAGINATION -->
+                            <div id="pembayaran-pagination-container">
+                                <!-- Tombol Pertama, Tombol Sebelumnya, Tombol Nomor Halaman, Tombol Berikutnya dan Tombol Terakhir akan dimunculkan oleh JV di sini -->
+                            </div>
                         </div>
                     </div>
                     <!-- Panel 2: Daftar Bukti Pengeluaran Riil -->
@@ -245,6 +260,10 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            <!-- PAGINATION -->
+                            <div id="pengeluaran-rill-pagination-container">
+                                <!-- Tombol Pertama, Tombol Sebelumnya, Tombol Nomor Halaman, Tombol Berikutnya dan Tombol Terakhir akan dimunculkan oleh JV di sini -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -399,7 +418,7 @@
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto relative flex flex-col">
             <!-- Modal Header -->
             <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
-                <h3 id="pengeluaran-rill-modal-title" class="text-xl font-semibold text-white">Tambah Pengeluaran Rill
+                <h3 id="pengeluaran-rill-modal-title" class="text-xl font-semibold text-white">Tambah Pengeluaran Rell
                 </h3>
                 <button id="close-pengeluaran-rill-modal-button" class="text-gray-300 hover:text-white">
                     <i class="fas fa-times text-2xl"></i>
