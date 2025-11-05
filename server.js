@@ -1214,6 +1214,7 @@ app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
             JOIN spt s ON ps.spt_id = s.id
             JOIN pegawai p ON ps.pegawai_id = p.id
             ORDER BY ps.tanggal_pembatalan DESC
+<<<<<<< HEAD
             LIMIT ? OFFSET ?
         `;
         const canceledSpts = await dbAll(sql, [limit, offset]);
@@ -1221,6 +1222,11 @@ app.get('/api/spt/canceled', isApiAuthenticated, async (req, res) => {
             data: canceledSpts,
             pagination: { page, limit, totalItems, totalPages }
         });
+=======
+            `;
+        const canceledSpts = await dbAll(sql);
+        res.json(canceledSpts);
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil daftar SPT yang dibatalkan:', err);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -3492,6 +3498,7 @@ p.id,
             JOIN spt s ON p.spt_id = s.id
             JOIN pegawai pelaksana ON p.pelaksana_id = pelaksana.id
             ORDER BY p.tanggal_panjar DESC, p.id DESC
+<<<<<<< HEAD
             LIMIT ? OFFSET ?
     `;
         const panjarList = await dbAll(sql, [limit, offset]);
@@ -3499,6 +3506,11 @@ p.id,
             data: panjarList,
             pagination: { page, limit, totalItems, totalPages }
         });
+=======
+    `;
+        const panjarList = await dbAll(sql);
+        res.json(panjarList);
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
     } catch (error) {
         console.error('[API ERROR] Gagal mengambil data panjar:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
@@ -3837,11 +3849,19 @@ app.get('/api/pengeluaran-riil', isApiAuthenticated, async (req, res) => {
 
         // Ambil data sesuai halaman dan limit
         const sql = `
+<<<<<<< HEAD
             SELECT
                 pr.id,
                 pr.uraian,
                 pr.jumlah,
                 p.nama_lengkap as nama_pegawai
+=======
+SELECT
+pr.id,
+    pr.uraian,
+    pr.jumlah,
+    p.nama_lengkap as nama_pegawai
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
             FROM pengeluaran_riil pr
             JOIN pegawai p ON pr.pegawai_id = p.id
             ORDER BY pr.created_at DESC

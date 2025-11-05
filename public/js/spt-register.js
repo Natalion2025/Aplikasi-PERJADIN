@@ -155,21 +155,33 @@
 
         const { page, totalPages, totalItems } = pagination;
         // PERBAIKAN: Gunakan currentPageLimit dinamis
+<<<<<<< HEAD
         if (totalItems <= currentPageLimit) return; // Tidak perlu paginasi jika item lebih sedikit dari limit
 
 
         // Untuk menampilkan informasi halaman dan tombol navigasi
+=======
+        if (totalItems <= currentPageLimit) {
+            return; // Tidak perlu paginasi jika item lebih sedikit dari limit
+        }
+
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+<<<<<<< HEAD
             Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+=======
+            Halaman <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span>
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
         </p>`;
 
         const navButtons = document.createElement('div');
         navButtons.className = 'flex-1 flex justify-end';
 
+<<<<<<< HEAD
         // Tombol navigasi 'Pertama'
         const firstButton = document.createElement('button');
         firstButton.textContent = 'Pertama';
@@ -184,12 +196,18 @@
         const prevButton = document.createElement('button');
         prevButton.textContent = 'Sebelumnya';
         prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+=======
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600';
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
         if (page === 1) {
             prevButton.disabled = true;
             prevButton.classList.add('cursor-not-allowed', 'opacity-50');
         }
         prevButton.addEventListener('click', () => loadFunction(page - 1));
 
+<<<<<<< HEAD
         // Tombol navigasi nomor halaman
         // Container untuk tombol nomor halaman
         const pageNumbersContainer = document.createElement('div');
@@ -208,12 +226,18 @@
         const nextButton = document.createElement('button');
         nextButton.textContent = 'Berikutnya';
         nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+=======
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600';
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
         if (page === totalPages) {
             nextButton.disabled = true;
             nextButton.classList.add('cursor-not-allowed', 'opacity-50');
         }
         nextButton.addEventListener('click', () => loadFunction(page + 1));
 
+<<<<<<< HEAD
         // Tombol navigasi 'Terakhir'
         const lastButton = document.createElement('button');
         lastButton.textContent = 'Terakhir';
@@ -229,13 +253,20 @@
         navButtons.appendChild(pageNumbersContainer);
         navButtons.appendChild(nextButton);
         navButtons.appendChild(lastButton);
+=======
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(nextButton);
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
 
         wrapper.appendChild(pageInfo);
         wrapper.appendChild(navButtons);
         container.appendChild(wrapper);
     };
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> aee0d877786c2c9740da2e1d6aaa25b485145682
     const loadSptList = async (page = 1) => {
         // Guard clause: Jangan jalankan jika elemen tabel tidak ada di halaman ini
         if (!sptTableBody) {
