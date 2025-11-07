@@ -47,135 +47,44 @@
         return isNaN(number) ? '' : new Intl.NumberFormat('id-ID').format(number);
     };
 
-    // Fungsi render paginasi generik
-    const renderPagination = (container, pagination, loadFunction) => {
-        if (!container) return;
+    /**
+     * Merender komponen paginasi secara dinamis dan konsisten.
+     * @param {HTMLElement} container - Elemen div untuk menampung paginasi.
+     * @param {object} pagination - Objek paginasi dari API ({ page, totalPages, totalItems, limit }).
+     * @param {function} loadFunction - Fungsi yang akan dipanggil saat tombol halaman diklik.
+     */
+    const renderGlobalPagination = (container, pagination, loadFunction) => {
+        if (!container || !pagination) return;
         container.innerHTML = '';
 
-        const { page, totalPages, totalItems } = pagination;
-        if (totalItems <= currentPageLimit) return;
+        const { page, totalPages, totalItems, limit } = pagination;
+        if (totalItems <= limit) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
-            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span> halaman
         </p>`;
 
         const navButtons = document.createElement('div');
-        navButtons.className = 'flex-1 flex justify-end';
+        navButtons.className = 'flex-1 flex justify-end items-center';
 
-        // Tombol navigasi 'Pertama'
-        const firstButton = document.createElement('button');
-        firstButton.textContent = 'Pertama';
-        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === 1) {
-            firstButton.disabled = true;
-            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        firstButton.addEventListener('click', () => loadFunction(1));
-
-        // Tombol navigasi 'Sebelumnya'
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Sebelumnya';
-        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === 1) {
-            prevButton.disabled = true;
-            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        prevButton.addEventListener('click', () => loadFunction(page - 1));
-
-        // Tombol navigasi nomor halaman
-        // Container untuk tombol nomor halaman
-        const pageNumbersContainer = document.createElement('div');
-        pageNumbersContainer.className = 'inline-flex items-center';
-
-
-
-        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
-        for (let i = 1; i <= totalPages; i++) {
-            const pageNumberButton = document.createElement('button');
-            pageNumberButton.textContent = `${i}`;
-            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
-            pageNumberButton.addEventListener('click', () => loadFunction(i));
-            pageNumbersContainer.appendChild(pageNumberButton);
+        const createButton = (text, targetPage, isDisabled = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.className = 'relative inline-flex items-center px-4 py-2 border text-xs font-medium bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-slate-600' + (isDisabled ? ' cursor-not-allowed opacity-50' : '');
+            if (!isDisabled) button.addEventListener('click', () => loadFunction(targetPage));
+            return button;
         };
 
-
-
-        // Tombol navigasi 'Berikutnya'
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Berikutnya';
-        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            nextButton.disabled = true;
-            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        nextButton.addEventListener('click', () => loadFunction(page + 1));
-
-        // Tombol navigasi 'Terakhir'
-        const lastButton = document.createElement('button');
-        lastButton.textContent = 'Terakhir';
-        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            lastButton.disabled = true;
-            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        lastButton.addEventListener('click', () => loadFunction(totalPages));
-
-        navButtons.appendChild(firstButton);
-        navButtons.appendChild(prevButton);
-        navButtons.appendChild(pageNumbersContainer);
-        navButtons.appendChild(nextButton);
-        navButtons.appendChild(lastButton);
-
-        wrapper.appendChild(pageInfo);
-        wrapper.appendChild(navButtons);
+        navButtons.append(createButton('Pertama', 1, page === 1), createButton('Sebelumnya', page - 1, page === 1), createButton('Berikutnya', page + 1, page === totalPages), createButton('Terakhir', totalPages, page === totalPages));
+        wrapper.append(pageInfo, navButtons);
         container.appendChild(wrapper);
     };
 
-
-    const renderLaporanList = (laporanList, pagination) => {
-        laporanTableBody.innerHTML = ''; // Kosongkan tabel
-
-        if (!laporanList || laporanList.length === 0) {
-            laporanTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Belum ada data laporan. Silakan buat baru.</td></tr>`;
-            return;
-        }
-
-        laporanList.forEach((laporan, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}.</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${laporan.judul}</div>
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${laporan.nomor_surat}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">
-                    ${formatDate(laporan.tanggal_laporan)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                    <a href="/cetak/laporan/${laporan.id}" target="_blank" class="text-green-600 hover:text-green-900" title="Cetak Laporan"><i class="fas fa-print"></i></a>
-                    <a href="/edit-laporan/${laporan.id}" class="text-indigo-600 hover:text-indigo-900" title="Edit Laporan"><i class="fas fa-edit"></i></a>
-                    <button data-id="${laporan.id}" class="delete-laporan-btn text-red-600 hover:text-red-900" title="Hapus Laporan"><i class="fas fa-trash-alt"></i></button>
-                </td>
-            `;
-            laporanTableBody.appendChild(row);
-        });
-        renderPagination(laporanPaginationContainer, pagination, loadLaporanData);
-    };
-
     const loadLaporanData = async (page = 1) => {
-        if (!laporanTableBody) {
-            console.log("Melewati loadLaporanData karena 'laporan-table-body' tidak ada di halaman ini.");
-            return;
-        }
-
         laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
         try {
             const response = await fetch(`/api/laporan?page=${page}&limit=${currentPageLimit}`);
@@ -187,43 +96,30 @@
         }
     };
 
-    const renderCanceledSptList = (canceledList, pagination) => {
-        pembatalanTableBody.innerHTML = ''; // Kosongkan tabel
-
-        if (!canceledList || canceledList.length === 0) {
-            // PERBAIKAN: Sesuaikan colspan karena ada kolom baru
-            pembatalanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada data pembatalan tugas.</td></tr>`;
+    const renderLaporanList = (data, pagination) => {
+        laporanTableBody.innerHTML = '';
+        if (!data || data.length === 0) {
+            laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada laporan dibuat.</td></tr>`;
             return;
         }
 
-        canceledList.forEach((item, index) => {
+        data.forEach((laporan, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${index + 1}.</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${item.nomor_surat}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">
-                    ${formatDate(item.tanggal_pembatalan)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-400">
-                    ${item.pegawai_nama}
-                </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${item.alasan}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                    <a href="/cetak/pembatalan/${item.id}" target="_blank" class="text-green-600 hover:text-green-900" title="Cetak Surat Pernyataan"><i class="fas fa-print"></i></a>
-                    <button data-id="${item.id}" class="edit-pembatalan-btn text-indigo-600 hover:text-indigo-900" title="Edit Pembatalan"><i class="fas fa-edit"></i></button>
-                    <button data-id="${item.id}" data-nomor="${item.nomor_surat}" class="delete-pembatalan-btn text-red-600 hover:text-red-900" title="Hapus Pembatalan"><i class="fas fa-trash-alt"></i></button>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${laporan.judul}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${laporan.nomor_surat}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(laporan.tanggal_laporan)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="/cetak/laporan/${laporan.id}" target="_blank" class="text-blue-600 hover:text-blue-900" title="Cetak Laporan"><i class="fas fa-print"></i></a>
+                    <a href="/edit-laporan/${laporan.id}" class="text-indigo-600 hover:text-indigo-900 ml-4" title="Edit Laporan"><i class="fas fa-edit"></i></a>
+                    <button data-id="${laporan.id}" class="delete-laporan-btn text-red-600 hover:text-red-900 ml-4" title="Hapus Laporan"><i class="fas fa-trash"></i></button>
                 </td>
             `;
-            pembatalanTableBody.appendChild(row);
+            laporanTableBody.appendChild(row);
         });
-        renderPagination(pembatalanPaginationContainer, pagination, loadCanceledSptData); // FIX: Memanggil fungsi renderPagination
+
+        renderGlobalPagination(laporanPaginationContainer, pagination, loadLaporanData);
     };
 
     const loadCanceledSptData = async (page = 1) => {
@@ -239,7 +135,32 @@
         }
     };
 
+    const renderCanceledSptList = (data, pagination) => {
+        pembatalanTableBody.innerHTML = '';
+        if (!data || data.length === 0) {
+            pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Tidak ada data pembatalan.</td></tr>`;
+            return;
+        }
 
+        data.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_pembatalan)}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.pegawai_nama}</td>
+                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.alasan || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <a href="/cetak/pembatalan/${item.id}" target="_blank" class="text-blue-600 hover:text-blue-900" title="Cetak Surat Pembatalan"><i class="fas fa-print"></i></a>
+                    <button data-id="${item.id}" class="edit-pembatalan-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit Pembatalan"><i class="fas fa-edit"></i></button>
+                    <button data-id="${item.id}" data-nomor="${item.nomor_surat}" class="delete-pembatalan-btn text-red-600 hover:text-red-900 ml-4" title="Hapus Pembatalan"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            pembatalanTableBody.appendChild(row);
+        });
+
+        renderGlobalPagination(pembatalanPaginationContainer, pagination, loadCanceledSptData);
+    };
 
     // --- LOGIKA UNTUK TAB ---
 

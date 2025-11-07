@@ -1,3 +1,37 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const searchFilter = document.getElementById('search-input');
+    const searchButton = document.getElementById('search-button');
+
+    // Fungsi untuk mengirimkan event localSearch
+    const dispatchLocalSearch = (searchTerm) => {
+        const event = new CustomEvent('localSearch', {
+            detail: { query: searchTerm }
+        });
+        document.dispatchEvent(event);
+        console.log(`[HEADER SEARCH] Dispatched 'localSearch' event with query: "${searchTerm}"`);
+    };
+
+    // Event listener untuk tombol pencarian
+    searchButton.addEventListener('click', () => {
+        const searchTerm = searchFilter.value.toLowerCase().trim();
+        dispatchLocalSearch(searchTerm);
+    });
+
+    // Event listener untuk input pencarian (saat mengetik)
+    searchFilter.addEventListener('input', () => {
+        const searchTerm = this.value.toLowerCase().trim();
+        // Hanya dispatch jika searchTerm tidak kosong untuk menghindari terlalu banyak request
+        // atau biarkan dispatch jika searchTerm kosong untuk mereset tampilan
+        dispatchLocalSearch(searchTerm);
+    });
+
+    // Focus pada search box saat halaman load
+    window.addEventListener('load', function () {
+        searchFilter.focus();
+    });
+});
+
+
 /**
  * @typedef {object} UserProfile
  * @property {string} name - Nama lengkap pengguna.

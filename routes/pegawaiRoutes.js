@@ -20,11 +20,43 @@ const runQuery = (sql, params = []) => new Promise((resolve, reject) => {
 // --- Rute API Pegawai ---
 
 // GET: Mengambil semua data pegawai
-router.get('/', async (req, res) => {
-    const sql = "SELECT * FROM pegawai ORDER BY nama_lengkap ASC";
+router.get('/', async (req, res) => { // This route is now paginated and searchable
+    const limit = parseInt(req.query.limit) || 0; // 0 means no limit (get all)
+    const page = parseInt(req.query.page) || 1;
+    const searchQuery = req.query.q || '';
+    const offset = (page - 1) * limit;
+
+    let whereClauses = [];
+    let queryParams = [];
+
+    if (searchQuery) {
+        whereClauses.push(`(nama_lengkap LIKE ? OR nip LIKE ? OR jabatan LIKE ?)`);
+        const likeQuery = `%${searchQuery}%`;
+        queryParams.push(likeQuery, likeQuery, likeQuery);
+    }
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
     try {
-        const rows = await dbAll(sql, []);
-        res.json(rows);
+        const totalSql = `SELECT COUNT(*) as total FROM pegawai ${whereSql}`;
+        const totalResult = await dbGet(totalSql, queryParams);
+        const totalItems = totalResult.total;
+        const totalPages = limit > 0 ? Math.ceil(totalItems / limit) : 1;
+
+        let sql = `SELECT * FROM pegawai ${whereSql} ORDER BY nama_lengkap ASC`;
+        if (limit > 0) {
+            sql += ` LIMIT ? OFFSET ?`;
+            queryParams.push(limit, offset);
+        }
+        const rows = await dbAll(sql, queryParams);
+
+        if (limit > 0) {
+            res.json({
+                data: rows,
+                pagination: { page, limit, totalItems, totalPages }
+            });
+        } else {
+            res.json(rows); // Return all if limit is 0
+        }
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data pegawai:', err);
         res.status(500).json({ message: "Terjadi kesalahan pada server.", error: err.message });

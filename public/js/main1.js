@@ -181,6 +181,7 @@ async function setupLayout() {
         console.log('[DIAGNOSTIK] Memuat skrip sidebar dan header...');
         await Promise.all([
             loadScript('/js/sidebar.js'),
+            loadScript('/js/utils.js'), // Memuat utilitas global seperti renderGlobalPagination
             loadScript('/js/header-logic.js') // Pastikan header-logic.js dimuat
         ]);
 

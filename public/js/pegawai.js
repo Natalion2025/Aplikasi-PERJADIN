@@ -22,6 +22,11 @@
     const pegawaiIdInput = document.getElementById('pegawai-id');
     const pegawaiListContainer = document.getElementById('pegawai-list-container');
     const formNotification = document.getElementById('form-notification');
+    const pegawaiPaginationContainer = document.getElementById('pegawai-pagination-container');
+    const pageLimitSelect = document.getElementById('page-limit-select');
+    let currentPageLimit = 5;
+    let currentSearchQuery = '';
+    let currentPage = 1;
     const pangkatSelect = document.getElementById('pangkat');
     const golonganInput = document.getElementById('golongan');
 
@@ -35,6 +40,62 @@
     const hideNotification = (element) => {
         element.classList.add('hidden');
         element.textContent = '';
+    };
+
+    /**
+     * Merender komponen paginasi secara dinamis dan konsisten.
+     * @param {HTMLElement} container - Elemen div untuk menampung paginasi.
+     * @param {object} pagination - Objek paginasi dari API ({ page, totalPages, totalItems, limit }).
+     * @param {function} loadFunction - Fungsi yang akan dipanggil saat tombol halaman diklik (misal: loadData).
+     */
+    const renderGlobalPagination = (container, pagination, loadFunction) => {
+        if (!container || !pagination) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems, limit } = pagination;
+        if (totalItems <= limit) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span> halaman
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end items-center';
+
+        const createButton = (text, targetPage, isDisabled = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            let baseClasses = 'relative inline-flex items-center px-4 py-2 border text-xs font-medium bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-slate-600';
+            button.className = baseClasses;
+
+            if (isDisabled) {
+                button.disabled = true;
+                button.classList.add('cursor-not-allowed', 'opacity-50');
+            } else {
+                button.addEventListener('click', () => loadFunction(targetPage));
+            }
+            return button;
+        };
+
+        const firstButton = createButton('Pertama', 1, page === 1);
+        firstButton.classList.add('ml-3', 'rounded-l-md');
+        const prevButton = createButton('Sebelumnya', page - 1, page === 1);
+        const nextButton = createButton('Berikutnya', page + 1, page === totalPages);
+        const lastButton = createButton('Terakhir', totalPages, page === totalPages);
+        lastButton.classList.add('rounded-r-md');
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
+        container.appendChild(wrapper);
     };
 
     // ==================================================
@@ -209,14 +270,20 @@
         });
     };
 
-    const loadPegawai = async () => {
+    const loadPegawai = async (page = 1, query = '') => {
+        currentPage = page;
+        pegawaiListContainer.innerHTML = `<p class="text-gray-500 dark:text-white">Memuat data pegawai...</p>`;
+        if (pegawaiPaginationContainer) pegawaiPaginationContainer.innerHTML = '';
+
         try {
-            const response = await fetch('/api/pegawai');
+            const url = `/api/pegawai?page=${page}&limit=${currentPageLimit}&q=${encodeURIComponent(query)}`;
+            const response = await fetch(url);
             if (!response.ok) throw new Error('Gagal memuat data pegawai');
             const data = await response.json();
-            renderPegawaiList(data);
-        } catch (error) {
-            pegawaiListContainer.innerHTML = `<p class="text-red-500">${error.message}</p>`;
+            renderPegawaiList(data.data);
+            renderGlobalPagination(pegawaiPaginationContainer, data.pagination, loadPegawai);
+        } catch (error) { // Add query parameter to fetch
+            pegawaiListContainer.innerHTML = `<p class="text-red-500 dark:text-red-400">${error.message}</p>`;
         }
     };
 
@@ -250,7 +317,7 @@
             showNotification(pageNotification, `Data pegawai berhasil ${id ? 'diperbarui' : 'disimpan'}.`);
             setTimeout(() => hideNotification(pageNotification), 3000);
             closePegawaiModal();
-            loadPegawai();
+            loadPegawai(currentPage, currentSearchQuery);
         } catch (error) {
             showNotification(formNotification, error.message, true);
         }
@@ -275,7 +342,7 @@
                     if (!response.ok) throw new Error('Gagal menghapus data');
                     showNotification(pageNotification, 'Data pegawai berhasil dihapus.');
                     setTimeout(() => hideNotification(pageNotification), 3000);
-                    loadPegawai();
+                    loadPegawai(currentPage, currentSearchQuery);
                 } catch (error) {
                     showNotification(pageNotification, error.message, true);
                     setTimeout(() => hideNotification(pageNotification), 3000);
@@ -303,7 +370,24 @@
     // --- Event Listener untuk Pangkat -> Golongan ---
     pangkatSelect.addEventListener('change', updateGolongan);
 
+    if (pageLimitSelect) {
+        pageLimitSelect.addEventListener('change', (e) => {
+            currentPageLimit = parseInt(e.target.value, 10);
+            loadPegawai(1, currentSearchQuery);
+        });
+    }
+
+    // Listener untuk event pencarian lokal dari header
+    document.addEventListener('localSearch', (e) => {
+        if (window.location.pathname.includes('/pegawai')) {
+            e.preventDefault(); // Event ditangani
+            const { query } = e.detail;
+            currentSearchQuery = query;
+            loadPegawai(1, query);
+        }
+    });
+
     // --- Inisialisasi ---
-    loadPejabat();
-    loadPegawai();
+    loadPejabat(); // Pejabat tidak dipaginasi atau dicari
+    loadPegawai(1, currentSearchQuery);
 })();

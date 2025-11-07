@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentPageLimit = 5;
     let currentPage = 1;
+    let currentSearchQuery = '';
 
     // Fungsi untuk memformat mata uang
     const formatCurrency = (value) => {
@@ -21,87 +22,40 @@ document.addEventListener('DOMContentLoaded', () => {
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    // Fungsi render paginasi generik
-    const renderPagination = (container, pagination, loadFunction) => {
-        if (!container) return;
+    /**
+     * Merender komponen paginasi secara dinamis dan konsisten.
+     * @param {HTMLElement} container - Elemen div untuk menampung paginasi.
+     * @param {object} pagination - Objek paginasi dari API ({ page, totalPages, totalItems, limit }).
+     * @param {function} loadFunction - Fungsi yang akan dipanggil saat tombol halaman diklik.
+     */
+    const renderGlobalPagination = (container, pagination, loadFunction) => {
+        if (!container || !pagination) return;
         container.innerHTML = '';
 
-        const { page, totalPages, totalItems } = pagination;
-        if (totalItems <= currentPageLimit) return;
+        const { page, totalPages, totalItems, limit } = pagination;
+        if (totalItems <= limit) return;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
-            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span> halaman
         </p>`;
 
         const navButtons = document.createElement('div');
-        navButtons.className = 'flex-1 flex justify-end';
+        navButtons.className = 'flex-1 flex justify-end items-center';
 
-        // Tombol navigasi 'Pertama'
-        const firstButton = document.createElement('button');
-        firstButton.textContent = 'Pertama';
-        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === 1) {
-            firstButton.disabled = true;
-            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        firstButton.addEventListener('click', () => loadFunction(1));
+        const createButton = (text, targetPage, isDisabled = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.className = 'relative inline-flex items-center px-4 py-2 border text-xs font-medium bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-slate-600' + (isDisabled ? ' cursor-not-allowed opacity-50' : '');
+            if (!isDisabled) button.addEventListener('click', () => loadFunction(targetPage));
+            return button;
+        };
 
-        // Tombol navigasi 'Sebelumnya'
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Sebelumnya';
-        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600';
-        if (page === 1) {
-            prevButton.disabled = true;
-            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        prevButton.addEventListener('click', () => loadFunction(page - 1));
-
-        // Tombol navigasi nomor halaman
-        // Container untuk tombol nomor halaman
-        const pageNumbersContainer = document.createElement('div');
-        pageNumbersContainer.className = 'inline-flex items-center';
-
-        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
-        for (let i = 1; i <= totalPages; i++) {
-            const pageNumberButton = document.createElement('button');
-            pageNumberButton.textContent = `${i}`;
-            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
-            pageNumberButton.addEventListener('click', () => loadFunction(i));
-            pageNumbersContainer.appendChild(pageNumberButton);
-        }
-
-        // Tombol navigasi 'Berikutnya'
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Berikutnya';
-        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            nextButton.disabled = true;
-            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        nextButton.addEventListener('click', () => loadFunction(page + 1));
-
-        // Tombol navigasi 'Terakhir'
-        const lastButton = document.createElement('button');
-        lastButton.textContent = 'Terakhir';
-        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            lastButton.disabled = true;
-            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        lastButton.addEventListener('click', () => loadFunction(totalPages));
-
-        navButtons.appendChild(firstButton);
-        navButtons.appendChild(prevButton);
-        navButtons.appendChild(pageNumbersContainer);
-        navButtons.appendChild(nextButton);
-        navButtons.appendChild(lastButton);
-
-        wrapper.appendChild(pageInfo);
-        wrapper.appendChild(navButtons);
+        navButtons.append(createButton('Pertama', 1, page === 1), createButton('Sebelumnya', page - 1, page === 1), createButton('Berikutnya', page + 1, page === totalPages), createButton('Terakhir', totalPages, page === totalPages));
+        wrapper.append(pageInfo, navButtons);
         container.appendChild(wrapper);
     };
 
@@ -149,15 +103,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         listContainer.appendChild(table);
-        renderPagination(paginationContainer, pagination, loadUangMuka);
+        renderGlobalPagination(paginationContainer, pagination, loadUangMuka);
     };
 
     // Jadikan fungsi ini global agar bisa dipanggil dari spt-register.js
-    window.loadUangMuka = async (page = 1) => {
+    window.loadUangMuka = async (page = 1, query = '') => {
         currentPage = page;
+        currentSearchQuery = query;
         listContainer.innerHTML = `<p class="text-center text-gray-500 dark:text-gray-400 py-8">Memuat data...</p>`;
         try {
-            const response = await fetch(`/api/panjar?page=${page}&limit=${currentPageLimit}`);
+            const response = await fetch(`/api/panjar?page=${page}&limit=${currentPageLimit}&q=${encodeURIComponent(query)}`);
             if (!response.ok) throw new Error('Gagal memuat data uang muka.');
             const result = await response.json();
             renderUangMukaList(result.data, result.pagination);
@@ -211,8 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pageLimitSelect.addEventListener('change', (e) => {
         currentPageLimit = parseInt(e.target.value, 10);
-        loadUangMuka(1); // Muat ulang dari halaman pertama
+        loadUangMuka(1, currentSearchQuery); // Muat ulang dari halaman pertama
     });
 
-    loadUangMuka();
+    // Listener untuk event pencarian lokal dari header
+    document.addEventListener('localSearch', (e) => {
+        if (window.location.pathname.includes('/uang-muka')) {
+            e.preventDefault(); // Event ditangani
+            const { query } = e.detail;
+            loadUangMuka(1, query);
+        }
+    });
+
+
+    loadUangMuka(1, currentSearchQuery);
 });

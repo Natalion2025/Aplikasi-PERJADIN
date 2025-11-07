@@ -71,6 +71,43 @@
         return isNaN(number) ? 0 : number;
     };
 
+    /**
+     * Merender komponen paginasi secara dinamis dan konsisten.
+     * @param {HTMLElement} container - Elemen div untuk menampung paginasi.
+     * @param {object} pagination - Objek paginasi dari API ({ page, totalPages, totalItems, limit }).
+     * @param {function} loadFunction - Fungsi yang akan dipanggil saat tombol halaman diklik.
+     */
+    const renderGlobalPagination = (container, pagination, loadFunction) => {
+        if (!container || !pagination) return;
+        container.innerHTML = '';
+
+        const { page, totalPages, totalItems, limit } = pagination;
+        if (totalItems <= limit) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+        const pageInfo = document.createElement('div');
+        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span> halaman
+        </p>`;
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'flex-1 flex justify-end items-center';
+
+        const createButton = (text, targetPage, isDisabled = false) => {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.className = 'relative inline-flex items-center px-4 py-2 border text-xs font-medium bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-slate-600' + (isDisabled ? ' cursor-not-allowed opacity-50' : '');
+            if (!isDisabled) button.addEventListener('click', () => loadFunction(targetPage));
+            return button;
+        };
+
+        navButtons.append(createButton('Pertama', 1, page === 1), createButton('Sebelumnya', page - 1, page === 1), createButton('Berikutnya', page + 1, page === totalPages), createButton('Terakhir', totalPages, page === totalPages));
+        wrapper.append(pageInfo, navButtons);
+        container.appendChild(wrapper);
+    };
+
     // Function to open the modal
     const openModal = () => {
         pembayaranForm.reset();
@@ -515,6 +552,21 @@
         }
 
         try {
+            // --- PERBAIKAN: Cek apakah bukti pembayaran sudah ada untuk SPT ini ---
+            const paymentCheckResponse = await fetch(`/api/pembayaran/check/by-spt/${selectedSptId}`);
+            const paymentCheckResult = await paymentCheckResponse.json();
+
+            if (!paymentCheckResponse.ok || paymentCheckResult.exists) {
+                showInfoModal('Pembayaran Sudah Ada', 'Nama pelaksana pada Surat Tugas ini sudah pernah membuat bukti bayar.');
+                // Clear SPT selection and related fields
+                sptTomSelect.clear();
+                namaPenerimaTextarea.value = '';
+                uraianPembayaranTextarea.value = '';
+                clearRincian();
+                uangHarianInfoContainer.classList.add('hidden');
+                return; // Stop further processing
+            }
+
             const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);
             const result = await response.json();
 
@@ -574,92 +626,6 @@
             }
         });
     };
-
-
-    // Fungsi render paginasi generik
-    const renderPagination = (container, pagination, loadFunction) => {
-        if (!container) return;
-        container.innerHTML = '';
-
-        const { page, totalPages, totalItems } = pagination;
-        if (totalItems <= currentPageLimit) return;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
-
-        const pageInfo = document.createElement('div');
-        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
-            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span><span class="text-sm text-gray-700 dark:text-gray-400"> entri</span>
-        </p>`;
-
-        const navButtons = document.createElement('div');
-        navButtons.className = 'flex-1 flex justify-end';
-
-        // Tombol navigasi 'Pertama'
-        const firstButton = document.createElement('button');
-        firstButton.textContent = 'Pertama';
-        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === 1) {
-            firstButton.disabled = true;
-            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        firstButton.addEventListener('click', () => loadFunction(1));
-
-        // Tombol navigasi 'Sebelumnya'
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Sebelumnya';
-        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === 1) {
-            prevButton.disabled = true;
-            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        prevButton.addEventListener('click', () => loadFunction(page - 1));
-
-        // Tombol navigasi nomor halaman
-        // Container untuk tombol nomor halaman
-        const pageNumbersContainer = document.createElement('div');
-        pageNumbersContainer.className = 'inline-flex items-center';
-
-        // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
-        for (let i = 1; i <= totalPages; i++) {
-            const pageNumberButton = document.createElement('button');
-            pageNumberButton.textContent = `${i}`;
-            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'} `;
-            pageNumberButton.addEventListener('click', () => loadFunction(i));
-            pageNumbersContainer.appendChild(pageNumberButton);
-        }
-
-        // Tombol navigasi 'Berikutnya'
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Berikutnya';
-        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            nextButton.disabled = true;
-            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        nextButton.addEventListener('click', () => loadFunction(page + 1));
-
-        // Tombol navigasi 'Terakhir'
-        const lastButton = document.createElement('button');
-        lastButton.textContent = 'Terakhir';
-        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
-        if (page === totalPages) {
-            lastButton.disabled = true;
-            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
-        }
-        lastButton.addEventListener('click', () => loadFunction(totalPages));
-
-        navButtons.appendChild(firstButton);
-        navButtons.appendChild(prevButton);
-        navButtons.appendChild(pageNumbersContainer);
-        navButtons.appendChild(nextButton);
-        navButtons.appendChild(lastButton);
-
-        wrapper.appendChild(pageInfo);
-        wrapper.appendChild(navButtons);
-        container.appendChild(wrapper);
-    };
-
 
     // Merender daftar pembayaran ke dalam tabel
     const renderPembayaranList = (pembayaranList) => {
@@ -725,7 +691,7 @@
             if (!response.ok) throw new Error('Gagal memuat data pembayaran.');
             const result = await response.json();
             renderPembayaranList(result.data); // FIX: Hanya kirim data list
-            renderPagination(pembayaranPaginationContainer, result.pagination, loadPembayaran); // FIX: Panggil renderPagination di sini
+            renderGlobalPagination(pembayaranPaginationContainer, result.pagination, loadPembayaran); // FIX: Panggil renderPagination di sini
         } catch (error) {
             console.error('Error:', error);
             pembayaranTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
@@ -974,7 +940,7 @@
             }
             const result = await response.json();
             renderPengeluaranRill(result.data);
-            renderPagination(pengeluaranRillPaginationContainer, result.pagination, loadPengeluaranRill);
+            renderGlobalPagination(pengeluaranRillPaginationContainer, result.pagination, loadPengeluaranRill);
         } catch (error) {
             pengeluaranRillTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }

@@ -17,6 +17,7 @@
 
     let currentPageLimit = 5;
     let currentPage = 1;
+    let currentSearchQuery = '';
 
 
     let currentUserRole = 'user'; // Default role
@@ -232,7 +233,7 @@
     };
 
     // Fungsi untuk memuat data anggaran dari server
-    const loadAnggaran = async (page = 1) => {
+    const loadAnggaran = async (page = 1, query = '') => {
         currentPage = page;
         try {
             // Ambil data sesi, anggaran, dan pegawai secara bersamaan
@@ -240,7 +241,7 @@
                 fetch('/api/user/session'),
                 fetch(`/api/anggaran?page=${page}&limit=${currentPageLimit}`),
                 fetch('/api/pegawai') // Ambil data pegawai untuk dropdown PPTK
-            ]);
+            ], query);
 
             if (sessionRes.ok) {
                 const sessionData = await sessionRes.json();
@@ -254,7 +255,7 @@
             }
 
             if (!anggaranRes.ok) throw new Error('Gagal memuat data anggaran.');
-
+            currentSearchQuery = query;
             const result = await anggaranRes.json();
             renderAnggaranList(result.data, result.pagination);
 
@@ -369,10 +370,19 @@
     if (pageLimitSelect) {
         pageLimitSelect.addEventListener('change', (e) => {
             currentPageLimit = parseInt(e.target.value, 10);
-            loadAnggaran(1);
+            loadAnggaran(1, currentSearchQuery);
         });
     }
 
+    // Listener untuk event pencarian lokal dari header
+    document.addEventListener('localSearch', (e) => {
+        if (window.location.pathname.includes('/anggaran')) {
+            e.preventDefault(); // Event ditangani
+            const { query } = e.detail;
+            loadAnggaran(1, query);
+        }
+    });
+
     // Inisialisasi halaman
-    loadAnggaran();
+    loadAnggaran(1, currentSearchQuery);
 })();

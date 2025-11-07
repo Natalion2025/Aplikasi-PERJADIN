@@ -263,11 +263,12 @@
                     let truncated = text.substr(0, maxLength);
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
-                monthTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
+                monthTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
 
                 monthTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 52}px`;
                 monthTooltip.style.zIndex = 10;
-                monthTooltip.title = event.maksud_perjalanan;
+                monthTooltip.title = pegawaiNames;
                 monthTooltip.style.width = `340px`;
 
                 // Hitung posisi dan lebar
@@ -312,12 +313,12 @@
                     let truncated = text.substr(0, maxLength);
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
-                newTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
-
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
+                newTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
                 newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 4}px`;
                 newTooltip.style.width = `340px`;
                 newTooltip.style.zIndex = 10;
-                newTooltip.title = event.maksud_perjalanan;
+                newTooltip.title = pegawaiNames;
 
                 let startColumnIndex = -1;
 
@@ -352,12 +353,16 @@
                     let truncated = text.substr(0, maxLength);
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
-                weekTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
+                // PERBAIKAN: Gabungkan array nama pegawai dengan spasi, lalu potong jika perlu.
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
+                weekTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
                 weekTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 15}px`;
                 weekTooltip.style.left = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 15}px`;
                 weekTooltip.style.width = `340px`;
                 weekTooltip.style.zIndex = 10;
-                weekTooltip.title = event.maksud_perjalanan;
+                // PERBAIKAN: Tampilkan nama lengkap di atribut title.
+                weekTooltip.title = pegawaiNames;
+
 
                 // PERBAIKAN: Tambahkan logika untuk menentukan posisi horizontal tooltip
                 let startColumnIndex = -1;
