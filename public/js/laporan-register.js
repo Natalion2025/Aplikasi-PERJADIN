@@ -105,6 +105,7 @@
 
         data.forEach((laporan, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
                 <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${laporan.judul}</td>
@@ -144,6 +145,7 @@
 
         data.forEach((item, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>

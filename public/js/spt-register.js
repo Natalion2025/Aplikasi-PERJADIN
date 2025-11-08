@@ -64,6 +64,7 @@
 
         sptList.forEach((spt, index) => {
             const row = document.createElement('tr');
+            row.className = 'item' // Tambahkan kelas 'item' untuk pencarian 
 
             // PERBAIKAN: Tandai pegawai yang dibatalkan dengan coretan
             const canceledPegawaiSet = new Set(spt.pegawai_dibatalkan || []);
@@ -146,10 +147,10 @@
             `;
             // Terapkan kelas latar belakang berdasarkan status
             if (isCancelled) {
-                row.className = 'bg-red-50 dark:bg-red-900/20';
+                row.className = 'item bg-red-50 dark:bg-red-900/20';
             } else if (hasPayment) {
                 // PERMINTAAN: Tambahkan background jika sudah ada bukti bayar
-                row.className = 'bg-blue-200 dark:bg-navy-700/50';
+                row.className = 'item bg-blue-200 dark:bg-navy-700/50';
             }
             sptTableBody.appendChild(row);
         });
@@ -296,6 +297,7 @@
             // PERBAIKAN: Tambahkan kelas jika SPPD ini terkait dengan pegawai yang dibatalkan
             const rowClass = sppd.is_canceled ? 'bg-red-50 dark:bg-red-900/20' : '';
             row.className = rowClass;
+            row.className = 'item'
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">

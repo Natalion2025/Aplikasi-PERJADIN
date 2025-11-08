@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const table = document.createElement('table');
-        table.className = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
+        table.className = 'min-w-full item divide-y divide-gray-200 dark:divide-gray-700';
         table.innerHTML = `
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr class="bg-blue-50 dark:bg-gray-600 dark:text-white">
@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = table.querySelector('tbody');
         data.forEach((item, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'
             row.innerHTML = `
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>

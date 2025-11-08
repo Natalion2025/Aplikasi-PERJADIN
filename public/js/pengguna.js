@@ -81,6 +81,7 @@ const setupPage = async () => {
                 `<span class="text-gray-400 cursor-not-allowed ml-4" title="Tidak dapat menghapus"><i class="fas fa-trash"></i></span>`;
 
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-white">${targetUser.name}</div>

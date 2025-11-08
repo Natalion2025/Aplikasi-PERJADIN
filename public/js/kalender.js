@@ -265,7 +265,7 @@
                 };
                 const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
                 monthTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
-
+                monthTooltip.classList.add('item');
                 monthTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 52}px`;
                 monthTooltip.style.zIndex = 10;
                 monthTooltip.title = pegawaiNames;

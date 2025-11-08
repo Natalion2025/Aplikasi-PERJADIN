@@ -71,6 +71,11 @@
             /* Warna kuning, sesuaikan jika perlu */
             border-radius: 50%;
         }
+
+        /** Style untuk item dan statistik pencarian **/
+        .item.hidden {
+            display: none;
+        }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
@@ -93,7 +98,7 @@
             <div class="mt-0 flex space-x-2">
                 <!-- Bagian Header Kalender Mini -->
                 <div id="side-calendar-content"
-                    class="left-menu-light max-h-screen rounded-tr-xl rounded-br-xl w-[280px] bg-gradient-to-r from-red-900 from-2% via-yellow-900 via-10% to-dark-blue to-80% p-4">
+                    class="left-menu-light item max-h-screen rounded-tr-xl rounded-br-xl w-[280px] bg-gradient-to-r from-red-900 from-2% via-yellow-900 via-10% to-dark-blue to-80% p-4">
                     <div class="date flex text-white font-poppins items-center justify-between">
                         <div class="title">
                             <div id="side-calendar-month-year" class="text-nowrap text-[20px]">January 2025
@@ -159,7 +164,7 @@
                 <div class="mt-24">
                     <div
                         class="bg-white dark:bg-slate-800 p-5 rounded-t-xl border border-gray-200 dark:border-gray-700">
-                        <div class="flex justify-between items-center h-[30px]">
+                        <div class="flex item justify-between items-center h-[30px]">
                             <div class="flex space-x-2 items-center">
                                 <img src="/img/double_arrow.png" alt="bulan-sebelumnya" id="previous-month"
                                     class="cursor-pointer w-[32px] h-[32px] rotate-180">
@@ -199,7 +204,7 @@
                         </div>
                     </div>
                     <!-- PANEL KONTEN TAB -->
-                    <div class="relative" id="tab-content-container">
+                    <div class="relative item" id="tab-content-container">
                         <!-- Konten Status -->
                         <div id="event-tooltip-template"
                             class="status absolute hidden flex-col items-start border border-y-0 border-r-0 border-l-4 rounded-md shadow-lg w-60 z-50">

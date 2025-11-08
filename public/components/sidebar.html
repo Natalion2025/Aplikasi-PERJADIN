@@ -2,7 +2,7 @@
 <!-- Logo atau Judul Aplikasi -->
 <div class="flex items-center justify-between h-[68px] px-4 border-b border-white/10">
     <h1 class="text-2xl uppercase font-wdxlLubrifontSc text-white">Asisten Perjadin</h1>
-    <img src="/assets/logomelawi.png" class="h-8 w-auto py-3 rounded-full box-content" alt="logoMelawi">
+    <img src="/assets/logomelawi1.png" class="h-12 w-auto py-3 rounded-full box-content" alt="logoMelawi">
     <button id="sidebar-close"
         class="p-2 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-white lg:hidden">
         <i class="fas fa-times text-xl"></i>
@@ -13,7 +13,7 @@
 <nav class="mt-4">
     <!-- Item Menu: Dashboard -->
     <a href="/dashboard" id="nav-dashboard"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-home w-6 text-center"></i>
         <span class="ml-4">Dashboard</span>
     </a>
@@ -28,21 +28,21 @@
 
     <!-- Item Menu: Data Pegawai -->
     <a href="/pegawai" id="nav-pegawai"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-users w-6 text-center"></i>
         <span class="ml-4">Data Pegawai</span>
     </a>
 
     <!-- Item Menu: Standar Biaya -->
     <a href="/standar-biaya" id="nav-standar-biaya"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-tags w-6 text-center"></i>
         <span class="ml-4">Standar Biaya</span>
     </a>
 
     <!-- Item Menu: Anggaran -->
     <a href="/anggaran" id="nav-anggaran"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-wallet w-6 text-center"></i>
         <span class="ml-4">Anggaran</span>
     </a>
@@ -57,43 +57,43 @@
 
     <!-- Item Menu: Daftar SPT -->
     <a href="/spt" id="nav-spt"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-suitcase-rolling w-6 text-center"></i>
         <span class="ml-4">Surat Tugas - SPD</span>
     </a>
 
     <!-- Item Menu: Uang Muka -->
     <a href="/uang-muka" id="nav-uang-muka"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-money-bill-wave w-6 text-center"></i>
         <span class="ml-4">Uang Muka</span>
     </a>
 
     <!-- Item Menu: Pelaporan -->
     <a href="/laporan" id="nav-laporan"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-chart-bar w-6 text-center"></i>
         <span class="ml-4">Pelaporan</span>
     </a>
 
     <!-- Item Menu: Pembayaran -->
     <a href="/pembayaran" id="nav-pembayaran"
-        class="flex items-center px-6 py-3 text-white rounded-md mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
         <i class="fas fa-credit-card w-6 text-center"></i>
         <span class="ml-4">Pembayaran</span>
     </a>
 
     <!-- Item Menu Dropdown: Pengaturan -->
-    <div class="px-8 py-3">
+    <div class="pr-4">
         <button id="settings-button"
-            class="w-full flex justify-between items-center text-white focus:outline-none hover:bg-white/10 rounded-md p-2 -m-2 transition-colors duration-200">
+            class="w-full flex items-center justify-normal px-6 py-3 mx-2 space-x-8 transition-colors duration-200 hover:bg-white/10 rounded-xl text-white focus:outline-none p-2 -m-2 ">
             <span class="flex items-center">
                 <i class="fas fa-cog w-6 text-center"></i>
                 <span class="ml-4">Pengaturan</span>
             </span>
             <i id="settings-arrow" class="fas fa-chevron-down transform transition-transform duration-200"></i>
         </button>
-        <div id="settings-submenu" class="pl-8 mt-2 hidden ml-8">
+        <div id="settings-submenu" class="pl-8 mt-2 hidden ml-16">
             <a href="/profil" id="nav-profil-saya" class="block py-2 text-gray-300 hover:text-white">Profil Saya</a>
             <a href="/pengguna" id="nav-pengguna" class="block py-2 text-gray-300 hover:text-white">Pengguna</a>
             <a href="/pengaturan/aplikasi" id="nav-pengaturan-aplikasi"

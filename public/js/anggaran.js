@@ -173,6 +173,7 @@
 
         anggaranList.forEach((anggaran, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
 
             const actionButtons = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
                 ? `<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

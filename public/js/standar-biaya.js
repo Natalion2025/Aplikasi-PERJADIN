@@ -25,7 +25,7 @@
     // --- TABLE GENERATORS ---
     const generateTableA = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full item text-sm text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -43,7 +43,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -61,7 +61,7 @@
 
     const generateTableB = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full item text-sm text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -78,7 +78,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -95,7 +95,7 @@
 
     const generateTableC = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
@@ -107,7 +107,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.provinsi || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -122,7 +122,7 @@
 
     const generateTableD = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
@@ -134,7 +134,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -149,7 +149,7 @@
 
     const generateTableE = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -166,7 +166,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.provinsi || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -183,7 +183,7 @@
 
     const generateTableF = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -200,7 +200,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -217,7 +217,7 @@
 
     const generateTableG = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -234,7 +234,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -251,7 +251,7 @@
 
     const generateTableH = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -268,7 +268,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -285,7 +285,7 @@
 
     const generateTableI = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -302,7 +302,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -319,7 +319,7 @@
 
     const generateTableJ = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300" rowspan="2">No.</th>
@@ -336,7 +336,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.uraian || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>
@@ -353,7 +353,7 @@
 
     const generateTableK = (data) => {
         return `<div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <table class="w-full text-sm item text-left text-gray-500 dark:text-gray-400">
             <thead class="text-xs text-gray-700 uppercase bg-gray-200 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                     <th scope="col" class="px-4 py-3 text-center align-middle border-r border-gray-300">No.</th>
@@ -364,7 +364,7 @@
             </thead>
             <tbody>
                 ${data.map((item, index) => `
-                <tr class="bg-white border-b hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+                <tr class="bg-white border-b item hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
                     <td class="px-4 py-4 text-center">${index + 1}</td>
                     <td class="px-6 py-4">${item.provinsi || ''}</td>
                     <td class="px-6 py-4">${item.satuan || ''}</td>

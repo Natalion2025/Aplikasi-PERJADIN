@@ -638,6 +638,7 @@
 
         pembayaranList.forEach((p, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
                 <td class="pl-6 pr-3 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
@@ -955,6 +956,7 @@
 
         dataList.forEach((item, index) => {
             const row = document.createElement('tr');
+            row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
                 <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
                 <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.nama_pegawai}</td>

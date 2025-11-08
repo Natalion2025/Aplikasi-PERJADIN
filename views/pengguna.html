@@ -46,6 +46,11 @@
         .rotate-180 {
             transform: rotate(180deg);
         }
+
+        /** Style untuk item dan statistik pencarian **/
+        .item.hidden {
+            display: none;
+        }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
@@ -65,7 +70,7 @@
 
         <!-- Konten -->
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-6 item">
                 <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Manajemen Pengguna</h2>
                 <div class="fixed right-4">
                     <a href="/tambah-pengguna" id="tambah-pengguna-btn"
@@ -108,8 +113,6 @@
             </div>
         </main>
     </div>
-
-    <script src="/js/header-logic.js"></script>
     <script src="/js/main1.js"></script>
     <script src="/js/pengguna.js"></script>
     <script src="/js/sidebar.js"></script>
