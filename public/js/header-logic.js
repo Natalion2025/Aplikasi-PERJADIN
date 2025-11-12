@@ -1,37 +1,6 @@
-// document.addEventListener('DOMContentLoaded', () => {
-const searchFilter = document.getElementById('search-input');
-const items = document.querySelectorAll('.item');
-
-searchFilter.addEventListener('input', function () {
-    const searchTerm = this.value.toLowerCase().trim(); //Mengkonversi input pencarian ke lowercase dan menghapus spasi ekstra
-
-    items.forEach(item => { //Iterasi setiap item untuk memeriksa kecocokan
-        const itemText = item.textContent.toLowerCase(); //Mengkonversi teks kata pencarian item ke lowercase
-
-        // Cek apakah item sesuai dengan pencarian
-        const matchesText = itemText.includes(searchTerm); //Mengikat hasil pencarian dengan teks item
-
-        if (searchTerm === '' || matchesText) { //Tampilkan item jika input pencarian kosong atau ada kecocokan
-            item.classList.remove('hidden');
-
-            // Highlight texts jika ada kecocokan
-            if (searchTerm !== '' && (matchesText)) {
-                item.classList.add('highlighted');
-                highlightText(item, searchTerm);
-            } else {
-                item.classList.remove('highlighted');
-                removeHighlights(item);
-            }
-        } else {
-            item.classList.add('hidden');
-            item.classList.remove('highlighted');
-            removeHighlights(item);
-        }
-    });
-
-    updateSearchStats(searchTerm); //Perbarui statistik pencarian setelah setiap inputan terjadi
-});
-
+/**
+ * This file contains the logic for the application's header, including user menu, UI updates, and search functionality.
+ */
 
 //Function untuk dipanggil di atas
 function highlightText(element, searchTerm) { //Fungsi untuk menyorot teks yang sesuai dengan pencarian
@@ -90,13 +59,6 @@ function updateSearchStats(searchTerm) { //Fungsi untuk memperbarui statistik pe
     }
 }
 
-// Focus pada search box saat halaman load
-window.addEventListener('load', function () { // Menunggu hingga seluruh halaman dimuat 
-    searchFilter.focus(); // Fokus pada elemen input pencarian 
-});
-// });
-
-
 /**
  * @typedef {object} UserProfile
  * @property {string} name - Nama lengkap pengguna.
@@ -148,6 +110,50 @@ function initializeHeader(user) {
     const userMenuButton = document.getElementById('user-menu-button');
     const userMenu = document.getElementById('user-menu');
 
+    // --- Inisialisasi Fungsionalitas Pencarian ---
+    const searchFilter = document.getElementById('search-input');
+    if (searchFilter) {
+        console.log('[HEADER] Inisialisasi fungsionalitas pencarian...');
+        searchFilter.addEventListener('input', function () {
+            const searchTerm = this.value.toLowerCase().trim();
+            // PERBAIKAN: Ambil 'items' di dalam event listener agar selalu up-to-date
+            const items = document.querySelectorAll('.item');
+
+            items.forEach(item => {
+                const itemText = item.textContent.toLowerCase();
+                const matchesText = itemText.includes(searchTerm);
+
+                if (searchTerm === '' || matchesText) {
+                    item.classList.remove('hidden');
+                    if (searchTerm !== '' && matchesText) {
+                        item.classList.add('highlighted');
+                        highlightText(item, searchTerm);
+                    } else {
+                        item.classList.remove('highlighted');
+                        removeHighlights(item);
+                    }
+                } else {
+                    item.classList.add('hidden');
+                    item.classList.remove('highlighted');
+                    removeHighlights(item);
+                }
+            });
+
+            updateSearchStats(searchTerm);
+        });
+
+        // Focus pada search box saat halaman load
+        // PERBAIKAN: Pindahkan ke sini agar hanya berjalan jika search box ada
+        window.addEventListener('load', function () {
+            searchFilter.focus();
+        });
+
+    } else {
+        console.log('[HEADER] Input pencarian (search-input) tidak ditemukan di halaman ini.');
+    }
+
+
+    // --- Inisialisasi Dropdown Menu Pengguna ---
     if (userMenuButton && userMenu) {
         console.log('[HEADER] Menambahkan event listener untuk dropdown menu');
 

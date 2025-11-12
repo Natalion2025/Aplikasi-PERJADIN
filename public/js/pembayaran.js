@@ -233,7 +233,9 @@
     const loadDropdownOptions = async () => {
         try {
             const [anggaranRes, sptRes, pegawaiRes] = await Promise.all([
-                fetch('/api/anggaran?limit=0'), // FIX: Minta semua data anggaran tanpa paginasi
+                // PERBAIKAN: Gunakan endpoint '/api/anggaran/options' yang mengembalikan data lengkap
+                // dengan ID, tanpa agregasi yang salah.
+                fetch(`/api/anggaran/options?t=${new Date().getTime()}`),
                 fetch('/api/spt?limit=1000'), // PERBAIKAN: Minta hingga 1000 SPT untuk memastikan semua data termuat
                 fetch('/api/pegawai')
             ]);
@@ -242,14 +244,14 @@
             if (sptTomSelect) sptTomSelect.destroy();
             if (pptkTomSelect) pptkTomSelect.destroy();
 
-            // Proses Data Anggaran
-            const anggaranResult = await anggaranRes.json();
-            // FIX: Ekstrak array 'data' dari respons. Fallback ke respons langsung jika formatnya berbeda.
-            const anggaranList = anggaranResult.data || anggaranResult;
+            // Proses Data Anggaran (endpoint baru mengembalikan array langsung)
+            const anggaranList = await anggaranRes.json();
             anggaranDataMap.clear(); // Kosongkan map sebelum diisi
             anggaranSelect.innerHTML = '<option value="">-- Pilih Anggaran --</option>';
             anggaranList.forEach(a => {
-                const optionText = `${a.mata_anggaran_kode} - ${a.mata_anggaran_nama} (Sub: ${a.sub_kegiatan})`;
+                // PERBAIKAN: Sesuaikan teks opsi dengan data dari endpoint baru
+                const infoKegiatan = [a.kegiatan, a.sub_kegiatan].filter(Boolean).join(' / ');
+                const optionText = `${a.mata_anggaran_kode} - ${a.mata_anggaran_nama} (${infoKegiatan || 'Info kegiatan tidak tersedia'})`;
                 const option = new Option(optionText, a.id);
                 anggaranSelect.appendChild(option);
                 anggaranDataMap.set(a.id.toString(), a); // Simpan data anggaran lengkap
@@ -551,46 +553,62 @@
             uraianPembayaranTextarea.value = '';
         }
 
+        const isEditMode = !!pembayaranIdInput.value;
+
         try {
-            // --- PERBAIKAN: Cek apakah bukti pembayaran sudah ada untuk SPT ini ---
-            const paymentCheckResponse = await fetch(`/api/pembayaran/check/by-spt/${selectedSptId}`);
-            const paymentCheckResult = await paymentCheckResponse.json();
+            // Hanya jalankan pengecekan jika BUKAN dalam mode edit
+            if (!isEditMode) {
+                const paymentCheckResponse = await fetch(`/api/pembayaran/check/by-spt/${selectedSptId}`);
+                const paymentCheckResult = await paymentCheckResponse.json();
 
-            if (!paymentCheckResponse.ok || paymentCheckResult.exists) {
-                showInfoModal('Pembayaran Sudah Ada', 'Nama pelaksana pada Surat Tugas ini sudah pernah membuat bukti bayar.');
-                // Clear SPT selection and related fields
-                sptTomSelect.clear();
-                namaPenerimaTextarea.value = '';
-                uraianPembayaranTextarea.value = '';
-                clearRincian();
-                uangHarianInfoContainer.classList.add('hidden');
-                return; // Stop further processing
-            }
-
-            const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);
-            const result = await response.json();
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    showInfoModal('Informasi', 'Belum ada laporan yang dibuat untuk SPT ini. Buatlah laporan perjalanan dinas terlebih dahulu.');
+                if (!paymentCheckResponse.ok || paymentCheckResult.exists) {
+                    showInfoModal('Pembayaran Sudah Ada', 'Nama pelaksana pada Surat Tugas ini sudah pernah membuat bukti bayar.');
+                    sptTomSelect.clear();
                     namaPenerimaTextarea.value = '';
+                    uraianPembayaranTextarea.value = '';
                     clearRincian();
                     uangHarianInfoContainer.classList.add('hidden');
                     return;
                 }
-                throw new Error(result.message || 'Gagal mengambil data penerima.');
             }
 
-            const penerimaText = result.penerima
-                .map(p => `${p.nama_lengkap} - NIP. ${p.nip}`)
-                .join('\n');
+            let result;
+            if (isEditMode) {
+                // --- PERBAIKAN: Mode Edit ---
+                // Panggil endpoint baru yang tidak bergantung pada laporan
+                const response = await fetch(`/api/spt/${selectedSptId}/expenditure-details`);
+                result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Gagal menghitung rincian biaya untuk SPT ini.');
+            } else {
+                // --- Logika Lama: Mode Tambah Baru ---
+                const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);
+                result = await response.json();
 
-            namaPenerimaTextarea.value = penerimaText;
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        showInfoModal('Informasi', 'Belum ada laporan yang dibuat untuk SPT ini. Buatlah laporan perjalanan dinas terlebih dahulu.');
+                        namaPenerimaTextarea.value = '';
+                        clearRincian();
+                        uangHarianInfoContainer.classList.add('hidden');
+                        return;
+                    }
+                    throw new Error(result.message || 'Gagal mengambil data penerima.');
+                }
+            }
 
-            renderRincianPengeluaran(result.pengeluaran, result.penerima, selectedSptId);
+            // Logika pengisian form tetap sama karena struktur data 'result' akan konsisten
+            if (result.penerima && result.penerima.length > 0) {
+                const penerimaText = result.penerima
+                    .map(p => `${p.nama_lengkap} - NIP. ${p.nip}`)
+                    .join('\n');
+                namaPenerimaTextarea.value = penerimaText;
+                renderRincianPengeluaran(result.pengeluaran || [], result.penerima, selectedSptId);
+                await applyExistingPanjar(selectedSptId);
+            } else {
+                namaPenerimaTextarea.value = '';
+                clearRincian();
+            }
 
-            // Setelah rincian dirender, coba terapkan panjar yang ada
-            await applyExistingPanjar(selectedSptId);
 
         } catch (error) {
             console.error("Gagal mengisi nama penerima:", error);

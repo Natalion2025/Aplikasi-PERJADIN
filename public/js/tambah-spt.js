@@ -101,7 +101,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const [pejabatResponse, pegawaiResponse, anggaranResponse] = await Promise.all([
                 fetch('/api/pejabat'),
                 fetch('/api/pegawai'),
-                fetch('/api/anggaran')
+                // PERBAIKAN: Gunakan endpoint baru yang didesain khusus untuk dropdown
+                // agar semua data anggaran termuat tanpa agregasi yang salah.
+                fetch(`/api/anggaran/options?t=${new Date().getTime()}`)
             ]);
 
             if (!pejabatResponse.ok) throw new Error('Gagal memuat data pejabat.');
@@ -110,7 +112,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const pejabatDaerah = await pejabatResponse.json();
             const semuaPegawai = await pegawaiResponse.json();
+            // PERBAIKAN: Ekstrak array 'data' dari objek respons API.
+            // Endpoint baru mengembalikan array langsung, jadi tidak perlu .data
             const semuaAnggaran = await anggaranResponse.json();
+            console.log('[DEBUG-SPT] Data anggaran mentah dari API:', semuaAnggaran);
+            console.log('[DEBUG-SPT] Data anggaran yang akan diproses:', semuaAnggaran);
 
             // 1. Siapkan data untuk dropdown "Pejabat Pemberi Tugas" (Kepala Daerah & Sekda)
             const sekda = semuaPegawai.find(p => p.jabatan && p.jabatan.toLowerCase() === 'sekretaris daerah');
@@ -148,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 3. Siapkan data untuk dropdown "Kode Mata Anggaran"
             if (semuaAnggaran.length > 0) {
+                console.log(`[DEBUG-SPT] Memproses ${semuaAnggaran.length} data anggaran untuk dropdown.`);
                 const anggaranOptions = semuaAnggaran.map(a => {
                     // Gabungkan kegiatan dan sub kegiatan untuk deskripsi yang lebih informatif
                     const infoKegiatan = [a.kegiatan, a.sub_kegiatan].filter(Boolean).join(' / ');
@@ -157,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     .join(''); // Gabungkan semua string <option> menjadi satu
                 kodeAnggaranSelect.innerHTML = `<option value="">-- Pilih Mata Anggaran --</option>${anggaranOptions}`;
             } else {
+                console.warn('[DEBUG-SPT] Tidak ada data anggaran yang ditemukan (semuaAnggaran.length adalah 0). Dropdown akan dinonaktifkan.');
                 kodeAnggaranSelect.innerHTML = '<option value="">-- Belum ada data anggaran --</option>';
                 kodeAnggaranSelect.disabled = true;
             }

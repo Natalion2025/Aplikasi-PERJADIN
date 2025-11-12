@@ -9,6 +9,7 @@
     const tujuanPerjalananEl = document.getElementById('tujuan_perjalanan');
     const lamaDanTanggalEl = document.getElementById('lama_dan_tanggal_perjalanan');
     const tempatDikunjungiEl = document.getElementById('tempat_dikunjungi');
+    const kodeAnggaranDisplayEl = document.getElementById('kode_anggaran_display'); // Elemen baru
 
     // Elemen untuk upload file
     const fileUploadArea = document.getElementById('file-upload-area');
@@ -27,6 +28,9 @@
     let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
     let deletedFiles = []; // Menyimpan ID file yang akan dihapus (mode edit)
     let accommodationStandards = {}; // Menyimpan standar biaya akomodasi per pegawai
+    let objectUrls = new Map(); // Untuk menyimpan Object URL agar bisa di-revoke
+    let isEditMode = false; // Flag untuk mode edit
+    let isLoadingData = false; // Flag untuk mencegah pemanggilan berulang
 
     // --- Fungsi Helper untuk Format Angka ---
     const formatCurrency = (value) => {
@@ -59,8 +63,31 @@
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
+    // --- FUNGSI DEBUGGING ---
+    const debugLog = (message, data = null) => {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[DEBUG ${timestamp}] ${message}`;
+        console.log(logMessage);
+        if (data) console.log(data);
+
+        // Tambahkan ke elemen debug jika ada (opsional)
+        const debugContainer = document.getElementById('debug-container');
+        if (debugContainer) {
+            const debugEntry = document.createElement('div');
+            debugEntry.className = 'text-xs text-gray-500 border-t pt-1 mt-1';
+            debugEntry.textContent = logMessage;
+            debugContainer.appendChild(debugEntry);
+
+            // Batasi jumlah entri debug
+            if (debugContainer.children.length > 50) {
+                debugContainer.removeChild(debugContainer.firstChild);
+            }
+        }
+    };
+
     // Fungsi untuk memuat SPT ke dropdown
     const loadSptOptions = async () => {
+        debugLog('Memulai loadSptOptions');
         try {
             const response = await fetch('/api/spt');
             if (!response.ok) throw new Error('Gagal memuat data SPT.');
@@ -68,6 +95,7 @@
 
             // Filter SPT yang aktif dan belum punya laporan
             const availableSpts = spts.filter(spt => spt.status === 'aktif' && spt.laporan_count === 0);
+            debugLog(`SPT tersedia: ${availableSpts.length} dari ${spts.length} total`);
 
             availableSpts.forEach(spt => {
                 const option = document.createElement('option');
@@ -85,8 +113,11 @@
 
     // --- FUNGSI BARU: Mengatur visibilitas dan urutan rincian pengeluaran ---
     const updateAndReorderExpenseBlocks = () => {
+        debugLog('Memulai updateAndReorderExpenseBlocks');
         const checkedSigners = Array.from(penandatanganContainer.querySelectorAll('input[type="checkbox"]:checked'));
         const allExpenseBlocks = pengeluaranPerPegawaiContainer.querySelectorAll('.pengeluaran-pegawai-item');
+
+        debugLog(`Penandatangan yang dicentang: ${checkedSigners.length}, Total blok: ${allExpenseBlocks.length}`);
 
         // 1. Sembunyikan semua blok terlebih dahulu
         allExpenseBlocks.forEach(block => {
@@ -100,42 +131,85 @@
             if (expenseBlock) {
                 expenseBlock.classList.remove('hidden');
                 pengeluaranPerPegawaiContainer.appendChild(expenseBlock); // Pindahkan ke akhir untuk mengurutkan
+                debugLog(`Menampilkan blok untuk pegawai ID: ${pegawaiId}`);
+            } else {
+                debugLog(`Blok tidak ditemukan untuk pegawai ID: ${pegawaiId}`, { checkedSigners, allExpenseBlocks });
             }
         });
     };
 
     // Fungsi untuk mengisi data form berdasarkan SPT yang dipilih
     const populateFormFromSpt = async () => {
+        if (isLoadingData) {
+            debugLog('populateFormFromSpt dibatalkan - sedang loading data');
+            return;
+        }
+
+        isLoadingData = true;
+        debugLog('Memulai populateFormFromSpt');
+
         const selectedOption = sptSelect.options[sptSelect.selectedIndex];
         const sptId = selectedOption.value;
 
         if (!sptId) {
+            debugLog('Tidak ada SPT yang dipilih, reset form');
             form.reset();
             // Sembunyikan dan kosongkan rincian pengeluaran jika tidak ada SPT dipilih
             document.getElementById('rincian-pengeluaran-section').classList.add('hidden');
             accommodationStandards = {}; // Reset standar biaya
+            if (kodeAnggaranDisplayEl) kodeAnggaranDisplayEl.value = ''; // Kosongkan field anggaran
             pengeluaranPerPegawaiContainer.innerHTML = '';
+            isLoadingData = false;
             return;
         }
 
         try {
+            debugLog(`Mengambil detail SPT ID: ${sptId}`);
             // Ambil detail lengkap dari SPT, termasuk nama pegawai
             const response = await fetch(`/api/spt/${sptId}`);
             if (!response.ok) throw new Error('Gagal memuat detail SPT.');
             const sptDetail = await response.json();
+            debugLog('Detail SPT berhasil diambil', sptDetail);
+
+            // PERBAIKAN: Ambil dan tampilkan informasi anggaran
+            if (kodeAnggaranDisplayEl) {
+                try {
+                    debugLog(`Mengambil data anggaran ID: ${sptDetail.anggaran_id}`);
+                    const anggaranRes = await fetch(`/api/anggaran/${sptDetail.anggaran_id}`);
+                    if (anggaranRes.ok) {
+                        const anggaran = await anggaranRes.json();
+                        kodeAnggaranDisplayEl.value = `${anggaran.mata_anggaran_kode} - ${anggaran.mata_anggaran_nama}`;
+                        debugLog('Data anggaran berhasil dimuat');
+                    } else {
+                        kodeAnggaranDisplayEl.value = 'Data anggaran tidak ditemukan.';
+                        debugLog('Data anggaran tidak ditemukan');
+                    }
+                } catch (e) {
+                    kodeAnggaranDisplayEl.value = 'Gagal memuat data anggaran.';
+                    debugLog('Error mengambil data anggaran', e);
+                }
+            }
 
             // Ambil standar biaya akomodasi untuk SPT ini
             try {
+                debugLog('Mengambil standar biaya akomodasi');
                 const standardsRes = await fetch(`/api/spt/${sptId}/accommodation-standards`);
                 if (standardsRes.ok) {
                     accommodationStandards = await standardsRes.json();
-                } else accommodationStandards = {};
-            } catch (e) { accommodationStandards = {}; }
-
+                    debugLog('Standar biaya akomodasi berhasil dimuat', accommodationStandards);
+                } else {
+                    accommodationStandards = {};
+                    debugLog('Standar biaya akomodasi tidak ditemukan');
+                }
+            } catch (e) {
+                accommodationStandards = {};
+                debugLog('Error mengambil standar biaya akomodasi', e);
+            }
 
             // Ambil semua pegawai yang terlibat (pelaksana dan pengikut)
             // Urutkan agar pelaksana utama (bukan pengikut) selalu di atas.
             const semuaPelaksana = (sptDetail.pegawai || []).sort((a, b) => a.is_pengikut - b.is_pengikut);
+            debugLog(`Jumlah pelaksana: ${semuaPelaksana.length}`);
 
             // Kosongkan kontainer dan tambahkan checkbox untuk setiap pelaksana
             penandatanganContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Pilih penandatangan laporan (otomatis dari SPT):</p>';
@@ -144,6 +218,7 @@
                 //Filter pegawai yang dibatalkan agar tidak dapat membuat laporan
                 // PERBAIKAN: Buat Set dari ID pegawai yang dibatalkan untuk pengecekan cepat.
                 const canceledPegawaiIds = new Set((sptDetail.pegawai_dibatalkan || []).map(p => p.pegawai_id));
+                debugLog(`Pegawai yang dibatalkan: ${Array.from(canceledPegawaiIds)}`);
 
                 semuaPelaksana.forEach(p => {
                     const isCanceled = canceledPegawaiIds.has(p.pegawai_id);
@@ -165,9 +240,11 @@
                         </div>
                     `;
                     penandatanganContainer.insertAdjacentHTML('beforeend', checkboxHtml);
+                    debugLog(`Checkbox dibuat untuk ${p.nama_lengkap} - checked: ${isChecked}, disabled: ${isDisabled}`);
                 });
             } else {
                 penandatanganContainer.innerHTML += '<p class="text-sm text-red-500">Tidak ada data pegawai ditemukan pada SPT ini.</p>';
+                debugLog('Tidak ada data pegawai ditemukan');
             }
 
             // Tampilkan section rincian pengeluaran dan buat form untuk setiap pegawai
@@ -189,6 +266,7 @@
                 setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
 
                 pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
+                debugLog(`Blok pengeluaran dibuat untuk ${pegawai.nama_lengkap}`);
             });
             // Panggil fungsi untuk menampilkan rincian yang relevan (pelaksana utama)
             updateAndReorderExpenseBlocks();
@@ -198,18 +276,24 @@
             lamaDanTanggalEl.value = `${sptDetail.lama_perjalanan} hari, dari ${formatDisplayDate(sptDetail.tanggal_berangkat)} s/d ${formatDisplayDate(sptDetail.tanggal_kembali)}`;
             tempatDikunjungiEl.value = sptDetail.lokasi_tujuan;
 
+            debugLog('Form berhasil diisi dari SPT');
+
         } catch (error) {
             console.error(error);
             alert(error.message);
+        } finally {
+            isLoadingData = false;
         }
     };
 
     // Fungsi untuk memuat data laporan yang ada untuk mode edit
     const loadLaporanForEdit = async (id) => {
+        debugLog(`Memulai loadLaporanForEdit untuk ID: ${id}`);
         try {
             const response = await fetch(`/api/laporan/${id}`);
             if (!response.ok) throw new Error('Gagal memuat data laporan untuk diedit.');
             const laporan = await response.json();
+            debugLog('Data laporan berhasil diambil', laporan);
 
             // Jika SPT terkait tidak ada di daftar opsi (karena sudah punya laporan),
             // kita perlu menambahkannya secara manual agar bisa ditampilkan.
@@ -218,6 +302,7 @@
                 const sptData = await sptResponse.json();
                 const option = new Option(sptData.nomor_surat, sptData.id, true, true);
                 sptSelect.appendChild(option);
+                debugLog(`SPT ${sptData.nomor_surat} ditambahkan ke dropdown`);
             }
 
             sptSelect.value = laporan.spt_id;
@@ -225,25 +310,36 @@
             document.getElementById('tempat_laporan').value = laporan.tempat_laporan;
             document.getElementById('judul').value = laporan.judul;
 
-            // Panggil populateFormFromSpt untuk membuat checkbox, lalu centang sesuai data yang tersimpan
-            await populateFormFromSpt();
-
             // Fill/format penandatangan berdasarkan data laporan untuk di alihkan ke cetak-laporan.js
             // Penanganan error saat parsing JSON
+            debugLog('Mengisi data penandatangan...');
             let selectedIds = [];
             if (laporan.penandatangan_ids) {
                 try {
                     selectedIds = JSON.parse(laporan.penandatangan_ids);
+                    debugLog(`ID penandatangan yang diparsing: ${selectedIds}`);
                 } catch (e) {
                     console.error("Failed to parse penandatangan_ids:", e);
                     alert("Terjadi kesalahan data penandatangan. Data mungkin tidak ditampilkan dengan benar.");
                 }
             }
+
+            // PERBAIKAN UTAMA: Panggil populateFormFromSpt() HANYA SEKALI di sini untuk membuat struktur checkbox
+            // sebelum kita mencentangnya. Ini jauh lebih efisien.
+            debugLog('Memanggil populateFormFromSpt untuk membuat struktur form');
+            await populateFormFromSpt();
+
             if (selectedIds.length > 0) {
+                debugLog(`Mengatur checkbox untuk ${selectedIds.length} penandatangan`);
                 penandatanganContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                 selectedIds.forEach(id => {
                     const cb = penandatanganContainer.querySelector(`input[value="${id}"]`);
-                    if (cb) cb.checked = true;
+                    if (cb) {
+                        cb.checked = true;
+                        debugLog(`Checkbox untuk ID ${id} dicentang`);
+                    } else {
+                        debugLog(`Checkbox untuk ID ${id} tidak ditemukan`);
+                    }
                 });
             }
 
@@ -255,10 +351,12 @@
             document.getElementById('hasil_dicapai').value = laporan.hasil_dicapai;
 
             // Isi data transportasi dinamis
+            debugLog('Mengisi rincian pengeluaran...');
             // Tampilkan section rincian pengeluaran dan buat form untuk setiap pegawai
             document.getElementById('rincian-pengeluaran-section').classList.remove('hidden');
             pengeluaranPerPegawaiContainer.innerHTML = ''; // Kosongkan dulu
 
+            debugLog(`Jumlah pegawai dalam laporan: ${laporan.pegawai.length}`);
             laporan.pegawai.forEach(pegawai => {
                 const templateContent = pengeluaranPegawaiTemplate.content.cloneNode(true);
                 const pegawaiItem = templateContent.querySelector('.pengeluaran-pegawai-item');
@@ -271,6 +369,8 @@
                 const kontribusiData = laporan.kontribusi.filter(k => k.pegawai_id == pegawai.pegawai_id);
                 const lainLainData = laporan.lain_lain.filter(l => l.pegawai_id == pegawai.pegawai_id);
 
+                debugLog(`Data untuk ${pegawai.nama_lengkap}: transportasi=${transportasiData.length}, akomodasi=${akomodasiData.length}, kontribusi=${kontribusiData.length}, lain_lain=${lainLainData.length}`);
+
                 if (transportasiData.length > 0) transportasiData.forEach(item => addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id, item));
                 else addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
 
@@ -282,6 +382,7 @@
 
                 if (lainLainData.length > 0) lainLainData.forEach(item => addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id, item));
                 else addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
+
                 setupAddButtonListeners(pegawaiItem, pegawai.pegawai_id);
                 pengeluaranPerPegawaiContainer.appendChild(pegawaiItem);
             });
@@ -295,12 +396,19 @@
             document.getElementById('kesimpulan').value = laporan.kesimpulan;
 
             // Tampilkan lampiran yang sudah ada
+            debugLog('Merender pratinjau file...');
             if (laporan.lampiran && laporan.lampiran.length > 0) {
                 existingFiles = laporan.lampiran;
+                debugLog(`Ada ${existingFiles.length} file lampiran`);
                 renderFilePreviews();
+            }
+            // Tambahkan log jika tidak ada lampiran
+            else {
+                debugLog('Tidak ada lampiran untuk dirender.');
             }
 
             sptSelect.disabled = true; // Cegah perubahan SPT saat edit
+            debugLog('LoadLaporanForEdit selesai');
 
         } catch (error) {
             console.error(error);
@@ -312,33 +420,71 @@
     // --- FUNGSI-FUNGSI UNTUK FILE UPLOAD ---
 
     const renderFilePreviews = () => {
+        debugLog('Memulai renderFilePreviews');
+
+        // PERBAIKAN: Bersihkan semua Object URL yang ada sebelum me-render ulang.
+        // Ini adalah kunci untuk menghentikan flickering gambar.
+        debugLog(`Membersihkan ${objectUrls.size} Object URL lama...`);
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
+        objectUrls.clear();
+
         filePreviewList.innerHTML = '';
+        debugLog(`Rendering ${existingFiles.length} file existing dan ${newFiles.length} file baru`);
 
         // Render file yang sudah ada (mode edit)
         existingFiles.forEach(file => {
-            const previewEl = createFilePreviewElement(file.id, file.file_name, `/${file.file_path}`, true);
-            filePreviewList.appendChild(previewEl);
+            filePreviewList.appendChild(createFilePreviewElement(file.id, file.file_name, file.file_path, true));
         });
 
         // Render file baru yang akan diupload
         newFiles.forEach((file, index) => {
-            const previewEl = createFilePreviewElement(index, file.name, URL.createObjectURL(file), false);
+            // Gunakan objek File itu sendiri sebagai ID untuk file baru
+            const previewEl = createFilePreviewElement(`new-${index}`, file.name, file, false);
             filePreviewList.appendChild(previewEl);
         });
+        debugLog('renderFilePreviews selesai');
     };
 
-    const createFilePreviewElement = (id, name, url, isExisting) => {
-        const isImage = name.match(/\.(jpeg|jpg|png|gif)$/i);
+    // PERBAIKAN UTAMA: Fungsi createFilePreviewElement yang sudah dikoreksi
+    const createFilePreviewElement = (id, name, filePathOrFileObject, isExisting) => {
+        debugLog(`Membuat preview untuk: ${name} (${isExisting ? 'existing' : 'new'})`);
+
+        const isImage = name.match(/\.(jpeg|jpg|png|gif|webp)$/i);
         const fileExt = name.split('.').pop().toUpperCase();
 
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600';
+        // Simpan ID sebagai string untuk file yang sudah ada, atau referensi File object untuk file baru
         wrapper.dataset.id = id;
         wrapper.dataset.isExisting = isExisting;
+        wrapper.dataset.filename = name;
 
-        const previewContent = isImage
-            ? `<img src="${url}" alt="Preview" class="w-16 h-16 object-cover rounded-md mr-4">`
-            : `<div class="w-16 h-16 flex items-center justify-center bg-slate-200 dark:bg-slate-600 rounded-md mr-4">
+        let previewSrc;
+        let previewAlt = name;
+
+        if (isExisting) {
+            // **PERBAIKAN:** Pastikan path gambar yang sudah ada memiliki leading slash
+            let rawPath = filePathOrFileObject.startsWith('/') ? filePathOrFileObject : '/' + filePathOrFileObject;
+            // PERBAIKAN UTAMA: Encode URI untuk menangani karakter seperti spasi pada nama file.
+            previewSrc = encodeURI(rawPath);
+            debugLog(`Preview existing file: ${previewSrc}`);
+        } else {
+            // **PERBAIKAN:** Untuk file baru, buat Object URL di sini.
+            // Map 'objectUrls' sekarang digunakan untuk melacak URL yang dibuat agar bisa dibersihkan nanti.
+            if (!objectUrls.has(filePathOrFileObject)) {
+                const newUrl = URL.createObjectURL(filePathOrFileObject);
+                objectUrls.set(filePathOrFileObject, newUrl);
+                debugLog(`Membuat Object URL baru: ${newUrl} untuk file ${name}`);
+            }
+            previewSrc = objectUrls.get(filePathOrFileObject);
+        }
+
+        // PERBAIKAN: Gunakan path file yang sudah dikoreksi untuk tag <a>
+        const fileLink = isExisting ? previewSrc : previewSrc;
+
+        const previewContent = isImage ?
+            `<img src="${previewSrc}" alt="${previewAlt}" class="w-16 h-16 object-cover rounded-md mr-4" onerror="console.error('Gagal memuat gambar: ${name}'); this.src='/images/placeholder-image.svg'">` :
+            `<div class="w-16 h-16 flex items-center justify-center bg-slate-200 dark:bg-slate-600 rounded-md mr-4">
                  <span class="text-lg font-bold text-slate-500 dark:text-slate-400">${fileExt}</span>
                </div>`;
 
@@ -346,7 +492,9 @@
             <div class="flex items-center flex-grow">
                 ${previewContent}
                 <div class="flex-grow">
-                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">${name}</p>
+                    <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                        ${isExisting ? `<a href="${fileLink}" target="_blank" class="text-indigo-600 hover:text-indigo-800">${name}</a>` : name}
+                    </p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">${isExisting ? 'Tersimpan' : 'Baru'}</p>
                 </div>
             </div>
@@ -354,12 +502,16 @@
                 <i class="fas fa-trash-alt"></i>
             </button>
         `;
+
+        debugLog(`Preview element dibuat untuk: ${name}`);
         return wrapper;
     };
 
     const handleFiles = (files) => {
+        debugLog(`Menangani ${files.length} file baru`);
         for (const file of files) {
             newFiles.push(file);
+            debugLog(`File ditambahkan: ${file.name} (${file.size} bytes)`);
         }
         renderFilePreviews();
     };
@@ -378,6 +530,7 @@
         e.preventDefault();
         fileUploadArea.classList.remove('border-indigo-600', 'bg-indigo-50', 'dark:bg-slate-800/50');
         const files = e.dataTransfer.files;
+        debugLog(`File di-drop: ${files.length} file`);
         if (files.length) {
             handleFiles(files);
         }
@@ -385,6 +538,7 @@
 
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
+            debugLog(`File dipilih via input: ${fileInput.files.length} file`);
             handleFiles(fileInput.files);
             fileInput.value = ''; // Reset input agar bisa pilih file yang sama lagi
         }
@@ -396,12 +550,30 @@
             const wrapper = deleteBtn.closest('div[data-id]');
             const id = wrapper.dataset.id;
             const isExisting = wrapper.dataset.isExisting === 'true';
+            const filename = wrapper.dataset.filename;
+
+            debugLog(`Menghapus file: ${filename} (${isExisting ? 'existing' : 'new'})`);
 
             if (isExisting) {
                 deletedFiles.push(id); // Tambahkan ID ke daftar hapus
                 existingFiles = existingFiles.filter(f => f.id != id); // Hapus dari daftar tampilan
+                debugLog(`File existing ${id} ditandai untuk dihapus`);
             } else {
-                newFiles.splice(id, 1); // Hapus dari array file baru
+                // **PERBAIKAN LOGIKA HAPUS FILE BARU**: 
+                // Untuk file baru, kita perlu mencari file berdasarkan index
+                const fileIndex = parseInt(id.replace('new-', ''), 10);
+                if (!isNaN(fileIndex) && fileIndex >= 0 && fileIndex < newFiles.length) {
+                    const fileObject = newFiles[fileIndex];
+                    if (objectUrls.has(fileObject)) {
+                        URL.revokeObjectURL(objectUrls.get(fileObject)); // Revoke URL
+                        objectUrls.delete(fileObject); // Hapus dari Map
+                        debugLog(`Object URL untuk ${fileObject.name} di-revoke`);
+                    }
+                    newFiles.splice(fileIndex, 1); // Hapus dari array file baru
+                    debugLog(`File baru ${filename} dihapus dari array`);
+                } else {
+                    debugLog(`Index file tidak valid: ${fileIndex}`, newFiles);
+                }
             }
             renderFilePreviews(); // Render ulang
         }
@@ -410,6 +582,7 @@
     // --- FUNGSI UNTUK RINCIAN PENGELUARAN DINAMIS ---
 
     const addTransportasiItem = (container, pegawaiId, data = {}) => {
+        debugLog(`Menambah item transportasi untuk pegawai ${pegawaiId}`, data);
         const templateContent = transportasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.transport-item');
         const itemIndex = container.querySelectorAll('.transport-item').length;
@@ -423,9 +596,11 @@
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
+        debugLog(`Item transportasi ke-${itemIndex} ditambahkan`);
     };
 
     const addAkomodasiItem = (container, pegawaiId, data = {}) => {
+        debugLog(`Menambah item akomodasi untuk pegawai ${pegawaiId}`, data);
         const templateContent = akomodasiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.akomodasi-item');
         const itemIndex = container.querySelectorAll('.akomodasi-item').length;
@@ -439,9 +614,11 @@
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
+        debugLog(`Item akomodasi ke-${itemIndex} ditambahkan`);
     };
 
     const addKontribusiItem = (container, pegawaiId, data = {}) => {
+        debugLog(`Menambah item kontribusi untuk pegawai ${pegawaiId}`, data);
         const templateContent = kontribusiTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.kontribusi-item');
         const itemIndex = container.querySelectorAll('.kontribusi-item').length;
@@ -452,9 +629,11 @@
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
+        debugLog(`Item kontribusi ke-${itemIndex} ditambahkan`);
     }
 
     const addLainLainItem = (container, pegawaiId, data = {}) => {
+        debugLog(`Menambah item lain-lain untuk pegawai ${pegawaiId}`, data);
         const templateContent = lainLainTemplate.content.cloneNode(true);
         const newItem = templateContent.querySelector('.lain-lain-item');
         const itemIndex = container.querySelectorAll('.lain-lain-item').length;
@@ -465,27 +644,31 @@
         });
         container.appendChild(newItem);
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
+        debugLog(`Item lain-lain ke-${itemIndex} ditambahkan`);
     }
 
     const checkRemoveButtons = (pegawaiItem) => {
         if (!pegawaiItem) return;
         const transportItems = pegawaiItem.querySelectorAll('.transport-item');
-        transportItems.forEach((item, index) => {
+        const akomodasiItems = pegawaiItem.querySelectorAll('.akomodasi-item');
+        const kontribusiItems = pegawaiItem.querySelectorAll('.kontribusi-item');
+        const lainLainItems = pegawaiItem.querySelectorAll('.lain-lain-item');
+
+        debugLog(`Check remove buttons: transport=${transportItems.length}, akomodasi=${akomodasiItems.length}, kontribusi=${kontribusiItems.length}, lain_lain=${lainLainItems.length}`);
+
+        transportItems.forEach((item) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', transportItems.length <= 1);
         });
-        const akomodasiItems = pegawaiItem.querySelectorAll('.akomodasi-item');
-        akomodasiItems.forEach((item, index) => {
+        akomodasiItems.forEach((item) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', akomodasiItems.length <= 1);
         });
-        const kontribusiItems = pegawaiItem.querySelectorAll('.kontribusi-item');
-        kontribusiItems.forEach((item, index) => {
+        kontribusiItems.forEach((item) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', kontribusiItems.length <= 1);
         });
-        const lainLainItems = pegawaiItem.querySelectorAll('.lain-lain-item');
-        lainLainItems.forEach((item, index) => {
+        lainLainItems.forEach((item) => {
             const removeBtn = item.querySelector('.remove-item-btn');
             removeBtn.classList.toggle('hidden', lainLainItems.length <= 1);
         });
@@ -503,17 +686,22 @@
 
         const total = harga * malam;
         totalNominalEl.value = formatCurrency(total);
+        debugLog(`Update akomodasi total: ${harga} * ${malam} = ${total}`);
     };
 
     // Event listener untuk form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        debugLog('Form submission dimulai');
 
         const selectedSignerIds = Array.from(penandatanganContainer.querySelectorAll('input[name="penandatangan_ids"]:checked'))
             .map(cb => cb.value);
 
+        debugLog(`Penandatangan yang dipilih: ${selectedSignerIds}`);
+
         if (selectedSignerIds.length === 0) {
             alert('Pilih minimal satu penandatangan laporan.');
+            debugLog('Validasi gagal: tidak ada penandatangan yang dipilih');
             return;
         }
 
@@ -533,6 +721,9 @@
                 if (!hasValue) {
                     validationPassed = false;
                     missingDetailsFor.push(signerName);
+                    debugLog(`Validasi gagal untuk ${signerName}: tidak ada rincian pengeluaran`);
+                } else {
+                    debugLog(`Validasi berhasil untuk ${signerName}: ada rincian pengeluaran`);
                 }
             }
         }
@@ -544,7 +735,6 @@
 
         // --- PERBAIKAN FINAL: Kumpulkan data form SEBELUM validasi ---
         const formData = new FormData();
-        const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
         const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
         const submitButton = form.querySelector('button[type="submit"]');
 
@@ -561,6 +751,8 @@
         formData.append('hasil_dicapai', document.getElementById('hasil_dicapai').value);
         formData.append('kesimpulan', document.getElementById('kesimpulan').value);
         formData.append('penandatangan_ids', JSON.stringify(selectedSignerIds));
+
+        debugLog('Data form dasar dikumpulkan');
 
         // Kumpulkan data pengeluaran dari setiap pegawai
         document.querySelectorAll('.pengeluaran-pegawai-item').forEach(pegawaiItem => {
@@ -587,10 +779,14 @@
             });
         });
 
+        debugLog('Data pengeluaran dikumpulkan');
+
         if (isEditMode) {
             formData.append('deleted_files', JSON.stringify(deletedFiles));
+            debugLog(`File yang dihapus: ${deletedFiles.length}`);
         }
         newFiles.forEach(file => formData.append('lampiran', file));
+        debugLog(`File baru: ${newFiles.length}`);
 
         // --- PERBAIKAN: Pindahkan deklarasi variabel ke sini, sebelum digunakan ---
         const url = isEditMode ? `/api/laporan/${laporanId}` : '/api/laporan';
@@ -603,6 +799,7 @@
         if (isEditMode) {
             const sptId = formData.get('spt_id'); // Ambil dari formData yang sudah dibuat
             try {
+                debugLog(`Memeriksa bukti bayar untuk SPT ${sptId}`);
                 const checkRes = await fetch(`/api/pembayaran/check/by-spt/${sptId}`);
                 const checkData = await checkRes.json();
                 if (checkRes.ok && checkData.exists) {
@@ -611,15 +808,18 @@
                     // Kembalikan kondisi tombol simpan
                     submitButton.disabled = false;
                     submitButton.textContent = 'Simpan Perubahan';
+                    debugLog('Simpan dibatalkan: ada bukti bayar terkait');
                     return; // Hentikan eksekusi fungsi submit
                 }
             } catch (checkError) {
                 // Jika pengecekan gagal, log error tapi biarkan proses lanjut agar tidak memblokir pengguna
                 console.warn("Peringatan: Pengecekan bukti bayar gagal, proses penyimpanan dilanjutkan.", checkError);
+                debugLog('Peringatan: Pengecekan bukti bayar gagal', checkError);
             }
         }
 
         try {
+            debugLog(`Mengirim request ${method} ke ${url}`);
             const response = await fetch(url, {
                 method: method,
                 body: formData,
@@ -627,9 +827,16 @@
             const result = await response.json();
             if (!response.ok) throw new Error(result.message);
 
+            // Bersihkan Object URL setelah upload berhasil
+            debugLog(`Membersihkan ${objectUrls.size} Object URL`);
+            objectUrls.forEach(url => URL.revokeObjectURL(url));
+            objectUrls.clear();
+
+            debugLog('Simpan berhasil', result);
             alert(result.message);
             window.location.href = '/laporan';
         } catch (error) {
+            debugLog('Error saat menyimpan', error);
             alert(`Gagal menyimpan: ${error.message}`);
             submitButton.disabled = false;
             submitButton.textContent = isEditMode ? 'Simpan Perubahan' : 'Simpan Laporan';
@@ -643,16 +850,21 @@
     penandatanganContainer.addEventListener('change', updateAndReorderExpenseBlocks);
 
     const setupAddButtonListeners = (pegawaiItem, pegawaiId) => {
+        debugLog(`Setup add button listeners untuk pegawai ${pegawaiId}`);
         pegawaiItem.querySelector('.tambah-transportasi-btn').addEventListener('click', () => {
+            debugLog(`Tambah transportasi untuk pegawai ${pegawaiId}`);
             addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawaiId);
         });
         pegawaiItem.querySelector('.tambah-akomodasi-btn').addEventListener('click', () => {
+            debugLog(`Tambah akomodasi untuk pegawai ${pegawaiId}`);
             addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawaiId);
         });
         pegawaiItem.querySelector('.tambah-kontribusi-btn').addEventListener('click', () => {
+            debugLog(`Tambah kontribusi untuk pegawai ${pegawaiId}`);
             addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawaiId);
         });
         pegawaiItem.querySelector('.tambah-lain-lain-btn').addEventListener('click', () => {
+            debugLog(`Tambah lain-lain untuk pegawai ${pegawaiId}`);
             addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawaiId);
         });
     };
@@ -663,6 +875,7 @@
         if (removeBtn) {
             const itemToRemove = removeBtn.parentElement.closest('div[class*="-item"]');
             const pegawaiItem = itemToRemove.closest('.pengeluaran-pegawai-item');
+            debugLog(`Menghapus item: ${itemToRemove.className}`);
             itemToRemove.remove();
             checkRemoveButtons(pegawaiItem);
         }
@@ -683,15 +896,19 @@
             const pegawaiId = pegawaiItem.dataset.pegawaiId;
             const hargaSatuanEl = itemElement.querySelector('[name$="[harga_satuan]"]');
 
+            debugLog(`Jenis akomodasi diubah: ${selectedValue} untuk pegawai ${pegawaiId}`);
+
             if (selectedValue === 'Rumah Warga (30%)') {
                 const standardCost = accommodationStandards[pegawaiId] || 0;
                 const calculatedCost = standardCost * 0.30;
                 hargaSatuanEl.value = formatCurrency(calculatedCost);
                 hargaSatuanEl.readOnly = true;
                 hargaSatuanEl.classList.add('bg-slate-100', 'dark:bg-slate-600', 'cursor-not-allowed');
+                debugLog(`Biaya rumah warga dihitung: ${standardCost} * 30% = ${calculatedCost}`);
             } else {
                 hargaSatuanEl.readOnly = false;
                 hargaSatuanEl.classList.remove('bg-slate-100', 'dark:bg-slate-600', 'cursor-not-allowed');
+                debugLog(`Biaya akomodasi manual diaktifkan`);
             }
             // Hitung ulang total setelah mengubah harga satuan
             updateAkomodasiTotal(itemElement);
@@ -715,9 +932,12 @@
 
     // Inisialisasi
     const initializePage = async () => {
-        const isEditMode = window.location.pathname.startsWith('/edit-laporan/');
+        debugLog('Memulai inisialisasi halaman');
+        isEditMode = window.location.pathname.startsWith('/edit-laporan/');
         const laporanId = isEditMode ? window.location.pathname.split('/').pop() : null;
         const submitButton = form.querySelector('button[type="submit"]');
+
+        debugLog(`Mode: ${isEditMode ? 'Edit' : 'Buat Baru'}, ID: ${laporanId || 'N/A'}`);
 
         if (isEditMode) {
             pageTitle.textContent = 'Edit Laporan Perjalanan Dinas';
@@ -726,7 +946,32 @@
         } else {
             await loadSptOptions();
         }
+
+        debugLog('Inisialisasi halaman selesai');
     };
+
+    // Panggil initializePage dan pastikan untuk membersihkan Object URL saat navigasi/penutupan
+    window.addEventListener('beforeunload', () => {
+        debugLog(`Membersihkan ${objectUrls.size} Object URL sebelum unload`);
+        objectUrls.forEach(url => URL.revokeObjectURL(url));
+    });
+
+    // Tambahkan debug container jika tidak ada
+    if (!document.getElementById('debug-container')) {
+        const debugContainer = document.createElement('div');
+        debugContainer.id = 'debug-container';
+        debugContainer.className = 'fixed bottom-0 right-0 w-80 h-40 bg-black bg-opacity-80 text-white text-xs p-2 overflow-auto z-50 hidden';
+        document.body.appendChild(debugContainer);
+
+        // Tombol toggle debug (opsional)
+        const debugToggle = document.createElement('button');
+        debugToggle.textContent = 'Debug';
+        debugToggle.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-2 py-1 rounded text-xs z-50';
+        debugToggle.addEventListener('click', () => {
+            debugContainer.classList.toggle('hidden');
+        });
+        document.body.appendChild(debugToggle);
+    }
 
     initializePage();
 })();

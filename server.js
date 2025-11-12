@@ -990,40 +990,47 @@ app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
 app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 5; // FIX: Gunakan radix 10
     const page = parseInt(req.query.page) || 1;
+    const query = req.query.q || '';
     const offset = (page - 1) * limit;
 
+    let whereClause = '';
+    const params = [];
+
+    if (query) {
+        whereClause = `WHERE program LIKE ? OR kegiatan LIKE ? OR sub_kegiatan LIKE ? OR mata_anggaran_nama LIKE ?`;
+        const searchQuery = `%${query}%`;
+        params.push(searchQuery, searchQuery, searchQuery, searchQuery);
+    }
+
     try {
-        const totalSql = "SELECT COUNT(*) as total FROM anggaran";
-        const totalResult = await dbGet(totalSql);
+        const totalResult = await dbGet(`SELECT COUNT(*) as total FROM anggaran ${whereClause}`, params);
         const totalItems = totalResult.total;
         const totalPages = Math.ceil(totalItems / limit);
 
         const sql = `
-        SELECT
-            a.*,
-            pptk.nama_lengkap as pptk_nama,
-            (
-                -- Hitung total dari bukti pembayaran
-                COALESCE((SELECT SUM(p.nominal_bayar) FROM pembayaran p WHERE p.anggaran_id = a.id), 0) +
-                -- Hitung total dari pengeluaran riil melalui SPT
-                COALESCE((
-                    SELECT SUM(pr.jumlah)
-                    FROM pengeluaran_riil pr
-                    JOIN spt s ON pr.spt_id = s.id
-                    WHERE s.anggaran_id = a.id
-                ), 0)
-            ) as realisasi
-        FROM
-            anggaran a
-        LEFT JOIN
-            pegawai pptk ON a.pptk_id = pptk.id
-        GROUP BY
-            a.id
-        ORDER BY
-            a.mata_anggaran_kode ASC
-        ` + (limit > 0 ? 'LIMIT ? OFFSET ?' : ''); // FIX: Hanya terapkan LIMIT jika > 0
-
-        const params = [];
+            -- PERBAIKAN UTAMA FINAL: Query ini menggabungkan semua anggaran berdasarkan kode,
+            -- lalu menjumlahkan total nilai dan total realisasi dengan benar.
+            SELECT
+                agg.mata_anggaran_kode,
+                agg.mata_anggaran_nama,
+                agg.program,
+                agg.kegiatan,
+                agg.sub_kegiatan,
+                agg.pptk_nama,
+                agg.total_nilai_anggaran as nilai_anggaran,
+                COALESCE(p_agg.total_realisasi, 0) as realisasi
+            FROM (
+                SELECT mata_anggaran_kode, mata_anggaran_nama, program, kegiatan, sub_kegiatan, MAX(pptk.nama_lengkap) as pptk_nama, SUM(nilai_anggaran) as total_nilai_anggaran
+                FROM anggaran
+                LEFT JOIN pegawai pptk ON anggaran.pptk_id = pptk.id
+                GROUP BY mata_anggaran_kode, mata_anggaran_nama
+            ) as agg
+            LEFT JOIN (
+                SELECT a.mata_anggaran_kode, SUM(p.nominal_bayar) as total_realisasi FROM pembayaran p JOIN anggaran a ON p.anggaran_id = a.id GROUP BY a.mata_anggaran_kode
+            ) as p_agg ON agg.mata_anggaran_kode = p_agg.mata_anggaran_kode
+            ${whereClause}
+            ORDER BY agg.mata_anggaran_kode ASC
+        ` + (limit > 0 ? 'LIMIT ? OFFSET ?' : '');
         if (limit > 0) {
             params.push(limit, offset);
         }
@@ -1043,6 +1050,28 @@ app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data anggaran:', err);
         res.status(500).json({ message: err.message });
+    }
+});
+
+// --- PERBAIKAN: API BARU KHUSUS UNTUK DROPDOWN ---
+// Endpoint ini hanya mengambil data yang diperlukan untuk dropdown, tanpa agregasi atau GROUP BY.
+// Ini memastikan semua data anggaran akan muncul di form SPT.
+app.get('/api/anggaran/options', isApiAuthenticated, async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                id, 
+                mata_anggaran_kode, 
+                mata_anggaran_nama, 
+                kegiatan, 
+                sub_kegiatan 
+            FROM anggaran 
+            ORDER BY mata_anggaran_kode ASC`;
+        const rows = await dbAll(sql, []);
+        res.json(rows); // Kembalikan sebagai array langsung
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil opsi anggaran:', err);
+        res.status(500).json({ message: 'Gagal memuat opsi anggaran.' });
     }
 });
 
@@ -3111,6 +3140,126 @@ app.get('/api/laporan/by-spt/:spt_id', isApiAuthenticated, async (req, res) => {
     }
 });
 
+// --- API BARU: Mengambil detail pengeluaran berdasarkan SPT & Standar Biaya (tanpa laporan) ---
+app.get('/api/spt/:spt_id/expenditure-details', isApiAuthenticated, async (req, res) => {
+    const { spt_id } = req.params;
+    try {
+        const spt = await dbGet(`SELECT id, lokasi_tujuan, tempat_berangkat, lama_perjalanan FROM spt WHERE id = ?`, [spt_id]);
+        if (!spt) {
+            return res.status(404).json({ message: 'Data SPT terkait tidak ditemukan.' });
+        }
+
+        // Ambil semua pegawai yang ditugaskan (bukan pengikut)
+        const pegawaiSql = `
+            SELECT p.id, p.nama_lengkap, p.nip, p.jabatan, p.golongan
+            FROM pegawai p
+            JOIN spt_pegawai sp ON p.id = sp.pegawai_id
+            WHERE sp.spt_id = ? AND sp.is_pengikut = 0
+        `;
+        const penerimaFromDb = await dbAll(pegawaiSql, [spt_id]);
+
+        if (penerimaFromDb.length === 0) {
+            return res.json({ penerima: [], pengeluaran: [] });
+        }
+
+        // =================================================================
+        // === LOGIKA PENCARIAN STANDAR BIAYA (disalin dari /api/laporan/by-spt) ===
+        // =================================================================
+        const lokasiTujuan = spt.lokasi_tujuan || '';
+        let isDalamKota = false;
+        let lokasiUntukQuery = lokasiTujuan;
+
+        const locationsData = require('./public/data/locations.json');
+
+        const cariJenisLokasi = (lokasi) => {
+            const lokasiLower = lokasi.toLowerCase().trim();
+            for (const group of locationsData) {
+                if (group.group.toLowerCase().includes('kecamatan')) {
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) return { jenis: 'desa', nama: location, group: group.group };
+                    }
+                    if (group.group.toLowerCase().includes(lokasiLower) || lokasiLower.includes(group.group.toLowerCase().replace('kecamatan', '').trim())) return { jenis: 'kecamatan', nama: group.group };
+                }
+            }
+            for (const group of locationsData) {
+                if (!group.group.toLowerCase().includes('kecamatan')) {
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) return { jenis: 'kabupaten', nama: location, provinsi: group.group };
+                    }
+                    if (group.group.toLowerCase() === lokasiLower) return { jenis: 'provinsi', nama: group.group };
+                }
+            }
+            return { jenis: 'tidak_diketahui', nama: lokasi };
+        };
+
+        const infoLokasi = cariJenisLokasi(lokasiTujuan);
+
+        const cariStandarBiaya = async (tipeBiaya, lokasiQuery) => {
+            let query = tipeBiaya === 'A' ? `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))` : `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
+            let params = [`%${lokasiQuery.trim()}%`];
+            if (tipeBiaya === 'C' && (lokasiQuery.toLowerCase().includes('jakarta') || lokasiQuery.toLowerCase().includes('dki'))) {
+                params = ['%JAKARTA%'];
+            }
+            return await dbGet(query, params);
+        };
+
+        let standarBiayaHarian;
+        if (infoLokasi.jenis === 'desa' || infoLokasi.jenis === 'kecamatan') {
+            const namaKecamatan = (infoLokasi.jenis === 'desa' ? infoLokasi.group : infoLokasi.nama).replace('Kecamatan', '').trim();
+            standarBiayaHarian = await cariStandarBiaya('A', namaKecamatan);
+            isDalamKota = true;
+        } else if (infoLokasi.jenis === 'kabupaten') {
+            const tempatBerangkat = spt.tempat_berangkat || 'Nanga Pinoh';
+            const isSameRegion = infoLokasi.nama.toLowerCase().includes(tempatBerangkat.toLowerCase());
+            standarBiayaHarian = isSameRegion ? await cariStandarBiaya('A', infoLokasi.nama) : await cariStandarBiaya('C', infoLokasi.provinsi);
+            isDalamKota = isSameRegion;
+        } else { // Provinsi atau tidak diketahui
+            standarBiayaHarian = await cariStandarBiaya('C', infoLokasi.nama);
+            isDalamKota = false;
+        }
+
+        if (!standarBiayaHarian) {
+            standarBiayaHarian = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = ? LIMIT 1`, [isDalamKota ? 'A' : 'C']);
+        }
+
+        const biayaRepresentasiEselonII = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'D' AND(TRIM(UPPER(uraian)) = 'PEJABAT ESELON II' OR TRIM(UPPER(uraian)) LIKE '%ESELON II%')`);
+        const representasiInfo = biayaRepresentasiEselonII ? { uraian: biayaRepresentasiEselonII.uraian, harga: isDalamKota ? (biayaRepresentasiEselonII.biaya_kontribusi || 0) : (biayaRepresentasiEselonII.besaran || 0), satuan: biayaRepresentasiEselonII.satuan } : null;
+
+        // =================================================================
+        // === AKHIR LOGIKA PENCARIAN STANDAR BIAYA ===
+        // =================================================================
+
+        const penerima = penerimaFromDb.map(p => {
+            const tingkatBiaya = getTingkatBiaya(p);
+            const kolomGolongan = getKolomGolongan(tingkatBiaya);
+            let hargaSatuanHarian = 0;
+            if (standarBiayaHarian) {
+                hargaSatuanHarian = standarBiayaHarian[kolomGolongan] || standarBiayaHarian.besaran || 0;
+            }
+            p.uang_harian = { harga_satuan: hargaSatuanHarian, satuan: standarBiayaHarian ? standarBiayaHarian.satuan : 'OH', golongan: tingkatBiaya };
+            if (p.jabatan && p.jabatan.toLowerCase().includes('kepala dinas') && representasiInfo) {
+                p.biaya_representasi = representasiInfo;
+            }
+            return p;
+        });
+
+        // Buat struktur pengeluaran kosong, karena belum ada laporan
+        const pengeluaran = penerima.map(p => ({
+            pegawai_id: p.id,
+            akomodasi_malam: spt.lama_perjalanan - 1, // Asumsi lama perjalanan - 1
+            transportasi_nominal: 0,
+            akomodasi_nominal: 0,
+            kontribusi_nominal: 0,
+            lain_lain_nominal: 0
+        }));
+
+        res.json({ penerima, pengeluaran });
+
+    } catch (error) {
+        console.error(`[API ERROR] Gagal mengambil rincian pengeluaran untuk SPT ${spt_id}: `, error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server saat menghitung rincian.' });
+    }
+});
 
 // GET: Mengambil data satu laporan untuk edit/cetak
 app.get('/api/laporan/:id', isApiAuthenticated, async (req, res) => {

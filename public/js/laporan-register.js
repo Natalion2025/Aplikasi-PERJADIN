@@ -376,9 +376,14 @@
     }
 
     // Event delegation untuk tombol hapus laporan
-    laporanTableBody.addEventListener('click', async (e) => {
-        const deleteBtn = e.target.closest('.delete-laporan-btn');
-        if (deleteBtn) {
+    // PERBAIKAN: Pastikan listener hanya berjalan jika elemen tabel ada.
+    if (laporanTableBody) {
+        laporanTableBody.addEventListener('click', async (e) => {
+            const deleteBtn = e.target.closest('.delete-laporan-btn');
+            // PERBAIKAN: Hanya proses jika tombol hapus yang diklik. Abaikan klik lain.
+            if (!deleteBtn) return;
+
+            e.preventDefault(); // Mencegah aksi default jika tombol ada di dalam <a>
             const id = deleteBtn.dataset.id;
             if (confirm('Apakah Anda yakin ingin menghapus laporan ini? Tindakan ini tidak dapat dibatalkan.')) {
                 try {
@@ -391,8 +396,8 @@
                     alert(`Gagal menghapus: ${error.message}`);
                 }
             }
-        }
-    });
+        });
+    }
 
     // --- KUMPULAN EVENT LISTENERS ---
 
