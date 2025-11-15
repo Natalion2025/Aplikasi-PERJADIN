@@ -1,4 +1,3 @@
-// public/js/anggaran.js
 (function () {
     // Elemen Modal
     const openModalBtn = document.getElementById('tambah-anggaran-button');
@@ -14,13 +13,6 @@
     const anggaranTableBody = document.getElementById('anggaran-table-body');
     const paginationContainer = document.getElementById('anggaran-pagination-container');
     const pageLimitSelect = document.getElementById('page-limit-select');
-
-    let currentPageLimit = 5;
-    let currentPage = 1;
-    let currentSearchQuery = '';
-
-    // Variabel untuk menyimpan instance chart
-    let anggaranDonutChart = null;
 
 
     let currentUserRole = 'user'; // Default role
@@ -39,7 +31,7 @@
         return parseFloat(String(value || '').replace(/[^0-9]/g, '')) || 0;
     };
 
-    // Function to open the modal
+    // Fungsi untuk membuka modal 
     const openModal = (anggaran = null) => {
         anggaranForm.reset();
         anggaranIdInput.value = '';
@@ -75,8 +67,284 @@
         anggaranIdInput.value = '';
     };
 
+    // --- PERMINTAAN: Plugin kustom untuk efek rounded-cap pada Donut Chart ---
+    // const roundedCapPlugin = {
+    //     id: 'roundedCap',
+    //     afterDraw: (chart) => {
+    //         if (chart.config.type !== 'doughnut' && chart.config.type !== 'pie') {
+    //             return;
+    //         }
+
+    //         const ctx = chart.ctx;
+    //         const dataset = chart.data.datasets[0];
+    //         const arcs = chart.getDatasetMeta(0).data;
+
+    //         // Dapatkan nilai radius pembulatan dari konfigurasi dataset (kita menggunakan borderRadius)
+    //         const capRadius = dataset.borderRadius;
+
+    //         arcs.forEach(arc => {
+    //             // Kita hanya menggambar cap jika ada data dan radius > 0
+    //             if (arc.endAngle - arc.startAngle > 0 && capRadius > 0) {
+
+    //                 const { x, y, innerRadius, outerRadius, startAngle, endAngle } = arc.getProps(['x', 'y', 'innerRadius', 'outerRadius', 'startAngle', 'endAngle']);
+    //                 const midRadius = (innerRadius + outerRadius) / 2;
+
+    //                 // Dapatkan warna segmen
+    //                 ctx.fillStyle = arc.options.backgroundColor;
+
+    //                 // --- Menggambar Cap Awal (Start Angle) ---
+    //                 const startX = x + midRadius * Math.cos(startAngle);
+    //                 const startY = y + midRadius * Math.sin(startAngle);
+
+    //                 ctx.beginPath();
+    //                 ctx.arc(startX, startY, capRadius, 0, Math.PI * 2);
+    //                 ctx.fill();
+
+    //                 // --- Menggambar Cap Akhir (End Angle) ---
+    //                 const endX = x + midRadius * Math.cos(endAngle);
+    //                 const endY = y + midRadius * Math.sin(endAngle);
+
+    //                 ctx.beginPath();
+    //                 ctx.arc(endX, endY, capRadius, 0, Math.PI * 2);
+    //                 ctx.fill();
+    //             }
+    //         });
+    //     }
+    // };
+
+    // --- FUNGSI HELPER BARU: Untuk memecah teks panjang di tooltip ---
+    function wrapText(text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            if (currentLine.length + word.length + 1 < maxWidth) {
+                currentLine += ' ' + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+
+    function labelFormatter(context) {
+        const value = context.raw || 0;
+        // Total semua Realisasi dan Sisa dari semua mata anggaran
+        const grandTotal = context.dataset.data.reduce((sum, current) => sum + current, 0);
+        const persentaseTotal = grandTotal > 0 ? (value / grandTotal) * 100 : 0;
+        // Format angka untuk label tooltip
+        const formattedValue = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+        return `Nilai: ${formattedValue} (${persentaseTotal.toFixed(1)}%) dari Total Anggaran Keseluruhan`;
+    }
+
+    // Variabel untuk menyimpan instance chart
+    let anggaranDonutChart = null;
+
+    // --- PERUBAHAN: Fungsi untuk merender Donut Chart ---
+    const renderDonutChart = (anggaranList) => {
+
+        // --- FUNGSI BARU: Helper untuk warna ---
+        const colorPalette = [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+            '#858796', '#5a5c69', '#f8f9fc', '#6f42c1', '#fd7e14'
+        ];
+
+        const lightenColor = (hex, percent) => {
+            hex = hex.replace(/^#/, '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+
+            const newR = Math.min(255, r + (255 - r) * (percent / 100));
+            const newG = Math.min(255, g + (255 - g) * (percent / 100));
+            const newB = Math.min(255, b + (255 - b) * (percent / 100));
+
+            return `#${Math.round(newR).toString(16).padStart(2, '0')}${Math.round(newG).toString(16).padStart(2, '0')}${Math.round(newB).toString(16).padStart(2, '0')}`;
+        };
+
+        const getColorForIndex = (index) => {
+            return colorPalette[index % colorPalette.length];
+        };
+
+        const ctx = document.getElementById('anggaranDonutChart')?.getContext('2d');
+        if (!ctx) {
+            console.warn('[DEBUG-CHART] Elemen canvas "anggaranDonutChart" tidak ditemukan. Chart tidak akan dirender.');
+            return;
+        }
+
+        // PERBAIKAN: Tidak perlu agregasi di sisi klien lagi.
+        // Data dari API sudah diagregasi dengan benar.
+        const validAnggaranList = anggaranList.filter(a => a && (a.nilai_anggaran || 0) > 0);
+
+        console.log('[DEBUG-CHART] Data yang akan dirender di chart:', validAnggaranList);
+
+        if (!validAnggaranList || validAnggaranList.length === 0) {
+            // Jika tidak ada data yang valid, set persentase ke 0%
+            document.getElementById('total-realisasi-persen').textContent = `0%`;
+            const legendContainer = document.getElementById('donut-chart-legend');
+            if (legendContainer) {
+                legendContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Belum ada data anggaran untuk ditampilkan.</p>';
+            }
+            if (anggaranDonutChart) {
+                anggaranDonutChart.destroy();
+            }
+            return;
+        }
+
+        // Array baru untuk data chart
+        let chartLabels = [];
+        let chartData = [];
+        let chartColors = [];
+        let originalBudgetNames = [];
+        let originalDataRealisasi = [];
+        let originalDataSisa = [];
+
+        // --- PERUBAHAN LOGIKA: Hanya tampilkan realisasi sebagai segmen berwarna ---
+        // 1. Hitung total sisa anggaran dari semua item
+        const totalSisaAnggaran = validAnggaranList.reduce((sum, a) => sum + (a.sisa || 0), 0);
+
+        // 2. Buat slice untuk setiap realisasi
+        validAnggaranList.forEach((data, index) => {
+            const realisasi = data.realisasi || 0;
+
+            // Simpan data asli untuk Legenda
+            originalBudgetNames.push(data.mata_anggaran_nama);
+            originalDataRealisasi.push(realisasi);
+            originalDataSisa.push(data.sisa || 0);
+
+            // Hanya tambahkan slice jika ada realisasi
+            if (realisasi > 0) {
+                chartLabels.push(`Realisasi ${data.mata_anggaran_nama}`);
+                chartData.push(realisasi);
+                chartColors.push(getColorForIndex(index));
+            }
+        });
+
+        // 3. Tambahkan satu slice besar untuk total sisa anggaran
+        chartLabels.push('Sisa Anggaran Keseluruhan');
+        chartData.push(totalSisaAnggaran);
+        chartColors.push('#e9ecef'); // Warna abu-abu netral untuk sisa
+
+        // Hentikan jika tidak ada data sama sekali setelah filtering
+        if (chartData.length === 0) {
+            document.getElementById('total-realisasi-persen').textContent = `0%`;
+            const legendContainer = document.getElementById('donut-chart-legend');
+            if (legendContainer) {
+                legendContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Nilai anggaran total adalah nol atau data tidak valid.</p>';
+            }
+            if (anggaranDonutChart) {
+                anggaranDonutChart.destroy();
+            }
+            return;
+        }
+
+
+        // Hitung total keseluruhan dari list original untuk persentase tengah
+        const totalAnggaran = anggaranList.reduce((sum, a) => sum + (a.nilai_anggaran || 0), 0);
+        const totalRealisasi = anggaranList.reduce((sum, a) => sum + (a.realisasi || 0), 0);
+        const totalPersentase = totalAnggaran > 0 ? (totalRealisasi / totalAnggaran) * 100 : 0;
+
+        // Update teks di tengah chart
+        document.getElementById('total-realisasi-persen').textContent = `${totalPersentase.toFixed(1)}%`;
+
+        // --- PERUBAHAN: Render Legenda di samping Chart ---
+        const legendContainer = document.getElementById('donut-chart-legend');
+        if (legendContainer) {
+            let legendHtml = ''; // Buat string HTML kosong
+            if (originalBudgetNames.length > 0) {
+                // Tampilkan Legenda berdasarkan Mata Anggaran (gabungan Realisasi dan Sisa)
+                originalBudgetNames.forEach((label, index) => {
+                    const realisasiValue = originalDataRealisasi[index];
+                    const sisaValue = originalDataSisa[index];
+                    const baseColor = getColorForIndex(index);
+                    const sisaColor = lightenColor(baseColor, 60); // Diperlukan untuk legenda
+                    const totalAnggaranMata = realisasiValue + sisaValue;
+                    const persentaseRealisasi = totalAnggaranMata > 0 ? (realisasiValue / totalAnggaranMata) * 100 : 0;
+
+                    // PERBAIKAN: Tambahkan HTML ke string, jangan langsung ke innerHTML
+                    legendHtml += `
+                        <div class="flex flex-col text-sm border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
+                            <span class="font-semibold text-gray-800 dark:text-white">${label} (Rp ${formatCurrency(totalAnggaranMata)})</span>
+                            <div class="flex items-center mt-1">
+                                <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${baseColor};"></span>
+                                <span class="flex-grow text-gray-600 dark:text-gray-300">Realisasi (${persentaseRealisasi.toFixed(1)}%)</span>
+                                <span class="font-medium text-gray-800 dark:text-white">Rp ${formatCurrency(realisasiValue)}</span>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                legendHtml = '<p class="text-sm text-gray-500 dark:text-gray-400">Belum ada data anggaran untuk ditampilkan.</p>';
+            }
+            // PERBAIKAN: Set innerHTML hanya sekali setelah loop selesai.
+            legendContainer.innerHTML = legendHtml;
+        }
+
+        if (anggaranDonutChart) {
+            anggaranDonutChart.destroy();
+        }
+
+
+        anggaranDonutChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels, // Label yang sudah dipecah (Realisasi: Nama, Sisa: Nama)
+                datasets: [{
+                    label: 'Realisasi vs Sisa Anggaran',
+                    data: chartData, // Data yang sudah dipecah
+                    backgroundColor: chartColors, // Warna yang sudah dipecah
+                    borderColor: '#ffffff',
+                    borderRadius: 25,
+                    borderWidth: 2,
+                    spacing: -15,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '77%',
+                plugins: {
+                    legend: {
+                        display: false // Sembunyikan legenda asli
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            title: function (context) {
+                                // PERBAIKAN: Gunakan fungsi wrapText untuk memecah judul yang panjang
+                                return wrapText(context[0].label, 30); // Batasi sekitar 30 karakter per baris
+                            },
+                            label: function (context) {
+                                return wrapText(labelFormatter(context), 30); // Batasi sekitar 30 karakter per baris
+                            },
+                        }
+                    }
+                }
+            },
+            //plugins: [roundedCapPlugin] // Daftarkan plugin kustom di sini
+        });
+    };
+
+
+    // Objek pendukung fitur pagination
+    let currentPageLimit = 5;
+    let currentPage = 1;
+    let currentSearchQuery = '';
+
     // Fungsi render paginasi generik
-    const renderPagination = (container, pagination, loadFunction) => {
+    function renderPagination(container, pagination, loadFunction) {
+
         if (!container) return;
         container.innerHTML = '';
 
@@ -158,7 +426,7 @@
         wrapper.appendChild(pageInfo);
         wrapper.appendChild(navButtons);
         container.appendChild(wrapper);
-    };
+    }
 
 
     // Fungsi untuk merender daftar anggaran ke dalam tabel
@@ -254,218 +522,8 @@
         renderPagination(paginationContainer, pagination, loadAnggaran);
     };
 
-    // --- FUNGSI BARU: Helper untuk warna ---
-    const colorPalette = [
-        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
-        '#858796', '#5a5c69', '#f8f9fc', '#6f42c1', '#fd7e14'
-    ];
-
-    const lightenColor = (hex, percent) => {
-        hex = hex.replace(/^#/, '');
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-
-        const newR = Math.min(255, r + (255 - r) * (percent / 100));
-        const newG = Math.min(255, g + (255 - g) * (percent / 100));
-        const newB = Math.min(255, b + (255 - b) * (percent / 100));
-
-        return `#${Math.round(newR).toString(16).padStart(2, '0')}${Math.round(newG).toString(16).padStart(2, '0')}${Math.round(newB).toString(16).padStart(2, '0')}`;
-    };
-
-    const getColorForIndex = (index) => {
-        return colorPalette[index % colorPalette.length];
-    };
-    // --- PERUBAHAN: Fungsi untuk merender Donut Chart ---
-    const renderDonutChart = (anggaranList) => {
-        const ctx = document.getElementById('anggaranDonutChart')?.getContext('2d');
-        if (!ctx) {
-            console.warn('[DEBUG-CHART] Elemen canvas "anggaranDonutChart" tidak ditemukan. Chart tidak akan dirender.');
-            return;
-        }
-
-        // PERBAIKAN: Tidak perlu agregasi di sisi klien lagi.
-        // Data dari API sudah diagregasi dengan benar.
-        const validAnggaranList = anggaranList.filter(a => a && (a.nilai_anggaran || 0) > 0);
-
-        console.log('[DEBUG-CHART] Data yang akan dirender di chart:', validAnggaranList);
-
-        if (!validAnggaranList || validAnggaranList.length === 0) {
-            // Jika tidak ada data yang valid, set persentase ke 0%
-            document.getElementById('total-realisasi-persen').textContent = `0%`;
-            const legendContainer = document.getElementById('donut-chart-legend');
-            if (legendContainer) {
-                legendContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Belum ada data anggaran untuk ditampilkan.</p>';
-            }
-            if (anggaranDonutChart) {
-                anggaranDonutChart.destroy();
-            }
-            return;
-        }
-
-        // Array baru untuk data chart
-        let chartLabels = [];
-        let chartData = [];
-        let chartColors = [];
-        let originalBudgetNames = [];
-        let originalDataRealisasi = [];
-        let originalDataSisa = [];
-
-        // Menggabungkan Realisasi dan Sisa sebagai pasangan slice untuk visualisasi yang benar
-        validAnggaranList.forEach((data, index) => {
-            const sisa = data.sisa || 0;
-            const realisasi = data.realisasi || 0;
-
-            const baseColor = getColorForIndex(index);
-            const sisaColor = lightenColor(baseColor, 60); // Buat warna sisa 60% lebih terang
-            // PERBAIKAN: Hapus filter yang tidak perlu. Filter sudah dilakukan di awal.
-
-            // Simpan data asli untuk Legenda
-            originalBudgetNames.push(data.mata_anggaran_nama);
-            originalDataRealisasi.push(realisasi);
-            originalDataSisa.push(sisa);
-
-            // Slice Realisasi
-            chartLabels.push(`Realisasi: ${data.mata_anggaran_nama}`);
-            chartData.push(realisasi);
-            chartColors.push(baseColor);
-
-            // Slice Sisa
-            chartLabels.push(`Sisa: ${data.mata_anggaran_nama}`);
-            chartData.push(sisa);
-            chartColors.push(sisaColor);
-        });
-
-        // Hentikan jika tidak ada data sama sekali setelah filtering
-        if (chartData.length === 0) {
-            document.getElementById('total-realisasi-persen').textContent = `0%`;
-            const legendContainer = document.getElementById('donut-chart-legend');
-            if (legendContainer) {
-                legendContainer.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Nilai anggaran total adalah nol atau data tidak valid.</p>';
-            }
-            if (anggaranDonutChart) {
-                anggaranDonutChart.destroy();
-            }
-            return;
-        }
 
 
-        // Hitung total keseluruhan dari list original untuk persentase tengah
-        const totalAnggaran = anggaranList.reduce((sum, a) => sum + (a.nilai_anggaran || 0), 0);
-        const totalRealisasi = anggaranList.reduce((sum, a) => sum + (a.realisasi || 0), 0);
-        const totalPersentase = totalAnggaran > 0 ? (totalRealisasi / totalAnggaran) * 100 : 0;
-
-        // Update teks di tengah chart
-        document.getElementById('total-realisasi-persen').textContent = `${totalPersentase.toFixed(1)}%`;
-
-        // --- PERUBAHAN: Render Legenda di samping Chart ---
-        const legendContainer = document.getElementById('donut-chart-legend');
-        if (legendContainer) {
-            let legendHtml = ''; // Buat string HTML kosong
-            if (originalBudgetNames.length > 0) {
-                // Tampilkan Legenda berdasarkan Mata Anggaran (gabungan Realisasi dan Sisa)
-                originalBudgetNames.forEach((label, index) => {
-                    const realisasiValue = originalDataRealisasi[index];
-                    const sisaValue = originalDataSisa[index];
-                    const baseColor = getColorForIndex(index);
-                    const sisaColor = lightenColor(baseColor, 60);
-                    const totalAnggaranMata = realisasiValue + sisaValue;
-                    const persentaseRealisasi = totalAnggaranMata > 0 ? (realisasiValue / totalAnggaranMata) * 100 : 0;
-
-                    // PERBAIKAN: Tambahkan HTML ke string, jangan langsung ke innerHTML
-                    legendHtml += `
-                        <div class="flex flex-col text-sm border-b border-gray-100 dark:border-gray-700 pb-2 mb-2">
-                            <span class="font-semibold text-gray-800 dark:text-white">${label}</span>
-                            <div class="flex items-center mt-1">
-                                <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${baseColor};"></span>
-                                <span class="flex-grow text-gray-600 dark:text-gray-300">Realisasi (${persentaseRealisasi.toFixed(1)}%)</span>
-                                <span class="font-medium text-gray-800 dark:text-white">Rp ${formatCurrency(realisasiValue)}</span>
-                            </div>
-                            <div class="flex items-center">
-                                <span class="h-3 w-3 rounded-full mr-2" style="background-color: ${sisaColor};"></span>
-                                <span class="flex-grow text-gray-600 dark:text-gray-300">Sisa Anggaran</span>
-                                <span class="font-medium text-gray-800 dark:text-white">Rp ${formatCurrency(sisaValue)}</span>
-                            </div>
-                        </div>`;
-                });
-            } else {
-                legendHtml = '<p class="text-sm text-gray-500 dark:text-gray-400">Belum ada data anggaran untuk ditampilkan.</p>';
-            }
-            // PERBAIKAN: Set innerHTML hanya sekali setelah loop selesai.
-            legendContainer.innerHTML = legendHtml;
-        }
-
-        if (anggaranDonutChart) {
-            anggaranDonutChart.destroy();
-        }
-
-        anggaranDonutChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: chartLabels, // Label yang sudah dipecah (Realisasi: Nama, Sisa: Nama)
-                datasets: [{
-                    label: 'Realisasi vs Sisa Anggaran',
-                    data: chartData, // Data yang sudah dipecah
-                    backgroundColor: chartColors, // Warna yang sudah dipecah
-                    borderColor: '#ffffff',
-                    borderRadius: 10, // PERMINTAAN: Membuat ujung slice membulat penuh (full)
-                    borderWidth: 2,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: {
-                    legend: {
-                        display: false // Sembunyikan legenda asli
-                    },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            title: function (context) {
-                                // Judul adalah label slice (Realisasi: Nama / Sisa: Nama)
-                                return context[0].label;
-                            },
-                            label: function (context) {
-                                const value = context.raw || 0;
-                                // Total semua Realisasi dan Sisa dari semua mata anggaran
-                                const grandTotal = context.dataset.data.reduce((sum, current) => sum + current, 0);
-                                const persentaseTotal = grandTotal > 0 ? (value / grandTotal) * 100 : 0;
-                                // Format angka untuk label tooltip
-                                const formattedValue = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
-                                return `Nilai: ${formattedValue} (${persentaseTotal.toFixed(1)}% dari Total Anggaran)`;
-                            },
-                            afterLabel: function (context) {
-                                // Tampilkan total nilai mata anggaran ini
-                                const dataIndex = context.dataIndex;
-                                // Periksa apakah ini slice Realisasi (indeks genap) atau Sisa (indeks ganjil)
-                                const isRealisasiSlice = dataIndex % 2 === 0;
-                                const realisasiIndex = isRealisasiSlice ? dataIndex : dataIndex - 1;
-                                const sisaIndex = isRealisasiSlice ? dataIndex + 1 : dataIndex;
-
-                                // Cari data Realisasi dan Sisa (aman karena data dibuat berpasangan)
-                                const realisasi = context.dataset.data[realisasiIndex] || 0;
-                                const sisa = context.dataset.data[sisaIndex] || 0;
-                                const totalAnggaranMata = realisasi + sisa;
-
-                                const formattedTotal = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAnggaranMata);
-                                return `Total Mata Anggaran: ${formattedTotal}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    };
 
     // Fungsi untuk memuat data anggaran dari server
     const loadAnggaran = async (page = 1, query = '') => {
@@ -473,11 +531,11 @@
         try {
             // Ambil data sesi, anggaran, dan pegawai secara bersamaan
             const [sessionRes, anggaranRes, pegawaiRes, allAnggaranResForChart] = await Promise.all([
-                fetch('/api/user/session'),
-                fetch(`/api/anggaran?page=${page}&limit=${currentPageLimit}&q=${query}`),
-                fetch('/api/pegawai'),
+                fetch('/api/user/session', { cache: 'no-store' }),
+                fetch(`/api/anggaran?page=${page}&limit=${currentPageLimit}&q=${query}`, { cache: 'no-store' }),
+                fetch('/api/pegawai', { cache: 'no-store' }),
                 // Ambil semua data yang cocok dengan query untuk chart
-                fetch(`/api/anggaran?limit=0&q=${query}`)
+                fetch(`/api/anggaran?limit=0&q=${query}`, { cache: 'no-store' })
             ]);
 
             if (sessionRes.ok) {
@@ -517,113 +575,152 @@
         }
     };
 
-    // Handle form submission
-    anggaranForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const id = anggaranIdInput.value;
-        const formData = new FormData(anggaranForm);
-        const data = Object.fromEntries(formData.entries());
+    // PERBAIKAN: Bungkus semua logika spesifik halaman Anggaran dalam satu blok kondisi.
+    // Ini memastikan kode ini hanya berjalan jika kita berada di halaman Anggaran.
+    if (anggaranTableBody) {
+        // Handle form submission
+        anggaranForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = anggaranIdInput.value;
+            const formData = new FormData(anggaranForm);
+            const data = Object.fromEntries(formData.entries());
 
-        // Parse nilai anggaran dari format mata uang ke angka sebelum dikirim
-        data.nilai_anggaran = parseCurrency(data.nilai_anggaran);
-        data.pptk_id = document.getElementById('pptk_id').value;
+            data.nilai_anggaran = parseCurrency(data.nilai_anggaran);
+            data.pptk_id = document.getElementById('pptk_id').value;
 
-        // Pisahkan kode dan nama mata anggaran
-        const mataAnggaranValue = data.mata_anggaran;
-        const [kode, ...namaArray] = mataAnggaranValue.split(' - ');
-        data.mata_anggaran = mataAnggaranValue; // Kirim value lengkap
+            const mataAnggaranValue = data.mata_anggaran;
+            data.mata_anggaran = mataAnggaranValue;
 
-        const url = id ? `/api/anggaran/${id}` : '/api/anggaran';
-        const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/anggaran/${id}` : '/api/anggaran';
+            const method = id ? 'PUT' : 'POST';
 
-        try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data.');
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Gagal menyimpan data.');
 
-            closeModal();
-            // Panggil loadAnggaran dengan halaman saat ini dan query pencarian yang aktif.
-            loadAnggaran(currentPage, currentSearchQuery);
-        } catch (error) {
-            alert(`Error: ${error.message}`);
-        }
-    });
+                closeModal();
+                loadAnggaran(currentPage, currentSearchQuery);
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
 
-    // Event delegation untuk tombol Edit dan Hapus
-    anggaranTableBody.addEventListener('click', async (event) => {
-        const target = event.target;
+        // Event delegation untuk tombol Edit dan Hapus
+        anggaranTableBody.addEventListener('click', async (event) => {
+            const target = event.target;
 
-        // Handle Edit (periksa parent jika ikon yang diklik)
-        const editBtn = target.closest('.edit-btn');
-        if (editBtn) {
-            const id = editBtn.dataset.id; // Ambil ID dari tombol, bukan dari target klik
-            const response = await fetch(`/api/anggaran/${id}`);
-            const anggaran = await response.json();
-            openModal(anggaran);
-        }
+            const editBtn = target.closest('.edit-btn');
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                const response = await fetch(`/api/anggaran/${id}`);
+                const anggaran = await response.json();
+                openModal(anggaran);
+            }
 
-        // Handle Delete (periksa parent jika ikon yang diklik)
-        const deleteBtn = target.closest('.delete-btn');
-        if (deleteBtn) {
-            const id = deleteBtn.dataset.id; // Ambil ID dari tombol, bukan dari target klik
-            if (confirm('Apakah Anda yakin ingin menghapus data anggaran ini?')) {
-                try {
-                    const response = await fetch(`/api/anggaran/${id}`, { method: 'DELETE' });
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.message || 'Gagal menghapus data.');
-                    loadAnggaran(); // Muat ulang daftar
-                } catch (error) {
-                    alert(`Error: ${error.message}`);
+            const deleteBtn = target.closest('.delete-btn');
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                if (confirm('Apakah Anda yakin ingin menghapus data anggaran ini?')) {
+                    try {
+                        const response = await fetch(`/api/anggaran/${id}`, { method: 'DELETE' });
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.message || 'Gagal menghapus data.');
+                        loadAnggaran();
+                    } catch (error) {
+                        alert(`Error: ${error.message}`);
+                    }
                 }
             }
-        }
-    });
-
-    // Event listeners untuk modal
-    openModalBtn.addEventListener('click', () => openModal());
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) closeModal();
-    });
-
-    // Event listener untuk memformat input mata uang secara otomatis
-    anggaranForm.addEventListener('input', (e) => {
-        if (e.target.id === 'nilai_anggaran') {
-            // Simpan posisi kursor
-            const start = e.target.selectionStart;
-            const end = e.target.selectionEnd;
-            const oldValue = e.target.value;
-
-            e.target.value = formatCurrency(e.target.value);
-
-            // Kembalikan posisi kursor dengan memperhitungkan penambahan/pengurangan titik
-            const newLength = e.target.value.length;
-            const oldLength = oldValue.length;
-            e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
-        }
-    });
-
-    if (pageLimitSelect) {
-        pageLimitSelect.addEventListener('change', (e) => {
-            currentPageLimit = parseInt(e.target.value, 10);
-            loadAnggaran(1, currentSearchQuery);
         });
+
+        // Event listeners untuk modal
+        if (openModalBtn) openModalBtn.addEventListener('click', () => openModal());
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (modal) modal.addEventListener('click', (event) => {
+            if (event.target === modal) closeModal();
+        });
+
+        // Event listener untuk memformat input mata uang secara otomatis
+        anggaranForm.addEventListener('input', (e) => {
+            if (e.target.id === 'nilai_anggaran') {
+                const start = e.target.selectionStart;
+                const end = e.target.selectionEnd;
+                const oldValue = e.target.value;
+
+                e.target.value = formatCurrency(e.target.value);
+
+                const newLength = e.target.value.length;
+                const oldLength = oldValue.length;
+                e.target.setSelectionRange(start + (newLength - oldLength), end + (newLength - oldLength));
+            }
+        });
+
+        if (pageLimitSelect) {
+            pageLimitSelect.addEventListener('change', (e) => {
+                currentPageLimit = parseInt(e.target.value, 10);
+                loadAnggaran(1, currentSearchQuery);
+            });
+        }
+
+        // Listener untuk event pencarian lokal dari header
+        document.addEventListener('localSearch', (e) => {
+            if (window.location.pathname.includes('/anggaran')) {
+                e.preventDefault();
+                const { query } = e.detail;
+                loadAnggaran(1, query);
+            }
+        });
+
+        // Inisialisasi halaman Anggaran
+        loadAnggaran(1, currentSearchQuery);
     }
 
-    // Listener untuk event pencarian lokal dari header
-    document.addEventListener('localSearch', (e) => {
-        if (window.location.pathname.includes('/anggaran')) {
-            e.preventDefault(); // Event ditangani
-            const { query } = e.detail;
-            loadAnggaran(1, query);
+    /**
+     * FUNGSI GLOBAL: Mengambil data anggaran dari API dan mengisi elemen <select>.
+     * Fungsi ini diekspos ke 'window' agar bisa dipanggil dari script lain.
+     * @param {string} selectElementId - ID dari elemen <select> yang akan diisi.
+     * @param {string} [placeholder='-- Pilih Kode Anggaran --'] - Teks placeholder untuk opsi pertama.
+     */
+    window.populateAnggaranDropdown = async (selectElementId, placeholder = '-- Pilih Kode Anggaran --') => {
+        const selectElement = document.getElementById(selectElementId);
+        if (!selectElement) {
+            console.error(`Elemen dropdown dengan ID #${selectElementId} tidak ditemukan.`);
+            return;
         }
-    });
 
-    // Inisialisasi halaman
-    loadAnggaran(1, currentSearchQuery);
+        // Tampilkan status loading
+        selectElement.innerHTML = `<option value="">Memuat data anggaran...</option>`;
+        selectElement.disabled = true;
+
+        try {
+            // Mengambil semua data anggaran (limit=0)
+            const response = await fetch('/api/anggaran?limit=0');
+            if (!response.ok) {
+                throw new Error(`Gagal mengambil data anggaran: ${response.statusText}`);
+            }
+            const result = await response.json();
+            const anggaranList = result.data || result; // Handle jika API mengembalikan array langsung
+
+            selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+
+            anggaranList.forEach(anggaran => {
+                const option = document.createElement('option');
+                option.value = anggaran.id;
+                option.textContent = `${anggaran.mata_anggaran_kode} - ${anggaran.mata_anggaran_nama}`;
+                selectElement.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Terjadi kesalahan saat mengisi dropdown anggaran:", error);
+            selectElement.innerHTML = `<option value="">Gagal memuat data</option>`;
+        } finally {
+            selectElement.disabled = false;
+        }
+    };
+
 })();

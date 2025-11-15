@@ -988,10 +988,14 @@ app.delete('/api/pejabat/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, async
 
 // GET all anggaran
 app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
-    const limit = parseInt(req.query.limit, 10) || 5; // FIX: Gunakan radix 10
+    // PERBAIKAN: Tangani kasus limit=0 untuk mengambil semua data (untuk chart).
+    // Jika req.query.limit tidak ada atau 0, maka limit akan menjadi 0.
+    // Jika ada, akan di-parse. Jika parsing gagal (misal, string kosong), default ke 5.
+    const limit = req.query.limit === '0' ? 0 : (parseInt(req.query.limit, 10) || 5);
     const page = parseInt(req.query.page) || 1;
     const query = req.query.q || '';
-    const offset = (page - 1) * limit;
+    // PERBAIKAN: Offset hanya dihitung jika ada limit (paginasi aktif).
+    const offset = limit > 0 ? (page - 1) * limit : 0;
 
     let whereClause = '';
     const params = [];
@@ -1003,13 +1007,18 @@ app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
     }
 
     try {
-        const totalResult = await dbGet(`SELECT COUNT(*) as total FROM anggaran ${whereClause}`, params);
-        const totalItems = totalResult.total;
+        // PERBAIKAN: Hitung total item hanya jika paginasi aktif untuk efisiensi.
+        let totalItems = 0;
+        if (limit > 0) {
+            const totalResult = await dbGet(`SELECT COUNT(DISTINCT mata_anggaran_kode) as total FROM anggaran ${whereClause}`, params);
+            totalItems = totalResult.total;
+        }
         const totalPages = Math.ceil(totalItems / limit);
 
         const sql = `
             -- PERBAIKAN UTAMA FINAL: Query ini menggabungkan semua anggaran berdasarkan kode,
             -- lalu menjumlahkan total nilai dan total realisasi dengan benar.
+            -- Sebagian untuk menangani query untuk donut chart dan legend.
             SELECT
                 agg.mata_anggaran_kode,
                 agg.mata_anggaran_nama,
@@ -1020,10 +1029,15 @@ app.get('/api/anggaran', isApiAuthenticated, async (req, res) => {
                 agg.total_nilai_anggaran as nilai_anggaran,
                 COALESCE(p_agg.total_realisasi, 0) as realisasi
             FROM (
-                SELECT mata_anggaran_kode, mata_anggaran_nama, program, kegiatan, sub_kegiatan, MAX(pptk.nama_lengkap) as pptk_nama, SUM(nilai_anggaran) as total_nilai_anggaran
+                -- PERBAIKAN: Mengelompokkan hanya berdasarkan kode mata anggaran untuk agregasi yang benar.
+                -- Ini akan menjumlahkan semua anggaran dengan kode yang sama, bahkan jika namanya sedikit berbeda.
+                SELECT 
+                    mata_anggaran_kode, 
+                    SUBSTR(GROUP_CONCAT(mata_anggaran_nama), 1, INSTR(GROUP_CONCAT(mata_anggaran_nama) || ',', ',') - 1) as mata_anggaran_nama,
+                    program, kegiatan, sub_kegiatan, MAX(pptk.nama_lengkap) as pptk_nama, SUM(nilai_anggaran) as total_nilai_anggaran
                 FROM anggaran
                 LEFT JOIN pegawai pptk ON anggaran.pptk_id = pptk.id
-                GROUP BY mata_anggaran_kode, mata_anggaran_nama
+                GROUP BY mata_anggaran_kode
             ) as agg
             LEFT JOIN (
                 SELECT a.mata_anggaran_kode, SUM(p.nominal_bayar) as total_realisasi FROM pembayaran p JOIN anggaran a ON p.anggaran_id = a.id GROUP BY a.mata_anggaran_kode

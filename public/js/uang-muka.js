@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.pelaksana_nama}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatCurrency(item.total_biaya)}</td>
                 <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button data-id="${item.id}" class="print-btn text-blue-600 hover:text-blue-900" title="Cetak Bukti"><i class="fas fa-print"></i></button>
-                    <button data-id="${item.id}" class="edit-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button data-id="${item.id}" class="print-btn text-blue-600 hover:text-blue-900 ml-4" title="Cetak Bukti"><i class="fas fa-print"></i></button>
+                    <button data-id="${item.id}" class="edit-btn text-yellow-600 hover:text-yellow-900 ml-4" title="Edit"><i class="fas fa-edit"></i></button>
                     <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus"><i class="fas fa-trash"></i></button>
                 </td>
             `;
@@ -135,8 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`/api/panjar/${id}`, { method: 'DELETE' });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
-                    alert(result.message);
-                    loadUangMuka();
+                    alert(result.message); // Beri konfirmasi ke pengguna
+                    loadUangMuka(); // Muat ulang daftar
                 } catch (error) {
                     alert(`Gagal menghapus: ${error.message}`);
                 }
@@ -145,23 +145,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (button.classList.contains('edit-btn')) {
             // Logika untuk membuka modal dan mengisi data
-            const response = await fetch(`/api/panjar/${id}`);
-            if (!response.ok) {
-                alert('Gagal memuat data untuk diedit.');
-                return;
-            }
-            const data = await response.json();
+            try {
+                const response = await fetch(`/api/panjar/${id}`);
+                if (!response.ok) {
+                    throw new Error('Gagal memuat data untuk diedit.');
+                }
+                const data = await response.json();
 
-            // Panggil fungsi global openPanjarModal yang sudah diekspos dari spt-register.js
-            if (typeof window.openPanjarModal === 'function') {
-                window.openPanjarModal(data); // Kirim data untuk diisi
-            } else {
-                alert('Fungsi untuk edit tidak ditemukan.');
+                // Panggil fungsi global openPanjarModal yang ada di spt-register.js
+                if (typeof window.openPanjarModal === 'function') {
+                    window.openPanjarModal(data, true); // PERBAIKAN: Kirim data dan flag isFromUangMukaPage
+                } else {
+                    console.error('Fungsi window.openPanjarModal tidak ditemukan. Pastikan spt-register.js dimuat.');
+                    alert('Fungsi untuk edit tidak tersedia saat ini.');
+                }
+            } catch (error) {
+                alert(`Gagal membuka form edit: ${error.message}`);
             }
         }
 
         if (button.classList.contains('print-btn')) {
             window.open(`/cetak/panjar/${id}`, '_blank');
+        }
+
+        if (button.classList.contains('pay-btn')) {
+            // Logika untuk membuka modal pembayaran
+            try {
+                const response = await fetch(`/api/panjar/${id}`);
+                if (!response.ok) {
+                    throw new Error('Gagal memuat data untuk pembayaran.');
+                }
+                const data = await response.json();
+
+                if (window.app && window.app.pembayaranUangMuka) {
+                    window.app.pembayaranUangMuka.openModal(data);
+                } else {
+                    console.error('Objek window.app.pembayaranUangMuka tidak ditemukan. Pastikan pembayaran-uang-muka.js dimuat.');
+                    alert('Fungsi untuk pembayaran tidak tersedia saat ini.');
+                }
+            } catch (error) {
+                alert(`Gagal membuka form pembayaran: ${error.message}`);
+            }
         }
     });
 

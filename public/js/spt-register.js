@@ -357,7 +357,7 @@
     // --- LOGIKA MODAL PANJAR ---
 
     // Jadikan fungsi ini global agar bisa diakses dari file lain (misal: uang-muka.js)
-    window.openPanjarModal = async (data = null) => {
+    window.openPanjarModal = async (data = null, isFromUangMukaPage = false) => {
         if (!panjarModal) return;
 
         rincianBiayaContainer.innerHTML = ''; // Kosongkan rincian
@@ -375,18 +375,29 @@
             document.getElementById('panjar_tanggal').value = data.tanggal_panjar;
             panjarSptSelect.value = data.spt_id;
 
-            // PERBAIKAN: Trigger 'change' pada SPT untuk memuat SEMUA pegawai terkait dalam mode edit.
-            // Event ini akan menjalankan listener yang sudah kita perbaiki sebelumnya.
-            await panjarSptSelect.dispatchEvent(new Event('change'));
+            // PERBAIKAN: Logika untuk memuat dan mengatur nilai pelaksana
+            if (!isFromUangMukaPage) {
+                // Jika dari halaman SPT Register, cukup trigger 'change' untuk memuat pelaksana.
+                // Event listener 'change' akan menangani pengisian dropdown.
+                panjarSptSelect.dispatchEvent(new Event('change'));
+            } else {
+                // Jika dari halaman Uang Muka, kita harus memuat pelaksana secara manual
+                // karena event 'change' tidak di-trigger.
+                const sptRes = await fetch(`/api/spt/${data.spt_id}`);
+                if (sptRes.ok) {
+                    const sptDetail = await sptRes.json();
+                    panjarPelaksanaSelect.innerHTML = '<option value="">-- Pilih Pegawai Pelaksana --</option>';
+                    sptDetail.pegawai.forEach(p => {
+                        const option = new Option(`${p.nama_lengkap} (NIP: ${p.nip})`, p.pegawai_id);
+                        panjarPelaksanaSelect.appendChild(option);
+                    });
+                }
+            }
 
-            // Setelah daftar pelaksana dimuat (tanpa filter), kita bisa set nilainya.
-            // Beri jeda singkat untuk memastikan DOM sudah diperbarui oleh event 'change'.
-            await new Promise(resolve => setTimeout(resolve, 50));
-
+            // Setelah dropdown diisi, baru atur nilainya.
             panjarBendaharaSelect.value = data.bendahara_id;
             panjarPelaksanaSelect.value = data.pelaksana_id;
             panjarPejabatSelect.value = data.pejabat_id;
-
             // Isi rincian biaya
             if (data.rincian && data.rincian.length > 0) {
                 data.rincian.forEach(item => addRincianBiayaRow(item));
@@ -490,17 +501,16 @@
         const panjarId = document.getElementById('panjar-id').value;
         const isEditMode = !!panjarId;
 
-        panjarPelaksanaSelect.disabled = true;
-        // PERBAIKAN: Ambil elemen tombol simpan dan notifikasi
-        const submitBtn = panjarForm.querySelector('button[type="submit"]');
-        const submitButton = document.getElementById('submit-panjar-button');
+        // PERBAIKAN: Dapatkan elemen notifikasi dan tombol simpan
         let panjarNotif = document.getElementById('panjar-pelaksana-notif');
+        const submitButton = document.getElementById('submit-panjar-button');
+
+        // Sembunyikan notifikasi dan aktifkan tombol simpan setiap kali SPT diganti
         if (panjarNotif) panjarNotif.classList.add('hidden');
-        // PERBAIKAN: Selalu aktifkan tombol simpan di awal setiap kali SPT diganti.
-        // Tombol akan dinonaktifkan lagi nanti jika memang diperlukan.
-        if (submitBtn) submitBtn.disabled = false;
         if (submitButton) submitButton.disabled = false;
 
+        // Set status loading pada dropdown pelaksana
+        panjarPelaksanaSelect.disabled = true;
         panjarPelaksanaSelect.innerHTML = '<option value="">-- Memuat... --</option>';
         if (!sptId) {
             panjarPelaksanaSelect.innerHTML = '<option value="">-- Pilih SPT terlebih dahulu --</option>';
@@ -538,25 +548,18 @@
                 } else {
                     panjarPelaksanaSelect.innerHTML = '<option value="">-- Semua pegawai sudah menerima uang muka --</option>';
                     // PERBAIKAN: Tampilkan notifikasi dan nonaktifkan tombol simpan
+                    // Buat elemen notifikasi jika belum ada
                     if (!panjarNotif) {
                         panjarNotif = document.createElement('div');
                         panjarNotif.id = 'panjar-pelaksana-notif';
-                        panjarNotif.className = 'mt-2 p-2 text-sm text-center rounded-md';
+                        panjarNotif.className = 'mt-2 p-2 text-sm text-center rounded-md border border-yellow-300 bg-yellow-50 text-yellow-700';
                         panjarPelaksanaSelect.parentNode.insertBefore(panjarNotif, panjarPelaksanaSelect.nextSibling);
                     }
                     panjarNotif.textContent = 'Semua pegawai terkait nomor surat tugas yang Anda pilih telah menerima uang muka.';
                     panjarNotif.classList.remove('hidden');
-                    panjarNotif.classList.add('border', 'border-yellow-300', 'bg-yellow-50', 'text-yellow-700');
 
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                    }; // Nonaktifkan tombol simpan
-                    if (submitButton) {
-                        submitButton.disabled = true;
-                    }; // Nonaktifkan tombol simpan
-
-                    // PERBAIKAN: Pastikan dropdown pegawai juga dinonaktifkan
-                    // saat tidak ada pegawai yang tersedia.
+                    // Nonaktifkan tombol simpan dan dropdown pelaksana
+                    if (submitButton) submitButton.disabled = true;
                     panjarPelaksanaSelect.disabled = true;
                 }
             }
@@ -605,6 +608,19 @@
                     keterangan: item.querySelector('[name="keterangan"]').value,
                 });
             });
+
+            // PERMINTAAN: Validasi Rincian Biaya
+            // Pastikan ada setidaknya satu baris rincian
+            if (data.rincian.length === 0) {
+                alert('Harap tambahkan setidaknya satu rincian biaya.');
+                return;
+            }
+            // Pastikan uraian dan jumlah pada setiap rincian tidak kosong
+            const isRincianValid = data.rincian.every(item => item.uraian.trim() !== '' && item.jumlah > 0);
+            if (!isRincianValid) {
+                alert('Setiap rincian biaya harus memiliki Uraian dan Jumlah yang valid.');
+                return;
+            }
 
             const isEditMode = !!data.id;
             const url = isEditMode ? `/api/panjar/${data.id}` : '/api/panjar';
