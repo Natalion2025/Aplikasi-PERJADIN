@@ -68,12 +68,12 @@
 
             // PERBAIKAN: Tandai pegawai yang dibatalkan dengan coretan
             const canceledPegawaiSet = new Set(spt.pegawai_dibatalkan || []);
-            const pegawaiListHtml = (spt.pegawai && spt.pegawai.length > 0) ?
-                `<ul>${spt.pegawai.map(nama => {
-                    const isCanceled = canceledPegawaiSet.has(nama);
+            const pegawaiListHtml = (spt.pegawai && Array.isArray(spt.pegawai) && spt.pegawai.length > 0) ?
+                `<ul>${spt.pegawai.map(pegawaiObj => { // pegawaiObj adalah {id, nama_lengkap, nip}
+                    const isCanceled = canceledPegawaiSet.has(pegawaiObj.nama_lengkap);
                     const textClass = isCanceled ? 'line-through text-red-500' : 'dark:text-gray-400';
                     const title = isCanceled ? 'Tugas dibatalkan' : '';
-                    return `<li class="list-disc ml-4 ${textClass}" title="${title}">${nama}</li>`;
+                    return `<li class="list-disc ml-4 ${textClass}" title="${title}">${pegawaiObj.nama_lengkap}</li>`;
                 }).join('')}</ul>`
                 : '<span class="text-gray-400">Tidak ada</span>';
 

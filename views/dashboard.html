@@ -76,13 +76,27 @@
             <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Card 1 -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md item">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Perjalanan Dinas</h3>
-                    <p id="total-perjalanan" class="text-3xl font-bold text-indigo-600 mt-2">...</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Tahun Anggaran 2024</p>
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-100 mb-4 text-center md:text-left">
+                        Total Realisasi Anggaran</h3>
+                    <div class="flex md:flex-row gap-6 items-center">
+                        <div class="relative h-64 w-64 mx-auto flex-shrink-0">
+                            <canvas id="anggaranDonutChart"></canvas>
+                            <div id="chart-center-text"
+                                class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                                <span id="total-realisasi-persen"
+                                    class="text-2xl font-bold text-gray-800 dark:text-white">0%</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Realisasi</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- Card 2 -->
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md item">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Perjalanan Bulan Ini</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Perjalanan Dinas</h3>
+                    <p id="total-perjalanan" class="text-3xl font-bold text-indigo-600 mt-2">...</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Tahun Anggaran <span
+                            id="tahun-anggaran">...</span></p>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 pt-6">Perjalanan Bulan Ini</h3>
                     <p id="perjalanan-bulan-ini" class="text-3xl font-bold text-amber-600 mt-2">...</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Agenda aktif</p>
                 </div>
@@ -90,12 +104,34 @@
 
             <!-- Tabel Agenda -->
             <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md item">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Agenda Perjalanan Terbaru</h3>
-                <p class="text-gray-500 dark:text-gray-400">Fitur ini sedang dalam pengembangan.</p>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Pegawai yang Sedang Berdinas
+                    pada Bulan Ini</h3>
+                <div id="pegawai-on-duty-container" class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th
+                                    class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400 w-16">
+                                    No.</th>
+                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    Nama Pegawai</th>
+                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    Nomor ST</th>
+                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                    Tanggal Mulai s.d. Selesai</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pegawai-on-duty-body">
+                            <!-- Data akan dimuat di sini oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
 
+    <!-- PERBAIKAN: Tambahkan pustaka Chart.js sebelum skrip dashboard.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/main1.js"></script>
     <script src="/js/sidebar.js"></script>
     <script src="/js/dashboard.js"></script>

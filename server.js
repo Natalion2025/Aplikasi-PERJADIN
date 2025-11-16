@@ -1163,41 +1163,54 @@ app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, asyn
 
 // GET: Mengambil semua data SPT untuk ditampilkan di register
 app.get('/api/spt', isApiAuthenticated, async (req, res) => {
-    // PERBAIKAN: Ubah default limit menjadi 5 untuk konsistensi paginasi.
-    const limit = parseInt(req.query.limit) || 5;
+    // PERBAIKAN KOMPREHENSIF: Tangani kasus limit=0 secara eksplisit untuk mengambil semua data.
+    // Ini penting untuk dashboard dan kalender.
+    const usePagination = req.query.limit !== '0';
+    // Jika paginasi aktif, gunakan nilai dari query atau default ke 5. Jika tidak, limit adalah 0.
+    const limit = usePagination ? (parseInt(req.query.limit, 10) || 5) : -1; // Gunakan -1 untuk menandakan tanpa limit di SQLite
     const page = parseInt(req.query.page) || 1;
-    const offset = (page - 1) * limit;
+    const offset = usePagination ? (page - 1) * (parseInt(req.query.limit, 10) || 5) : 0;
 
     try {
         const sptsSql = `
-            SELECT 
-                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan, s.anggaran_id, s.keterangan,
-                s.tanggal_berangkat, s.tanggal_kembali, s.status,
-                a.mata_anggaran_kode, -- Tambahkan kolom ini
-                -- PERBAIKAN: Gunakan COALESCE untuk mengambil nama dari tabel pejabat atau pegawai
-                COALESCE(pj.nama, pg.nama_lengkap) as pejabat_nama,
-                COALESCE(pj.jabatan, pg.jabatan) as pejabat_jabatan,
+            SELECT
+                s.id, s.nomor_surat, s.tanggal_surat, s.maksud_perjalanan, s.lokasi_tujuan,
+                s.tanggal_berangkat, s.tanggal_kembali, s.status, s.keterangan,
+                a.mata_anggaran_kode,
+                COALESCE(pj.nama, pg_pejabat.nama_lengkap) as pejabat_nama,
+                COALESCE(pj.jabatan, pg_pejabat.jabatan) as pejabat_jabatan,
                 (SELECT COUNT(*) FROM laporan_perjadin WHERE spt_id = s.id) as laporan_count,
-                (SELECT COUNT(*) FROM pembayaran WHERE spt_id = s.id) as pembayaran_count
+                (SELECT COUNT(*) FROM pembayaran WHERE spt_id = s.id) as pembayaran_count,
+                -- PERBAIKAN: Mengambil data pegawai sebagai JSON array dalam satu query
+                -- PERBAIKAN: Gunakan COALESCE untuk menangani kasus di mana tidak ada pegawai terkait (GROUP_CONCAT mengembalikan NULL).
+                -- Ini memastikan bahwa hasilnya selalu berupa string JSON yang valid ('[]' atau '[{...}]').
+                COALESCE('[' || (SELECT GROUP_CONCAT(json_object('id', p.id, 'nama_lengkap', p.nama_lengkap, 'nip', p.nip)) FROM spt_pegawai sp_inner JOIN pegawai p ON sp_inner.pegawai_id = p.id WHERE sp_inner.spt_id = s.id) || ']', '[]') as pegawai_json
             FROM spt s
-            LEFT JOIN anggaran a ON s.anggaran_id = a.id -- Tambahkan JOIN ini
-            -- Gabung dengan kedua tabel untuk mencari pejabat pemberi tugas
+            LEFT JOIN anggaran a ON s.anggaran_id = a.id
             LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
-            LEFT JOIN pegawai pg ON s.pejabat_pemberi_tugas_id = pg.id
-            WHERE s.status != 'dibatalkan' -- Hanya tampilkan SPT yang belum dibatalkan
+            LEFT JOIN pegawai pg_pejabat ON s.pejabat_pemberi_tugas_id = pg_pejabat.id
+            LEFT JOIN spt_pegawai sp ON s.id = sp.spt_id
+            LEFT JOIN pegawai pg_spt ON sp.pegawai_id = pg_spt.id
+            WHERE s.status != 'dibatalkan'
+            GROUP BY s.id
             ORDER BY s.tanggal_surat DESC, s.id DESC
-        ` + (limit > 0 ? ' LIMIT ? OFFSET ?' : ''); // Tambahkan LIMIT jika nilainya lebih dari 0
-        const params = limit > 0 ? [limit, offset] : [];
+        ` + (usePagination ? ' LIMIT ? OFFSET ?' : ' LIMIT -1'); // Tambahkan LIMIT -1 jika tidak ada paginasi
+        const params = usePagination ? [limit, offset] : [];
         const spts = await dbAll(sptsSql, params);
 
         for (const spt of spts) {
-            // Ambil semua pegawai yang ditugaskan
-            const pegawaiSql = `SELECT pg.nama_lengkap, pg.nip FROM spt_pegawai sp 
-            JOIN pegawai pg ON sp.pegawai_id = pg.id 
-            WHERE sp.spt_id = ?
-            `;
-            const pegawaiRows = await dbAll(pegawaiSql, [spt.id]);
-            spt.pegawai = pegawaiRows.map(p => p.nama_lengkap);
+            // Parse string JSON menjadi objek JavaScript
+            // PERBAIKAN: Cek jika pegawai_json adalah null atau string kosong sebelum parsing
+            if (spt.pegawai_json) {
+                try {
+                    spt.pegawai = JSON.parse(spt.pegawai_json);
+                } catch (e) {
+                    spt.pegawai = []; // Jika ada error parsing, set ke array kosong
+                }
+            } else {
+                spt.pegawai = []; // Jika pegawai_json null, set ke array kosong
+            }
+            delete spt.pegawai_json; // Hapus properti string mentah
 
             // Ambil pegawai yang tugasnya dibatalkan untuk SPT ini
             const canceledPegawaiSql = `
@@ -1208,13 +1221,13 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
             spt.pegawai_dibatalkan = canceledPegawaiRows.map(p => p.nama_lengkap);
         }
 
-        // Jika limit adalah 0 (atau nilai falsy lainnya dari query), kembalikan semua data.
-        // Ini digunakan oleh halaman kalender.
-        if (!req.query.limit) {
+        // Jika tidak menggunakan paginasi, kembalikan semua data dalam array.
+        // PERBAIKAN: Jika tidak ada paginasi (misal, dari dropdown), kembalikan array langsung.
+        if (!req.query.page && !req.query.limit) {
             return res.json(spts);
         }
 
-        // Jika ada limit, kembalikan objek dengan paginasi (untuk register)
+        // Jika menggunakan paginasi, hitung total dan kembalikan objek paginasi.
         const totalSql = "SELECT COUNT(*) as total FROM spt WHERE status != 'dibatalkan'";
         const totalResult = await dbGet(totalSql);
         const totalItems = totalResult.total;
