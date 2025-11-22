@@ -299,7 +299,7 @@
                     },
                     tooltip: {
                         enabled: true,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        backgroundColor: 'rgba(0, 0, 0, 1)',
                         titleFont: {
                             size: 14,
                             weight: 'bold'

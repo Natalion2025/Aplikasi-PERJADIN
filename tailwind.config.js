@@ -36,12 +36,14 @@ module.exports = {
       colors: {
         'dark-navy': '#2c3e50',
         'dark-blue': '#34495e',
-        'gradient-start': '#2c3e50',
-        'gradient-end': '#3498db',
+        'darkSlate-gradient-start': '#2c3e50',
+        'lightBlue-gradient-end': '#3498db',
         greenSoft: '#20ca9a',
         customBlue: 'rgb(52, 152, 219)',
         mainNavy: '#003861',
         purpleCustom: '#4F55FB',
+        darkSlate: '#5a5c69',
+        yellowGolder: '#f6c23e',
         navy: {
           50: '#F2F7FA',
           100: '#E6F0F6',

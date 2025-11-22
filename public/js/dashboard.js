@@ -73,7 +73,10 @@ const loadDashboardData = async () => {
             // Cek apakah rentang tanggal SPT bersinggungan dengan bulan ini
             return spt.status === 'aktif' && startDate <= endOfMonth && endDate >= startOfMonth;
         });
-        renderPegawaiOnDuty(onDutySptsThisMonth);
+
+        renderPegawaiOnDuty(onDutySptsThisMonth, 1); // Tampilkan halaman pertama saat load
+        setupPegawaiPagination(onDutySptsThisMonth); // Siapkan kontrol paginasi
+        renderLineChart(allSpts); // Panggil render line chart dengan data SPT
 
 
     } catch (error) {
@@ -89,6 +92,7 @@ const loadDashboardData = async () => {
         // Juga handle error untuk chart jika perlu, misal tampilkan pesan
         renderDonutChart([]); // Render chart kosong
         renderPegawaiOnDuty([]); // Tampilkan pesan error atau kosong di tabel pegawai
+        renderLineChart([]); // Render line chart kosong
     }
 };
 
@@ -241,7 +245,8 @@ const renderDonutChart = (anggaranList) => {
                 },
                 tooltip: {
                     enabled: true,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 1)',
+                    index: 100,
                     titleFont: {
                         size: 14,
                         weight: 'bold'
@@ -266,12 +271,24 @@ const renderDonutChart = (anggaranList) => {
 };
 
 // Fungsi untuk merender daftar pegawai yang sedang bertugas
-const renderPegawaiOnDuty = (perjalananList) => {
+const renderPegawaiOnDuty = (perjalananList, page = 1) => {
     const tableBody = document.getElementById('pegawai-on-duty-body');
     if (!tableBody) return;
 
+    const itemsPerPage = 5; // Definisikan batas item per halaman di sini
+
     // PERBAIKAN: Buat daftar datar dari setiap pegawai di setiap perjalanan
     const onDutyList = [];
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const options = {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        };
+        return new Date(dateString).toLocaleDateString('id-ID', options);
+    };
 
     if (Array.isArray(perjalananList)) {
         perjalananList.forEach(perjalanan => {
@@ -290,16 +307,15 @@ const renderPegawaiOnDuty = (perjalananList) => {
         });
     }
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const options = { day: 'numeric', month: 'short', year: 'numeric' };
-        return new Date(dateString).toLocaleDateString('id-ID', options);
-    };
+    // Logika Paginasi Sisi Klien
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedItems = onDutyList.slice(startIndex, endIndex);
 
-    if (onDutyList.length > 0) {
-        const rowsHtml = onDutyList.map((item, index) => `
-            <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">${index + 1}</td>
+    if (paginatedItems.length > 0) {
+        const rowsHtml = paginatedItems.map((item, index) => `
+            <tr class="item border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">${startIndex + index + 1}</td>
                 <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${item.nama}</td>
                 <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">${item.nomor_spt}</td>
                 <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -317,8 +333,196 @@ const renderPegawaiOnDuty = (perjalananList) => {
     }
 };
 
+let currentPegawaiOnDutyPage = 1;
+
+// --- FUNGSI BARU UNTUK PAGINASI SISI KLIEN ---
+const setupPegawaiPagination = (fullList) => {
+    const paginationContainer = document.getElementById('pegawaiOnDuty-pagination-container');
+    if (!paginationContainer) return;
+
+    const itemsPerPage = 5;
+    const totalItems = fullList.reduce((acc, perjalanan) => acc + (perjalanan.pegawai?.length || 0), 0);
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    paginationContainer.innerHTML = ''; // Kosongkan container
+
+    if (totalPages <= 1) return; // Tidak perlu paginasi jika hanya 1 halaman
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+
+    // --- Fungsi internal untuk menangani klik ---
+    const handlePageClick = (newPage) => {
+        currentPegawaiOnDutyPage = newPage;
+        renderPegawaiOnDuty(fullList, newPage);
+        setupPegawaiPagination(fullList); // Render ulang paginasi untuk update state
+    };
+
+    const pageInfo = document.createElement('div');
+    pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+        Halaman <span class="font-medium">${currentPegawaiOnDutyPage}</span> dari <span class="font-medium">${totalPages}</span>
+    </p>`;
+
+    const navButtons = document.createElement('div');
+    navButtons.className = 'flex-1 flex justify-end';
+
+    // Tombol navigasi 'Pertama'
+    const firstButton = document.createElement('button');
+    firstButton.textContent = 'Pertama';
+    firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    if (currentPegawaiOnDutyPage === 1) {
+        firstButton.disabled = true;
+        firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+    }
+    firstButton.addEventListener('click', () => handlePageClick(1));
+
+    // Tombol navigasi 'Sebelumnya'
+    const prevButton = document.createElement('button');
+    prevButton.textContent = 'Sebelumnya';
+    prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    if (currentPegawaiOnDutyPage === 1) {
+        prevButton.disabled = true;
+        prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+    }
+    prevButton.addEventListener('click', () => handlePageClick(currentPegawaiOnDutyPage - 1));
+
+    const pageNumbersContainer = document.createElement('div');
+    pageNumbersContainer.className = 'inline-flex items-center';
+
+
+    // Membuat tombol nomor halaman sesuai dengan jumlah total halaman
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = `${i}`;
+        pageButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600`;
+        if (i === currentPegawaiOnDutyPage) {
+            pageButton.classList.add('bg-sky-100', 'dark:bg-slate-600');
+            pageButton.classList.remove('bg-white', 'dark:bg-slate-700', 'hover:bg-sky-100', 'dark:hover:bg-slate-600');
+        } else {
+            pageButton.disabled = true;
+        }
+        pageButton.addEventListener('click', () => handlePageClick(i));
+        pageNumbersContainer.appendChild(pageButton);
+    }
+
+    // Tombol navigasi 'Berikutnya'
+    const nextButton = document.createElement('button');
+    nextButton.textContent = 'Berikutnya';
+    nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    if (currentPegawaiOnDutyPage === totalPages) {
+        nextButton.disabled = true;
+        nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+    }
+    nextButton.addEventListener('click', () => handlePageClick(currentPegawaiOnDutyPage + 1));
+
+    // Tombol navigasi 'Terakhir'
+    const lastButton = document.createElement('button');
+    lastButton.textContent = 'Terakhir';
+    lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    if (currentPegawaiOnDutyPage === totalPages) {
+        lastButton.disabled = true;
+        lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+    }
+    lastButton.addEventListener('click', () => handlePageClick(totalPages));
+
+    navButtons.append(firstButton, prevButton, pageNumbersContainer, nextButton, lastButton);
+    wrapper.append(pageInfo, navButtons);
+    paginationContainer.appendChild(wrapper);
+};
+
+
+
 // Panggil fungsi utama setelah DOM siap.
 // Skrip ini sekarang dimuat oleh main1.js setelah DOM dan sesi siap.
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
 });
+
+let statisticLineChartInstance = null;
+
+const renderLineChart = (sptList) => {
+    const ctx = document.getElementById('statistic-line-chart')?.getContext('2d');
+    if (!ctx) return;
+
+    // Inisialisasi data bulanan dengan 0
+    const monthlyData = Array(12).fill(0);
+    const currentYear = new Date().getFullYear();
+
+    if (Array.isArray(sptList)) {
+        sptList.forEach(spt => {
+            const tglBerangkat = new Date(spt.tanggal_berangkat);
+            // Hanya hitung SPT untuk tahun berjalan
+            if (tglBerangkat.getFullYear() === currentYear) {
+                const month = tglBerangkat.getMonth(); // 0 = Januari, 11 = Desember
+                monthlyData[month]++;
+            }
+        });
+    }
+
+    if (statisticLineChartInstance) {
+        statisticLineChartInstance.destroy();
+    }
+
+    statisticLineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
+            datasets: [{
+                label: 'Volume Perjalanan Dinas',
+                data: monthlyData, // Gunakan data yang sudah diagregasi
+                fill: true,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(75, 192, 192, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: 15,
+                    title: {
+                        display: true,
+                        text: 'Volume (Jumlah ST)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: `Bulan (Tahun ${currentYear})`
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: '#0f172a',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y + ' ST';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    );
+};

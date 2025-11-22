@@ -84,21 +84,33 @@
                             <div id="chart-center-text"
                                 class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                                 <span id="total-realisasi-persen"
-                                    class="text-2xl font-bold text-gray-800 dark:text-white">0%</span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">Realisasi</span>
+                                    class="text-2xl font-bold dark:text-white opacity-50">0%</span>
+                                <span class="text-xs dark:text-gray-400 opacity-50">Realisasi</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <!-- Card 2 -->
-                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-md item">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Perjalanan Dinas</h3>
-                    <p id="total-perjalanan" class="text-3xl font-bold text-indigo-600 mt-2">...</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Tahun Anggaran <span
-                            id="tahun-anggaran">...</span></p>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 pt-6">Perjalanan Bulan Ini</h3>
-                    <p id="perjalanan-bulan-ini" class="text-3xl font-bold text-amber-600 mt-2">...</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Agenda aktif</p>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md item">
+                    <segment class="flex">
+                        <div class="mr-5">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Perjalanan Dinas
+                            </h3>
+                            <p id="total-perjalanan" class="text-3xl font-bold text-indigo-600 mt-2">...</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Tahun Anggaran <span
+                                    id="tahun-anggaran">...</span></p>
+                        </div>
+                        <div class="ml-5">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Perjalanan Bulan Ini
+                            </h3>
+                            <p id="perjalanan-bulan-ini" class="text-3xl font-bold text-amber-600 mt-2">...</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Agenda aktif</p>
+                        </div>
+                    </segment>
+                    <!-- Line Chart -->
+                    <div class="mt-4 h-64">
+                        <canvas id="statistic-line-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -106,18 +118,21 @@
             <div class="mt-8 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md item">
                 <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Pegawai yang Sedang Berdinas
                     pada Bulan Ini</h3>
-                <div id="pegawai-on-duty-container" class="overflow-x-auto">
+                <div id="pegawai-on-duty-container" class="overflow-x-auto item">
                     <table class="min-w-full">
                         <thead class="border-b border-gray-200 dark:border-gray-700">
                             <tr>
                                 <th
-                                    class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400 w-16">
+                                    class="uppercase py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400 w-16">
                                     No.</th>
-                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                <th
+                                    class="uppercase py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
                                     Nama Pegawai</th>
-                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                <th
+                                    class="uppercase py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
                                     Nomor ST</th>
-                                <th class="py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                                <th
+                                    class="uppercase py-2 px-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
                                     Tanggal Mulai s.d. Selesai</th>
                             </tr>
                         </thead>
@@ -125,6 +140,10 @@
                             <!-- Data akan dimuat di sini oleh JavaScript -->
                         </tbody>
                     </table>
+                </div>
+                <!-- Pagination -->
+                <div id="pegawaiOnDuty-pagination-container">
+                    <!-- Tombol "Sebelumnya" dan "Berikutnya" akan muncul di sini -->
                 </div>
             </div>
         </main>
