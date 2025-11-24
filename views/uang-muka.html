@@ -108,14 +108,15 @@
         <div
             class="relative top-10 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white dark:bg-slate-800">
             <!-- Modal Header -->
-            <div class="flex justify-between items-center pb-3 border-b bg-dark-navy -m-5 p-4 rounded-t-md">
-                <h3 class="text-xl font-semibold text-white uppercase">Rincian Biaya Perjalanan Dinas</h3>
+            <div
+                class="flex justify-between items-center pb-3 border-b-[3px] border-green-500 mb-4 bg-dark-navy -m-5 p-4 rounded-t-md">
+                <h3 class="text-xl font-semibold text-white uppercase font-poppins">Rincian Biaya Perjalanan Dinas</h3>
                 <button id="close-panjar-modal" class="text-gray-300 hover:text-white">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
             <!-- Modal Body -->
-            <div class="mt-6">
+            <div class="mt-4">
                 <form id="panjar-form" class="space-y-6">
                     <input type="hidden" id="panjar-id">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -123,14 +124,14 @@
                             <label for="panjar_tempat"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tempat</label>
                             <input type="text" id="panjar_tempat" name="tempat" required value="Nanga Pinoh"
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                         </div>
                         <div>
                             <label for="panjar_tanggal"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal
                                 Panjar</label>
                             <input type="date" id="panjar_tanggal" name="tanggal_panjar" required
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
                         </div>
                     </div>
 
@@ -139,7 +140,7 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor
                             SPT dan SPD</label>
                         <select id="panjar_spt_id" name="spt_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                             <option value="">-- Pilih SPT --</option>
                         </select>
                     </div>
@@ -159,11 +160,11 @@
                     <template id="rincian-biaya-template">
                         <div class="rincian-item grid grid-cols-12 gap-2 items-center">
                             <input type="text" name="uraian" placeholder="Uraian Biaya"
-                                class="col-span-5 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm">
+                                class="col-span-5 block w-full px-3 py-2 border text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm focus:border-green-500 focus:outline-none">
                             <input type="text" name="jumlah" placeholder="Jumlah (Rp)"
-                                class="col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm currency-input">
+                                class="col-span-3 block w-full px-3 py-2 border text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm currency-input focus:border-green-500 focus:outline-none">
                             <input type="text" name="keterangan" placeholder="Keterangan"
-                                class="col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm">
+                                class="col-span-3 block w-full px-3 py-2 border text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-sm focus:border-green-500 focus:outline-none">
                             <button type="button"
                                 class="remove-rincian-btn text-red-500 hover:text-red-700 col-span-1 justify-self-center">
                                 <i class="fas fa-trash"></i>
@@ -177,7 +178,7 @@
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bendahara
                                 Pengeluaran</label>
                             <select id="panjar_bendahara_id" name="bendahara_id" required
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                                 <option value="">-- Pilih Bendahara --</option>
                             </select>
                         </div>
@@ -186,7 +187,7 @@
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pegawai Pelaksana
                                 Perjalanan</label>
                             <select id="panjar_pelaksana_id" name="pelaksana_id" required
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                                 <option value="">-- Pilih SPT terlebih dahulu --</option>
                             </select>
                         </div>
@@ -197,7 +198,7 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pejabat Berwenang
                             Pemberi Tugas</label>
                         <select id="panjar_pejabat_id" name="pejabat_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                             <option value="">-- Pilih Pejabat --</option>
                         </select>
                     </div>

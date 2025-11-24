@@ -315,8 +315,8 @@ const renderPegawaiOnDuty = (perjalananList, page = 1) => {
     if (paginatedItems.length > 0) {
         const rowsHtml = paginatedItems.map((item, index) => `
             <tr class="item border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">${startIndex + index + 1}</td>
-                <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${item.nama}</td>
+                <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-300">${startIndex + index + 1}</td>
+                <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-200">${item.nama}</td>
                 <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">${item.nomor_spt}</td>
                 <td class="py-3 px-4 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     ${formatDate(item.tanggal_berangkat)} s.d. ${formatDate(item.tanggal_kembali)}
@@ -399,7 +399,8 @@ const setupPegawaiPagination = (fullList) => {
             pageButton.classList.add('bg-sky-100', 'dark:bg-slate-600');
             pageButton.classList.remove('bg-white', 'dark:bg-slate-700', 'hover:bg-sky-100', 'dark:hover:bg-slate-600');
         } else {
-            pageButton.disabled = true;
+            // Tombol untuk halaman lain tetap aktif agar bisa diklik.
+            // Gaya visual sudah cukup untuk membedakan halaman aktif.
         }
         pageButton.addEventListener('click', () => handlePageClick(i));
         pageNumbersContainer.appendChild(pageButton);

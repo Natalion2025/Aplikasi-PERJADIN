@@ -221,8 +221,9 @@
         <div
             class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg mx-auto relative flex flex-col max-h-[95vh]">
             <!-- Modal Header -->
-            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
-                <h3 class="text-xl font-semibold text-white">Formulir Pembatalan Tugas</h3>
+            <div
+                class="flex justify-between items-center p-4 border-b-[3px] border-green-500 bg-dark-navy rounded-t-lg">
+                <h3 class="text-xl font-semibold text-white font-poppins">Formulir Pembatalan Tugas</h3>
                 <button id="close-pembatalan-modal" class="text-gray-300 hover:text-white">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
@@ -235,7 +236,7 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor SPT yang
                             Dibatalkan</label>
                         <select id="pembatalan_spt_id" name="spt_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                             <option value="">-- Pilih SPT --</option>
                         </select>
                     </div>
@@ -244,7 +245,7 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pegawai yang
                             Dibatalkan</label>
                         <select id="pembatalan_pegawai_id" name="pegawai_id" required disabled
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm disabled:bg-slate-200 disabled:cursor-not-allowed">
+                            class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm disabled:bg-slate-200 disabled:cursor-not-allowed focus:outline-none focus:border-green-500">
                             <option value="">-- Pilih SPT terlebih dahulu --</option>
                         </select>
                     </div>
@@ -257,22 +258,21 @@
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tempat</label>
                             <input type="text" id="tempat_pembatalan" name="tempat_pembatalan" required
                                 value="Nanga Pinoh"
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                         </div>
                         <div>
                             <label for="tanggal_pembatalan"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal</label>
                             <input type="date" id="tanggal_pembatalan" name="tanggal_pembatalan" required
-                                class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                         </div>
                     </div>
                     <div>
                         <label for="alasan_pembatalan"
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Alasan
                             Pembatalan</label>
-                        <textarea id="alasan_pembatalan" name="alasan" rows="4" required
-                            placeholder="Jelaskan alasan pembatalan tugas..."
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
+                        <textarea id="alasan_pembatalan" name="alasan" rows="4" required placeholder=""
+                            class="mt-1 block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500"></textarea>
                     </div>
 
                     <!-- Rincian Biaya Hangus -->
@@ -295,9 +295,9 @@
                         <div class="space-y-2">
                             <input type="text" id="pembatalan_rincian_biaya" name="rincian_biaya"
                                 placeholder="Contoh: Tiket Pesawat, Reservasi Hotel"
-                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                                class="block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-green-500">
                             <input type="text" id="pembatalan_nominal_biaya" name="nominal_biaya" placeholder="Rp 0"
-                                class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-right">
+                                class="block w-full px-3 py-2 border text-slate-600 text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm text-right focus:outline-none focus:border-green-500">
                         </div>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Isi manual jika tidak ada uang muka,
                             atau aktifkan toggle untuk mengambil data otomatis.</p>

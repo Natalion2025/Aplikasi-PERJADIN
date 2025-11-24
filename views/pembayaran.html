@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manajemen Pembayaran - Aplikasi Perjadin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tom Select CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
     <link href="/css/output.css" rel="stylesheet">
     <style>
@@ -57,42 +56,43 @@
             padding: 2rem 1rem;
         }
 
-        /* Custom styles to make Tom-Select blend with Tailwind forms */
-        :root {
-            --ts-border-radius: 0.375rem;
-            /* rounded-md */
-            --tailwind-input-height: 38px;
-            /* h-9.5 */
+        /* --- PERBAIKAN STYLING TOM SELECT FOCUS --- */
+        /* Target Tom-select control di dalam modal */
+        #pembayaran-modal .ts-control {
+            border-radius: 0.375rem;
+            border-color: #d1d5db;
+            /* gray-300 */
         }
 
-        .ts-control {
-            box-sizing: border-box;
-            padding: 0.375rem 0.75rem 0.375rem 0.75rem !important;
-            min-height: var(--tailwind-input-height) !important;
-            border-radius: var(--ts-border-radius) !important;
-            transition: box-shadow 0.15s ease-in-out;
-            border-width: 1px;
-            border-color: #cbd5e1;
-            /* slate-300 */
+        /* Default Focus Style (Light Mode) */
+        #pembayaran-modal .ts-wrapper.focus .ts-control {
+            border-color: #10b981;
+            /* green-500 */
+            box-shadow: 0 0 0 0.6px #10b981;
+            /* green-500 ring */
         }
 
-        .dark .ts-control {
+        /* Dark Mode: Tom Select Control */
+        .dark #pembayaran-modal .ts-control {
             background-color: #334155;
             /* slate-700 */
             border-color: #4b5563;
             /* gray-600 */
         }
 
-        .ts-wrapper.focus .ts-control,
-        .ts-wrapper.dropdown-active .ts-control {
-            box-shadow: 0 0 0 1px #0ea5e9;
-            /* focus:ring-1 focus:ring-sky-500 */
-            border-color: #0ea5e9;
-            /* focus:border-sky-500 */
+        /* Dark Mode: Tom Select Focus Style */
+        .dark #pembayaran-modal .ts-wrapper.focus .ts-control {
+            border-color: #10b981 !important;
+            /* green-500 */
+            box-shadow: 0 0 0 0.6px #10b981 !important;
+            /* green-500 ring */
         }
 
-        .ts-dropdown .ts-option {
-            padding: 0.5rem 0.75rem;
+        /* Pastikan elemen Tom Select di modal memiliki tinggi yang konsisten di Dark Mode */
+        .dark #pembayaran-modal .ts-control,
+        .dark #pembayaran-modal .ts-control input {
+            color: #f3f4f6;
+            /* gray-100 */
         }
 
         /* Styling untuk tabel rincian yang lebih baik */
@@ -131,19 +131,13 @@
 </head>
 
 <body class="bg-slate-50 dark:bg-gray-900">
-    <!-- Sidebar -->
     <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
-        <!-- Sidebar content akan dimuat di sini -->
     </aside>
 
-    <!-- Konten utama -->
     <div class="main-content">
-        <!-- Header -->
         <header id="header-container">
-            <!-- Header content akan dimuat di sini -->
         </header>
 
-        <!-- Konten -->
         <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
             <div class="flex justify-between items-center mb-6 item">
                 <h2 class="text-2xl font-semibold text-mainNavy uppercase font-sans dark:text-gray-200">Manajemen
@@ -160,9 +154,7 @@
                 </div>
             </div>
 
-            <!-- Kontainer Tab -->
             <div class="bg-white w-full dark:bg-slate-800 rounded-2xl shadow-md">
-                <!-- Navigasi Tab -->
                 <div class="border-b flex items-center justify-between border-gray-200 p-0 dark:border-gray-700">
                     <ul class="flex flex-wrap -mb-px text-center" id="payment-tabs" role="tablist">
                         <li class="me-2" role="presentation">
@@ -192,14 +184,11 @@
                         </select>
                     </div>
                 </div>
-                <!-- Konten Tab -->
                 <div id="payment-tab-content" class="pt-3 px-4">
-                    <!-- Panel 1: Daftar Bukti Pembayaran -->
                     <div id="bukti-bayar-panel" role="tabpanel" aria-labelledby="bukti-bayar-tab">
                         <div id="pembayaran-list-container" class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <!-- Header tabel bukti pembayaran yang sudah ada -->
                                     <tr class="bg-blue-50 dark:bg-gray-600">
                                         <th scope="col"
                                             class="pl-6 pr-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -226,13 +215,10 @@
                                     class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
                                 </tbody>
                             </table>
-                            <!-- PAGINATION -->
                             <div id="pembayaran-pagination-container">
-                                <!-- Tombol Pertama, Tombol Sebelumnya, Tombol Nomor Halaman, Tombol Berikutnya dan Tombol Terakhir akan dimunculkan oleh JV di sini -->
                             </div>
                         </div>
                     </div>
-                    <!-- Panel 2: Daftar Bukti Pengeluaran Riil -->
                     <div id="pengeluaran-rill-panel" class="hidden" role="tabpanel"
                         aria-labelledby="pengeluaran-rill-tab">
                         <div class="overflow-x-auto">
@@ -258,12 +244,9 @@
                                 </thead>
                                 <tbody id="pengeluaran-rill-table-body"
                                     class="bg-white divide-y item divide-gray-200 dark:bg-gray-800 dark:divide-gray-600">
-                                    <!-- Data akan dimuat di sini -->
                                 </tbody>
                             </table>
-                            <!-- PAGINATION -->
                             <div id="pengeluaran-rill-pagination-container">
-                                <!-- Tombol Pertama, Tombol Sebelumnya, Tombol Nomor Halaman, Tombol Berikutnya dan Tombol Terakhir akan dimunculkan oleh JV di sini -->
                             </div>
                         </div>
                     </div>
@@ -272,25 +255,24 @@
         </main>
     </div>
 
-    <!-- Modal Buat Bukti Bayar -->
     <div id="pembayaran-modal" class="modal-overlay hidden">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto relative flex flex-col">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
-                <h3 id="pembayaran-modal-title" class="text-xl font-semibold text-white">Buat Bukti Pembayaran Baru</h3>
+            <div
+                class="flex justify-between p-4 pt-2 pb-0 mb-0 border-b-[3px] border-green-500 bg-dark-navy rounded-t-lg">
+                <h3 id="pembayaran-modal-title" class="text-md font-semibold text-white font-poppins">Buat Bukti
+                    Pembayaran Baru</h3>
                 <button id="close-pembayaran-modal-button" class="text-gray-300 hover:text-white">
-                    <i class="fas fa-times text-2xl"></i>
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <!-- Modal Body -->
-            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
-                <form id="pembayaran-form" class="space-y-6">
+            <div class="flex-grow p-4 pt-0 overflow-y-auto">
+                <form id="pembayaran-form" class="space-y-4">
                     <input type="hidden" id="pembayaran-id">
                     <div>
                         <label for="spt_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Register
                             SPT</label>
                         <select id="spt_id" name="spt_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-0 block w-full py-2 border-0 text-sm text-slate-600 dark:bg-slate-700 dark:text-white">
                             <option value="">-- Pilih SPT --</option>
                         </select>
                     </div>
@@ -299,7 +281,7 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kode/Mata
                             Anggaran</label>
                         <select id="anggaran_id" name="anggaran_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-0 block w-full py-2 border-0 text-sm text-slate-600 dark:bg-slate-700 dark:text-white shadow-sm">
                             <option value="" class="dark:text-white">-- Pilih Anggaran --</option>
                         </select>
                     </div>
@@ -309,43 +291,38 @@
                             Pembayaran</label>
                         <textarea id="nama_penerima" name="nama_penerima" rows="3" required
                             placeholder="Akan terisi otomatis setelah memilih Register SPT"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                            class="mt-1 block w-full px-3 py-2 border text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
                     </div>
                     <div>
                         <label for="uraian_pembayaran"
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uraian Pembayaran</label>
                         <textarea id="uraian_pembayaran" name="uraian_pembayaran" rows="3" required
                             placeholder="Contoh: Pembayaran biaya perjalanan dinas ke..."
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                            class="mt-1 block w-full px-3 py-2 border text-sm border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
                     </div>
 
-                    <!-- Tambahkan ini di dalam <form id="pembayaran-form"> di file pembayaran.html untuk dropdown nama PPTK -->
                     <div class="sm:col-span-3">
                         <label for="pptk_id"
-                            class="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-300">PPTK</label>
-                        <div class="mt-2">
+                            class="block text-sm font-medium text-gray-900 dark:text-gray-300">PPTK</label>
+                        <div class="mt-0">
                             <select id="pptk_id" name="pptk_id" required
-                                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-600 dark:text-white">
+                                class="block w-full rounded-md border-0 py-1 text-gray-900 shadow-sm sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-600 dark:text-white">
                                 <option value="">-- Pilih PPTK --</option>
                             </select>
                         </div>
                     </div>
 
 
-                    <!-- Informasi Uang Harian -->
                     <div id="uang-harian-info-container" class="hidden">
                         <div class="uang-harian-info">
                             <i class="fas fa-info-circle mr-2 text-blue-500"></i>
                             <span class="font-medium">Informasi Uang Harian:</span>
                             <span id="uang-harian-details" class="ml-2"></span>
                         </div>
-                        <!-- Area untuk menampilkan pesan analisis -->
                         <div id="uang-harian-analysis" class="mt-2 space-y-1 text-xs">
-                            <!-- Pesan analisis akan disisipkan di sini oleh JavaScript -->
                         </div>
                     </div>
 
-                    <!-- Rincian Pengeluaran (Disisipkan di sini) -->
                     <div id="rincian-pengeluaran-container" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rincian
                             Pengeluaran</label>
@@ -384,7 +361,6 @@
                                 </thead>
                                 <tbody id="rincian-pengeluaran-body"
                                     class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-600">
-                                    <!-- Baris rincian akan diisi oleh JS -->
                                 </tbody>
                                 <tfoot class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
@@ -400,40 +376,37 @@
                         </div>
                     </div>
 
-                    <!-- Nominal bayar sekarang tersembunyi dan diisi otomatis oleh JavaScript -->
                     <input type="hidden" id="nominal_bayar" name="nominal_bayar" required>
                 </form>
             </div>
-            <!-- Modal Footer -->
-            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-2 bg-dark-blue border-t rounded-b-lg">
                 <button id="cancel-pembayaran-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                    class="bg-gray-200 text-gray-700 px-4 py-2 text-sm font-semibold rounded-lg mr-2 hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pembayaran-form"
-                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Simpan</button>
+                    class="bg-green-500 text-white px-4 py-2 text-sm font-semibold rounded-lg hover:bg-green-600">Simpan</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Pengeluaran Rill -->
     <div id="pengeluaran-rill-modal" class="modal-overlay hidden">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl mx-auto relative flex flex-col">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-4 border-b bg-dark-navy rounded-t-lg">
-                <h3 id="pengeluaran-rill-modal-title" class="text-xl font-semibold text-white">Tambah Pengeluaran Rell
+            <div
+                class="flex justify-between items-center pl-4 pr-0 pt-2 pb-0 mb-0 border-b-[3px] border-green-500  bg-dark-navy rounded-t-lg">
+                <h3 id="pengeluaran-rill-modal-title" class="text-md font-semibold text-white font-poppins">Tambah
+                    Pengeluaran Rell
                 </h3>
-                <button id="close-pengeluaran-rill-modal-button" class="text-gray-300 hover:text-white">
-                    <i class="fas fa-times text-2xl"></i>
+                <button id="close-pengeluaran-rill-modal-button" class="text-gray-300 hover:text-white mr-2 mb-2">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <!-- Modal Body -->
-            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+            <div class="flex-grow p-6 pt-0 mt-0 space-y-3 overflow-y-auto">
                 <form id="pengeluaran-rill-form" class="space-y-6">
                     <input type="hidden" id="pengeluaran-rill-id">
                     <div>
                         <label for="pengeluaran_spt_id"
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor SPT</label>
                         <select id="pengeluaran_spt_id" name="spt_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                            class="mt-1 block w-full px-3 py-2 border text-sm text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500">
                             <option value="">-- Pilih SPT --</option>
                         </select>
                     </div>
@@ -441,7 +414,7 @@
                         <label for="pengeluaran_pelaksana_id"
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Pelaksana</label>
                         <select id="pengeluaran_pelaksana_id" name="pegawai_id" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                            class="mt-1 block w-full px-3 py-2 border text-sm text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500"
                             disabled>
                             <option value="">-- Pilih SPT terlebih dahulu --</option>
                         </select>
@@ -451,30 +424,28 @@
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uraian</label>
                         <textarea id="pengeluaran_uraian" name="uraian" rows="3" required
                             placeholder="Contoh: Biaya taksi dari bandara ke hotel"
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"></textarea>
+                            class="mt-1 block w-full px-3 py-2 border text-sm text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500"></textarea>
                     </div>
                     <div>
                         <label for="pengeluaran_jumlah"
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jumlah</label>
                         <input type="text" id="pengeluaran_jumlah" name="jumlah" required
-                            class="mt-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 currency-input"
-                            placeholder="Masukkan nominal">
+                            class="mt-1 block w-full px-3 py-2 border text-sm text-slate-600 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm placeholder-slate-400 focus:ring-[0.6px] focus:outline-none focus:ring-green-500 focus:border-green-500 currency-input"
+                            placeholder="Nominal (Rp)">
                     </div>
                 </form>
             </div>
-            <!-- Modal Footer -->
-            <div class="flex justify-end items-center p-4 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-2 bg-dark-blue border-t rounded-b-lg">
                 <button id="cancel-pengeluaran-rill-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 font-semibold hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pengeluaran-rill-form"
-                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Simpan</button>
+                    class="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600">Simpan</button>
             </div>
         </div>
     </div>
 
     <script src="/js/main1.js"></script>
     <script src="/js/sidebar.js"></script>
-    <!-- Tom Select JS -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script src="/js/utils.js"></script>
     <script src="/js/pembayaran.js"></script>
