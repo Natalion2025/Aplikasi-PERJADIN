@@ -52,7 +52,6 @@
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.6);
             z-index: 1000;
-            overflow-y: auto;
             padding: 2rem 1rem;
         }
 
@@ -258,14 +257,14 @@
     <div id="pembayaran-modal" class="modal-overlay hidden">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto relative flex flex-col">
             <div
-                class="flex justify-between p-4 pt-2 pb-0 mb-0 border-b-[3px] border-green-500 bg-dark-navy rounded-t-lg">
+                class="flex justify-between items-center pl-4 pr-0 pt-2 pb-0 mb-0 border-b-[3px] border-green-500 bg-dark-navy rounded-t-lg">
                 <h3 id="pembayaran-modal-title" class="text-md font-semibold text-white font-poppins">Buat Bukti
                     Pembayaran Baru</h3>
-                <button id="close-pembayaran-modal-button" class="text-gray-300 hover:text-white">
+                <button id="close-pembayaran-modal-button" class="text-gray-300 hover:text-white mr-2 mb-2">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="flex-grow p-4 pt-0 overflow-y-auto">
+            <div class="flex-grow p-4 pt-0 overflow-y-auto max-h-[65vh]">
                 <form id="pembayaran-form" class="space-y-4">
                     <input type="hidden" id="pembayaran-id">
                     <div>
@@ -379,11 +378,11 @@
                     <input type="hidden" id="nominal_bayar" name="nominal_bayar" required>
                 </form>
             </div>
-            <div class="flex justify-end items-center p-2 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-4 rounded-b-lg">
                 <button id="cancel-pembayaran-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 text-sm font-semibold rounded-lg mr-2 hover:bg-gray-300">Batal</button>
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-semibold mr-2 hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pembayaran-form"
-                    class="bg-green-500 text-white px-4 py-2 text-sm font-semibold rounded-lg hover:bg-green-600">Simpan</button>
+                    class="bg-green-500 text-white px-4 py-2 font-semibold rounded-md hover:bg-green-600">Simpan</button>
             </div>
         </div>
     </div>
@@ -399,7 +398,7 @@
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="flex-grow p-6 pt-0 mt-0 space-y-3 overflow-y-auto">
+            <div class="flex-grow p-6 pt-0 mt-0 space-y-3 overflow-y-auto max-h-[65vh]">
                 <form id="pengeluaran-rill-form" class="space-y-6">
                     <input type="hidden" id="pengeluaran-rill-id">
                     <div>
@@ -435,11 +434,11 @@
                     </div>
                 </form>
             </div>
-            <div class="flex justify-end items-center p-2 bg-dark-blue border-t rounded-b-lg">
+            <div class="flex justify-end items-center p-4 rounded-b-lg">
                 <button id="cancel-pengeluaran-rill-button" type="button"
-                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg mr-2 font-semibold hover:bg-gray-300">Batal</button>
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md mr-2 font-semibold hover:bg-gray-300">Batal</button>
                 <button type="submit" form="pengeluaran-rill-form"
-                    class="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600">Simpan</button>
+                    class="bg-green-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-600">Simpan</button>
             </div>
         </div>
     </div>

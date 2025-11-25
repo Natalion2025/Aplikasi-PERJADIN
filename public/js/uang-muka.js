@@ -205,4 +205,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     loadUangMuka(1, currentSearchQuery);
+
 });
