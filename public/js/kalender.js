@@ -263,11 +263,12 @@
                     let truncated = text.substr(0, maxLength);
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
-                monthTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
+                // KOREKSI: Gunakan maksud_perjalanan untuk judul dan gabungkan nama pegawai untuk atribut title.
+                monthTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
                 monthTooltip.classList.add('item');
                 monthTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 52}px`;
                 monthTooltip.style.zIndex = 10;
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
                 monthTooltip.title = pegawaiNames;
                 monthTooltip.style.width = `340px`;
 
@@ -313,11 +314,12 @@
                     let truncated = text.substr(0, maxLength);
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
-                newTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
+                // KOREKSI: Gunakan maksud_perjalanan untuk judul dan gabungkan nama pegawai untuk atribut title.
+                newTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
                 newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 4}px`;
                 newTooltip.style.width = `340px`;
                 newTooltip.style.zIndex = 10;
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
                 newTooltip.title = pegawaiNames;
 
                 let startColumnIndex = -1;
@@ -354,13 +356,14 @@
                     return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
                 };
                 // PERBAIKAN: Gabungkan array nama pegawai dengan spasi, lalu potong jika perlu.
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.join(' ') : event.pegawai;
-                weekTooltip.querySelector('.tooltip-title').textContent = truncateText(pegawaiNames);
+                // KOREKSI: Gunakan maksud_perjalanan untuk judul dan gabungkan nama pegawai untuk atribut title.
+                weekTooltip.querySelector('.tooltip-title').textContent = truncateText(event.maksud_perjalanan);
                 weekTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 15}px`;
                 weekTooltip.style.left = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 15}px`;
                 weekTooltip.style.width = `340px`;
                 weekTooltip.style.zIndex = 10;
                 // PERBAIKAN: Tampilkan nama lengkap di atribut title.
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
                 weekTooltip.title = pegawaiNames;
 
 

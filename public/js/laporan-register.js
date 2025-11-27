@@ -6,6 +6,8 @@
     const pageLimitSelect = document.getElementById('page-limit-select');
 
     let currentPageLimit = 5;
+    let currentLaporanPage = 1;
+    let currentPembatalanPage = 1;
 
     // Elemen untuk Modal Pembatalan
     const openPembatalanBtn = document.getElementById('pembatalan-tugas-btn');
@@ -54,49 +56,131 @@
      * @param {function} loadFunction - Fungsi yang akan dipanggil saat tombol halaman diklik.
      */
     const renderGlobalPagination = (container, pagination, loadFunction) => {
-        if (!container || !pagination) return;
+        if (!container) return;
         container.innerHTML = '';
 
-        const { page, totalPages, totalItems, limit } = pagination;
-        if (totalItems <= limit) return;
+        const { page, totalPages, totalItems, currentPageLimit } = pagination;
+        if (totalItems <= currentPageLimit) return; // Jangan render pagination jika hanya ada 1 halaman atau kurang
 
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
-        pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
-            Menampilkan <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span> halaman
+        pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">
+            Halaman <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span>
         </p>`;
 
         const navButtons = document.createElement('div');
-        navButtons.className = 'flex-1 flex justify-end items-center';
+        navButtons.className = 'flex-1 flex justify-end';
 
-        const createButton = (text, targetPage, isDisabled = false) => {
-            const button = document.createElement('button');
-            button.textContent = text;
-            button.className = 'relative inline-flex items-center px-4 py-2 border text-xs font-medium bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-slate-600' + (isDisabled ? ' cursor-not-allowed opacity-50' : '');
-            if (!isDisabled) button.addEventListener('click', () => loadFunction(targetPage));
-            return button;
-        };
+        // Tombol navigasi 'Pertama'
+        const firstButton = document.createElement('button');
+        firstButton.textContent = 'Pertama';
+        firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            firstButton.disabled = true;
+            firstButton.classList.add('cursor-not-allowed', 'opacity-50');
+        } else {
+            firstButton.addEventListener('click', () => loadFunction(1));
+        }
 
-        navButtons.append(createButton('Pertama', 1, page === 1), createButton('Sebelumnya', page - 1, page === 1), createButton('Berikutnya', page + 1, page === totalPages), createButton('Terakhir', totalPages, page === totalPages));
-        wrapper.append(pageInfo, navButtons);
+        // Tombol navigasi 'Sebelumnya'
+        const prevButton = document.createElement('button');
+        prevButton.textContent = 'Sebelumnya';
+        prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-l-0 border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === 1) {
+            prevButton.disabled = true;
+            prevButton.classList.add('cursor-not-allowed', 'opacity-50');
+        } else {
+            prevButton.addEventListener('click', () => loadFunction(page - 1));
+        }
+
+        // Container untuk tombol nomor halaman
+        const pageNumbersContainer = document.createElement('div');
+        pageNumbersContainer.className = 'inline-flex items-center';
+
+        // Tentukan rentang halaman yang akan ditampilkan (maksimal 5 halaman)
+        let startPage = Math.max(1, page - 2);
+        let endPage = Math.min(totalPages, startPage + 4);
+
+        // Sesuaikan startPage jika endPage mencapai batas
+        if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+        }
+
+        // Tombol navigasi nomor halaman
+        for (let i = startPage; i <= endPage; i++) {
+            const pageNumberButton = document.createElement('button');
+            pageNumberButton.textContent = `${i}`;
+            pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-l-0 border-r-0 border-navy-500 text-xs text-navy-500 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600 font-bold' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'}`;
+            pageNumberButton.addEventListener('click', () => loadFunction(i));
+            pageNumbersContainer.appendChild(pageNumberButton);
+        }
+
+        // Tombol navigasi 'Berikutnya'
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Berikutnya';
+        nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            nextButton.disabled = true;
+            nextButton.classList.add('cursor-not-allowed', 'opacity-50');
+        } else {
+            nextButton.addEventListener('click', () => loadFunction(page + 1));
+        }
+
+        // Tombol navigasi 'Terakhir'
+        const lastButton = document.createElement('button');
+        lastButton.textContent = 'Terakhir';
+        lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-l-0 border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+        if (page === totalPages) {
+            lastButton.disabled = true;
+            lastButton.classList.add('cursor-not-allowed', 'opacity-50');
+        } else {
+            lastButton.addEventListener('click', () => loadFunction(totalPages));
+        }
+
+        navButtons.appendChild(firstButton);
+        navButtons.appendChild(prevButton);
+        navButtons.appendChild(pageNumbersContainer);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(lastButton);
+
+        wrapper.appendChild(pageInfo);
+        wrapper.appendChild(navButtons);
         container.appendChild(wrapper);
     };
 
     const loadLaporanData = async (page = 1) => {
-        laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
+        if (!laporanTableBody) return;
+        laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        currentLaporanPage = page;
         try {
-            const response = await fetch(`/api/laporan?page=${page}&limit=${currentPageLimit}`);
-            if (!response.ok) throw new Error('Gagal memuat daftar laporan.');
-            const result = await response.json();
+            const [laporanRes, sessionRes] = await Promise.all([
+                fetch(`/api/laporan?page=${page}&limit=${currentPageLimit}`),
+                fetch('/api/user/session')
+            ]);
+
+            if (sessionRes.ok) {
+                const sessionData = await sessionRes.json();
+                currentUserRole = sessionData.user.role;
+            }
+
+            if (!laporanRes.ok) {
+                const errorData = await laporanRes.json();
+                throw new Error(errorData.message || 'Gagal memuat data Laporan.');
+            }
+
+            const result = await laporanRes.json();
             renderLaporanList(result.data, result.pagination);
+            renderGlobalPagination(laporanPaginationContainer, result.pagination, loadLaporanData);
         } catch (error) {
+            if (!laporanTableBody) return; // Cek lagi untuk menghindari error jika user pindah halaman
             laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
 
-    const renderLaporanList = (data, pagination) => {
+    const renderLaporanList = (data) => {
+        if (!laporanTableBody) return;
         laporanTableBody.innerHTML = '';
         if (!data || data.length === 0) {
             laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada laporan dibuat.</td></tr>`;
@@ -119,24 +203,29 @@
             `;
             laporanTableBody.appendChild(row);
         });
-
-        renderGlobalPagination(laporanPaginationContainer, pagination, loadLaporanData);
     };
 
     const loadCanceledSptData = async (page = 1) => {
-        pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Memuat...</td></tr>`;
+        if (!pembatalanTableBody) return;
+        pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        if (pembatalanPaginationContainer) pembatalanPaginationContainer.innerHTML = '';
+        currentPembatalanPage = page;
         try {
             const response = await fetch(`/api/spt/canceled?page=${page}&limit=${currentPageLimit}`);
-            if (!response.ok) throw new Error('Gagal memuat daftar pembatalan.');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal memuat data Pembatalan.');
+            }
             const result = await response.json();
             renderCanceledSptList(result.data, result.pagination);
+            renderGlobalPagination(pembatalanPaginationContainer, result.pagination, loadCanceledSptData);
         } catch (error) {
-            // PERBAIKAN: Sesuaikan colspan karena ada kolom baru
             pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
         }
     };
 
-    const renderCanceledSptList = (data, pagination) => {
+    const renderCanceledSptList = (data) => {
+        if (!pembatalanTableBody) return;
         pembatalanTableBody.innerHTML = '';
         if (!data || data.length === 0) {
             pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Tidak ada data pembatalan.</td></tr>`;
@@ -160,8 +249,6 @@
             `;
             pembatalanTableBody.appendChild(row);
         });
-
-        renderGlobalPagination(pembatalanPaginationContainer, pagination, loadCanceledSptData);
     };
 
     // --- LOGIKA UNTUK TAB ---
@@ -391,7 +478,7 @@
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
                     alert(result.message);
-                    loadLaporanData(); // Muat ulang daftar laporan
+                    loadLaporanData(currentLaporanPage); // Muat ulang daftar laporan
                 } catch (error) {
                     alert(`Gagal menghapus: ${error.message}`);
                 }
@@ -482,30 +569,32 @@
     });
 
     // Event delegation untuk tombol aksi di tabel pembatalan
-    pembatalanTableBody.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-pembatalan-btn');
-        const deleteBtn = e.target.closest('.delete-pembatalan-btn');
+    if (pembatalanTableBody) {
+        pembatalanTableBody.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-pembatalan-btn');
+            const deleteBtn = e.target.closest('.delete-pembatalan-btn');
 
-        if (editBtn) {
-            const id = editBtn.dataset.id;
-            openPembatalanModal(id);
-        }
-
-        if (deleteBtn) {
-            const id = deleteBtn.dataset.id;
-            const nomor = deleteBtn.dataset.nomor;
-            if (confirm(`Apakah Anda yakin ingin menghapus pembatalan untuk SPT "${nomor}"? Status SPT akan dikembalikan menjadi aktif.`)) {
-                fetch(`/api/pembatalan/${id}`, { method: 'DELETE' })
-                    .then(res => res.ok ? res.json() : Promise.reject(res.json()))
-                    .then(result => {
-                        alert(result.message);
-                        loadCanceledSptData();
-                        loadSptForCancellation();
-                    })
-                    .catch(errPromise => errPromise.then(err => alert(`Gagal menghapus: ${err.message}`)));
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                openPembatalanModal(id);
             }
-        }
-    });
+
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                const nomor = deleteBtn.dataset.nomor;
+                if (confirm(`Apakah Anda yakin ingin menghapus pembatalan untuk SPT "${nomor}"? Status SPT akan dikembalikan menjadi aktif.`)) {
+                    fetch(`/api/pembatalan/${id}`, { method: 'DELETE' })
+                        .then(res => res.ok ? res.json() : Promise.reject(res.json()))
+                        .then(result => {
+                            alert(result.message);
+                            loadCanceledSptData(currentPembatalanPage);
+                            loadSptForCancellation();
+                        })
+                        .catch(errPromise => errPromise.then(err => alert(`Gagal menghapus: ${err.message}`)));
+                }
+            }
+        });
+    }
 
     pageLimitSelect.addEventListener('change', (e) => {
         currentPageLimit = parseInt(e.target.value, 10);

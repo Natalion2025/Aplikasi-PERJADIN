@@ -359,7 +359,7 @@ const setupPegawaiPagination = (fullList) => {
     };
 
     const pageInfo = document.createElement('div');
-    pageInfo.innerHTML = `<p class="text-sm text-gray-700 dark:text-gray-400">
+    pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">
         Halaman <span class="font-medium">${currentPegawaiOnDutyPage}</span> dari <span class="font-medium">${totalPages}</span>
     </p>`;
 
@@ -369,7 +369,7 @@ const setupPegawaiPagination = (fullList) => {
     // Tombol navigasi 'Pertama'
     const firstButton = document.createElement('button');
     firstButton.textContent = 'Pertama';
-    firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    firstButton.className = 'ml-3 relative inline-flex items-center px-4 py-2 border border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-l-2xl text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
     if (currentPegawaiOnDutyPage === 1) {
         firstButton.disabled = true;
         firstButton.classList.add('cursor-not-allowed', 'opacity-50');
@@ -379,7 +379,7 @@ const setupPegawaiPagination = (fullList) => {
     // Tombol navigasi 'Sebelumnya'
     const prevButton = document.createElement('button');
     prevButton.textContent = 'Sebelumnya';
-    prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    prevButton.className = 'relative inline-flex items-center px-4 py-2 border border-l-0 border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
     if (currentPegawaiOnDutyPage === 1) {
         prevButton.disabled = true;
         prevButton.classList.add('cursor-not-allowed', 'opacity-50');
@@ -394,7 +394,7 @@ const setupPegawaiPagination = (fullList) => {
     for (let i = 1; i <= totalPages; i++) {
         const pageButton = document.createElement('button');
         pageButton.textContent = `${i}`;
-        pageButton.className = `relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600`;
+        pageButton.className = `relative inline-flex items-center px-4 py-2 border-l-0 border-r-0 border border-navy-500 text-xs text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600`;
         if (i === currentPegawaiOnDutyPage) {
             pageButton.classList.add('bg-sky-100', 'dark:bg-slate-600');
             pageButton.classList.remove('bg-white', 'dark:bg-slate-700', 'hover:bg-sky-100', 'dark:hover:bg-slate-600');
@@ -409,7 +409,7 @@ const setupPegawaiPagination = (fullList) => {
     // Tombol navigasi 'Berikutnya'
     const nextButton = document.createElement('button');
     nextButton.textContent = 'Berikutnya';
-    nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    nextButton.className = 'relative inline-flex items-center px-4 py-2 border border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
     if (currentPegawaiOnDutyPage === totalPages) {
         nextButton.disabled = true;
         nextButton.classList.add('cursor-not-allowed', 'opacity-50');
@@ -419,7 +419,7 @@ const setupPegawaiPagination = (fullList) => {
     // Tombol navigasi 'Terakhir'
     const lastButton = document.createElement('button');
     lastButton.textContent = 'Terakhir';
-    lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
+    lastButton.className = 'relative inline-flex items-center px-4 py-2 border border-l-0 border-navy-500 hover:bg-sky-100 dark:border-gray-600 text-xs rounded-r-2xl text-navy-500 dark:text-gray-300 bg-white dark:bg-slate-700 dark:hover:bg-slate-600';
     if (currentPegawaiOnDutyPage === totalPages) {
         lastButton.disabled = true;
         lastButton.classList.add('cursor-not-allowed', 'opacity-50');
