@@ -152,22 +152,36 @@ async function setupLayout() {
         loadComponent('/components/header.html', 'header-container')
     ]);
 
-    // 2. Periksa sesi pengguna
+    // 2. Muat skrip interaktivitas untuk komponen global (sidebar dan header)
+    // Ini harus dilakukan SEBELUM memeriksa sesi, agar UI siap
+    console.log('[DIAGNOSTIK] Memuat skrip sidebar dan header...');
+    await Promise.all([
+        loadScript('/js/sidebar.js'),
+        loadScript('/js/utils.js'), // Memuat utilitas global
+        loadScript('/js/header-logic.js') // Memuat logika header
+    ]);
+
+    // 3. Panggil inisialisasi sidebar SEKARANG, karena HTML dan JS-nya sudah siap.
+    if (window.App && typeof window.App.initializeSidebar === 'function') {
+        console.log('[DIAGNOSTIK] Menginisialisasi sidebar...');
+        window.App.initializeSidebar();
+    } else {
+        console.error('DIAGNOSTIK: Fungsi inisialisasi sidebar (App.initializeSidebar) tidak ditemukan setelah dimuat.');
+    }
+
+    // 4. Periksa sesi pengguna
     try {
         console.log('[DIAGNOSTIK] Memeriksa sesi pengguna...');
         // Tidak perlu `{ credentials: 'include' }` lagi, karena sudah ditangani oleh wrapper global
         const response = await fetch('/api/user/session');
 
-        // Jika sesi tidak valid (misalnya, status 401), alihkan ke halaman login
         if (!response.ok) {
-            // Log yang lebih detail untuk debugging
             console.error(`[DIAGNOSTIK] Verifikasi sesi gagal (Status: ${response.status}). Mengalihkan ke login.`);
-            // PERBAIKAN: Tambahkan parameter ?force=true untuk menghancurkan sesi lama di server
             window.location.href = '/login?force=true';
             return; // Hentikan eksekusi lebih lanjut
         }
 
-        // 3. Jika sesi valid, simpan data pengguna dari respons pertama.
+        // 5. Jika sesi valid, proses data pengguna dan inisialisasi header.
         const sessionData = await response.json();
         const currentUser = sessionData.user;
 
@@ -177,29 +191,11 @@ async function setupLayout() {
             return;
         }
 
-        // 4. Muat skrip interaktivitas untuk komponen global (sidebar dan header)
-        console.log('[DIAGNOSTIK] Memuat skrip sidebar dan header...');
-        await Promise.all([
-            loadScript('/js/sidebar.js'),
-            loadScript('/js/utils.js'), // Memuat utilitas global seperti renderGlobalPagination
-            loadScript('/js/header-logic.js') // Pastikan header-logic.js dimuat
-        ]);
-
-        // Panggil inisialisasi sidebar SETELAH skripnya dimuat.
-        // Ini mengasumsikan sidebar.js mengekspos fungsi global App.initializeSidebar()
-        if (window.App && typeof window.App.initializeSidebar === 'function') {
-            window.App.initializeSidebar();
-        } else {
-            console.warn('DIAGNOSTIK: Fungsi inisialisasi sidebar (App.initializeSidebar) tidak ditemukan.');
-        }
-
-        // Panggil inisialisasi header SETELAH skripnya dimuat.
-        // Ini memastikan header-logic.js berjalan setelah komponen header ada di DOM.
-        // PERBAIKAN: Kirim data pengguna yang sudah didapat ke fungsi inisialisasi.
         if (typeof initializeHeader === 'function') {
+            console.log('[DIAGNOSTIK] Menginisialisasi header dengan data pengguna...');
             initializeHeader(currentUser);
         } else {
-            console.warn('DIAGNOSTIK: Fungsi inisialisasi header (initializeHeader) tidak ditemukan.');
+            console.error('DIAGNOSTIK: Fungsi inisialisasi header (initializeHeader) tidak ditemukan setelah dimuat.');
         }
 
         // 6. Cari dan muat skrip spesifik untuk halaman ini

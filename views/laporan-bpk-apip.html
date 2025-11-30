@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan BPK & APIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="/css/output.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
+            z-index: 50;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+
+        .sidebar.visible {
+            left: 0;
+        }
+
+        .sidebar.visible+.main-content {
+            margin-left: 280px;
+        }
+
+        #sidebar a.active {
+            background-color: #4a5568;
+            /* Warna latar belakang lebih gelap untuk item aktif */
+            color: #ffffff;
+            /* Warna teks putih */
+            font-weight: bold;
+            /* Membuat teks menjadi tebal */
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        /** Style untuk item dan statistik pencarian **/
+        .item.hidden {
+            display: none;
+        }
+    </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="bg-slate-50 dark:bg-gray-900">
+    <!-- Sidebar -->
+    <aside class="sidebar bg-gradient-to-br from-dark-navy to-dark-blue text-white" id="sidebar">
+        <!-- Sidebar content akan dimuat di sini -->
+    </aside>
+
+    <!-- Konten utama -->
+    <div class="main-content">
+        <!-- Header -->
+        <header id="header-container">
+            <!-- Header content akan dimuat di sini -->
+        </header>
+
+        <!-- Konten halaman Laporan BPK & APIP -->
+        <main class="p-8 bg-[#f5f9fc] dark:bg-gray-800 min-h-screen">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-200">Laporan BPK & APIP</h1>
+                <div>
+                    <button>
+                        <a href="/files/Laporan_BPK_dan_APIP.exl" download
+                            class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-500 dark:hover:bg-blue-600 focus:outline-none dark:focus:ring-blue-800">
+                            Template BPK
+                        </a>
+                    </button>
+                </div>
+            </div>
+            <!-- Kontainer Tab & Filter -->
+            <div class="w-full bg-white rounded-2xl shadow-md  dark:bg-slate-800">
+                <!-- Navigasi Tab dan Filter -->
+                <div class="justify-between flex items-center p-0 border-b border-gray-200 dark:border-gray-700">
+                    <ul class="flex flex-wrap -mb-px text-center" id="register-tabs" role="tablist">
+                        <li class="me-2" role="presentation">
+                            <button
+                                class="inline-block p-4 uppercase font-semibold rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
+                                id="bpk-tab" type="button" role="tab" aria-controls="bpk-panel" aria-selected="true">
+                                Informasi Dasar
+                            </button>
+                        </li>
+                        <li class="me-2" role="presentation">
+                            <button
+                                class="inline-block p-4 uppercase font-semibold rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
+                                id="apip-tab" type="button" role="tab" aria-controls="apip-panel" aria-selected="false">
+                                Transportasi
+                                <i id="transport-arrow"
+                                    class="fas fa-chevron-down ml-1 transform transition-transform duration-200"></i>
+                            </button>
+                            <div id="transpot-submenu"
+                                class=" absolute hidden right-[36rem] top-56 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                                <a href="" id="departure-button"
+                                    class="block text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Berangkat
+                                </a>
+                                <a href="" id="arrival-button"
+                                    class="block text-start px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Kembali
+                                </a>
+                            </div>
+                        </li>
+                        <li>
+                            <button
+                                class="inline-block p-4 uppercase font-semibold rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
+                                id="accomodation-tab" type="button" role="tab" aria-controls="lain-panel"
+                                aria-selected="false">
+                                Penginapan
+                            </button>
+                        </li>
+                        <li>
+                            <button
+                                class="inline-block p-4 uppercase font-semibold rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
+                                id="meal-tab" type="button" role="tab" aria-controls="meal-panel" aria-selected="false">
+                                Uang Harian
+                            </button>
+                        </li>
+                        <li>
+                            <button
+                                class="inline-block p-4 uppercase font-semibold rounded-t-lg text-sm text-gray-700 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-500"
+                                id="other-tab" type="button" role="tab" aria-controls="other-panel"
+                                aria-selected="false">
+                                Biaya Lain-lain
+                            </button>
+                        </li>
+                    </ul>
+                    <!-- FITUR BARU: Filter Jumlah Tampilan -->
+                    <div class="pr-4">
+                        <label for="page-limit-select"
+                            class="text-sm font-medium text-gray-700 dark:text-gray-400 mr-2">Tampilkan:</label>
+                        <select id="page-limit-select" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring
+                            focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-slate-700 dark:border-gray-600
+                            dark:text-white">
+                            <option value="5">5</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Konten Tab -->
+                <div id="register-tab-content">
+                    <!-- Panel Informasi Dasar -->
+                    <div class="py-3 px-3" id="basicInfo-panel" role="tabpanel" aria-labelledby="basicInfo-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full  divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr class="bg-blue-50 dark:bg-gray-600 text-nowrap">
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No.</th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama & Jabatan</th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Pangkat/Gol</th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No. Surat Tugas</th>
+                                        <th scope="col"
+                                            class="px-1 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No. SPD</th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300">
+                                            <span class="uppercase tracking-wider">Tgl. Mulai - Selesai</span>
+                                        </th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama Kegiatan</th>
+                                        <th scope="col"
+                                            class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jenis
+                                            PERJADIN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="basicInfo-table-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                            </table>
+                            <!-- Paginasi -->
+                            <div id="basicInfo-pagination-container">
+                                <!-- Tombol "Sebelumnya" dan "Berikutnya" akan muncul di sini -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Panel Transportasi -->
+                    <div class="hidden px-3 py-3" id="transport-panel" role="tabpanel" aria-labelledby="transport-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr class="bg-blue-50 dark:bg-gray-600 text-nowrap">
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No.</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama & Jabatan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nomor Surat Tugas</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Maskapai</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Kode Booking & Penerbangan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No. & Tgl. Tiket</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            dari & Tujuan </th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Harga</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transport-table-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                            </table>
+                            <!-- Paginasi -->
+                            <div id="transport-pagination-container">
+                                <!-- Tombol "Pertama" , "Sebelumnya" , "tombol number page" , "Berikutnya", dan "Terakhir" akan dimunculkan di sini oleh javascript-->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Panel Penginapan -->
+                    <div class="hidden px-3 py-3" id="accomodation-panel" role="tabpanel"
+                        aria-labelledby="accomodation-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr class="bg-blue-50 dark:bg-gray-600 text-nowrap">
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No.</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama & Jabatan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nomor Surat Tugas</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama Hotel</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama Kota</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Tgl. Check In & Check Out</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jumlah Malam</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Harga/Malam</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Total Harga</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accomodation-table-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                            </table>
+                            <!-- Paginasi -->
+                            <div id="accomodation-pagination-container">
+                                <!-- Tombol "Pertama" , "Sebelumnya" , "tombol number page" , "Berikutnya", dan "Terakhir" akan dimunculkan di sini oleh javascript-->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Panel Uang Harian & Reprensentatif -->
+                    <div class="hidden px-3 py-3" id="meal-panel" role="tabpanel" aria-labelledby="meal-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr class="bg-blue-50 dark:bg-gray-600 text-nowrap">
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No.</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama & Jabatan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nomor Surat Tugas</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jumlah Hari</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Tarif Satuan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Total</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Biaya Representatif</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="meal-table-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                            </table>
+                            <!-- Paginasi -->
+                            <div id="meal-pagination-container">
+                                <!-- Tombol "Pertama" , "Sebelumnya" , "tombol number page" , "Berikutnya", dan "Terakhir" akan dimunculkan di sini oleh javascript-->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Panel Biaya Lain-lain -->
+                    <div class="hidden px-3 py-3" id="otherCost-panel" role="tabpanel" aria-labelledby="otherCost-tab">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr class="bg-blue-50 dark:bg-gray-600 text-nowrap">
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            No.</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nama & Jabatan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Nomor Surat Tugas</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jenis Biaya</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Jumlah Hari</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Tarif Satuan</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Total</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="otherCost-table-body"
+                                    class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                            </table>
+                            <!-- Paginasi -->
+                            <div id="otherCost-pagination-container">
+                                <!-- Tombol "Pertama" , "Sebelumnya" , "tombol number page" , "Berikutnya", dan "Terakhir" akan dimunculkan di sini oleh javascript-->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/js/main1.js"></script>
+    <script src="/js/sidebar.js"></script>
+
+
+</body>
+
+</html>

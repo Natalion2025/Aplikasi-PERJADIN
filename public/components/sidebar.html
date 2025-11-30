@@ -14,7 +14,7 @@
 <nav class="mt-4">
     <!-- Item Menu: Dashboard -->
     <a href="/dashboard" id="nav-dashboard"
-        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        class="flex items-center px-6 py-3 text-white rounded-xl mx-2 transition-colors duration-200 hover:bg-white/10  active:aria-[current=page]:bg-green-100/30">
         <i class="fas fa-home w-6 text-center"></i>
         <span class="ml-4">Dashboard</span>
     </a>
@@ -87,7 +87,7 @@
     <!-- Item Menu Dropdown: Pengaturan -->
     <div class="pr-4">
         <button id="settings-button"
-            class="w-full flex items-center justify-normal px-6 py-3 mx-2 space-x-8 transition-colors duration-200 hover:bg-white/10 rounded-xl text-white focus:outline-none p-2 -m-2 ">
+            class="w-full flex items-center justify-normal px-6 py-2 mx-2 space-x-8 mt-1 transition-colors duration-200 hover:bg-white/10 focus:bg-white/10 focus:font-bold rounded-xl text-white focus:outline-none p-2 -m-2 ">
             <span class="flex items-center">
                 <i class="fas fa-cog w-6 text-center"></i>
                 <span class="ml-4">Pengaturan</span>
@@ -101,6 +101,12 @@
                 class="block py-2 text-gray-300 hover:text-white">Aplikasi</a>
         </div>
     </div>
+
+    <!-- Format Laporan Pemeriksaan -->
+    <a href="/laporan-bpk-apip" id="nav-bpk-apip"
+        class="flex items-center px-6 py-2 text-white rounded-xl mx-2 mt-[10px] transition-colors duration-200 hover:bg-white/10 aria-[current=page]:bg-black/20">
+        <i class="fas fa-file-alt w-6 text-center"></i>
+        <span class="ml-4">BPK & APIP</span></a>
 
     <!-- Divider dan Hak Cipta -->
     <div class="px-8 py-2 mb-16">

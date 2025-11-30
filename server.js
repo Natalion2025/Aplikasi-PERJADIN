@@ -883,6 +883,11 @@ app.get('/pengaturan/aplikasi', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'pengaturan-aplikasi.html'));
 });
 
+// Rute untuk halaman laporan BPK & APIP
+app.get('/laporan-bpk-apip', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'laporan-bpk-apip.html'));
+});
+
 // Rute utama, redirect to dashboard atau login
 app.get('/', (req, res) => {
     if (req.session.user) {
@@ -2824,10 +2829,9 @@ app.get('/api/laporan', isApiAuthenticated, async (req, res) => {
     const offset = (page - 1) * limit;
 
     try {
-        const totalSql = "SELECT COUNT(*) as total FROM pembatalan_spt"; // FIX: Hitung dari tabel yang benar
-        const totalResult = await dbGet(totalSql); // FIX: Jalankan query yang sudah diperbaiki
-        const totalItems = totalResult.total;
-        const totalPages = Math.ceil(totalItems / limit);
+        const totalResult = await dbGet("SELECT COUNT(*) as total FROM laporan_perjadin"); // Hitung total laporan
+        const totalItems = totalResult ? totalResult.total : 0; // Hitung total item
+        const totalPages = Math.ceil(totalItems / limit); // Hitung total halaman
 
         const sql = `
 SELECT

@@ -8,6 +8,7 @@
     let currentPageLimit = 5;
     let currentLaporanPage = 1;
     let currentPembatalanPage = 1;
+    let currentUserRole = 'user'; // Default role
 
     // Elemen untuk Modal Pembatalan
     const openPembatalanBtn = document.getElementById('pembatalan-tugas-btn');
@@ -59,8 +60,14 @@
         if (!container) return;
         container.innerHTML = '';
 
-        const { page, totalPages, totalItems, currentPageLimit } = pagination;
-        if (totalItems <= currentPageLimit) return; // Jangan render pagination jika hanya ada 1 halaman atau kurang
+        // Ambil page dan totalItems dari API dengan aman.
+        // Coba berbagai kemungkinan nama properti untuk total item.
+        const page = pagination?.page ?? 1;
+        const totalItems = pagination?.totalItems ?? pagination?.total ?? pagination?.count ?? pagination?.total_count ?? 0;
+
+        // Hitung totalPages di sisi klien untuk memastikan konsistensi.
+        const totalPages = Math.ceil(totalItems / currentPageLimit);
+        if (totalPages <= 1) return; // Jangan render pagination jika hanya ada 1 halaman.
 
         const wrapper = document.createElement('div');
         wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
@@ -99,17 +106,8 @@
         const pageNumbersContainer = document.createElement('div');
         pageNumbersContainer.className = 'inline-flex items-center';
 
-        // Tentukan rentang halaman yang akan ditampilkan (maksimal 5 halaman)
-        let startPage = Math.max(1, page - 2);
-        let endPage = Math.min(totalPages, startPage + 4);
-
-        // Sesuaikan startPage jika endPage mencapai batas
-        if (endPage - startPage < 4) {
-            startPage = Math.max(1, endPage - 4);
-        }
-
         // Tombol navigasi nomor halaman
-        for (let i = startPage; i <= endPage; i++) {
+        for (let i = 1; i <= totalPages; i++) {
             const pageNumberButton = document.createElement('button');
             pageNumberButton.textContent = `${i}`;
             pageNumberButton.className = `relative inline-flex items-center px-4 py-2 border border-l-0 border-r-0 border-navy-500 text-xs text-navy-500 dark:text-gray-300 ${i === page ? 'bg-sky-100 dark:bg-slate-600 font-bold' : 'bg-white dark:bg-slate-700 hover:bg-sky-100 dark:hover:bg-slate-600'}`;
@@ -153,7 +151,9 @@
     const loadLaporanData = async (page = 1) => {
         if (!laporanTableBody) return;
         laporanTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        // Perbarui state halaman saat ini
         currentLaporanPage = page;
+
         try {
             const [laporanRes, sessionRes] = await Promise.all([
                 fetch(`/api/laporan?page=${page}&limit=${currentPageLimit}`),
@@ -171,7 +171,7 @@
             }
 
             const result = await laporanRes.json();
-            renderLaporanList(result.data, result.pagination);
+            renderLaporanList(result.data, currentUserRole);
             renderGlobalPagination(laporanPaginationContainer, result.pagination, loadLaporanData);
         } catch (error) {
             if (!laporanTableBody) return; // Cek lagi untuk menghindari error jika user pindah halaman
@@ -205,19 +205,19 @@
         });
     };
 
-    const loadCanceledSptData = async (page = 1) => {
+    const loadCanceledSptData = async (page = 1) => { // Sudah benar, tidak perlu diubah tapi kita pastikan konsisten
         if (!pembatalanTableBody) return;
         pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
         if (pembatalanPaginationContainer) pembatalanPaginationContainer.innerHTML = '';
         currentPembatalanPage = page;
         try {
-            const response = await fetch(`/api/spt/canceled?page=${page}&limit=${currentPageLimit}`);
+            const response = await fetch(`/api/spt/canceled?page=${currentPembatalanPage}&limit=${currentPageLimit}`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Gagal memuat data Pembatalan.');
             }
             const result = await response.json();
-            renderCanceledSptList(result.data, result.pagination);
+            renderCanceledSptList(result.data);
             renderGlobalPagination(pembatalanPaginationContainer, result.pagination, loadCanceledSptData);
         } catch (error) {
             pembatalanTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
@@ -603,6 +603,6 @@
     });
 
     setupTabs();
-    loadLaporanData();
-    loadCanceledSptData();
+    loadLaporanData(currentLaporanPage);
+    // loadCanceledSptData tidak perlu dipanggil di awal karena baru dipanggil saat tab-nya diklik
 })();
