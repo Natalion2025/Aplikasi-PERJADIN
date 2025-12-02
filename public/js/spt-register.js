@@ -33,6 +33,7 @@
     const sptPanel = document.getElementById('spt-panel');
     const sppdPanel = document.getElementById('sppd-panel');
 
+    // Fungsi untuk format tanggal
     const formatDate = (dateString) => {
         if (!dateString) return '-';
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -46,6 +47,7 @@
         return isNaN(number) ? '' : new Intl.NumberFormat('id-ID').format(number);
     };
 
+    // Fungsi untuk merender daftar SPT di tabel
     const renderSptList = (sptList, role) => {
         // Guard clause: Jangan lakukan apa-apa jika elemen tabel tidak ada
         if (!sptTableBody) {
@@ -55,6 +57,7 @@
 
         sptTableBody.innerHTML = ''; // Kosongkan tabel
 
+        // Jika tidak ada data SPT 
         if (!sptList || sptList.length === 0) {
             sptTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Belum ada data Surat Tugas. Silakan buat baru.</td></tr>`;
             return;
@@ -743,6 +746,7 @@
         const tabs = [sptTab, sppdTab];
         const panels = [sptPanel, sppdPanel];
 
+        // Ketika mengalihkan tab, sembunyikan semua panel dan set semua tab ke tidak terpilih
         tabs.forEach(tab => {
             tab.setAttribute('aria-selected', 'false');
             tab.classList.remove('bg-green-100', 'dark:bg-sky-900', 'text-green-800');
@@ -750,6 +754,7 @@
         });
         panels.forEach(panel => panel.classList.add('hidden'));
 
+        // Tampilkan panel yang dipilih dan set tab sebagai terpilih
         selectedTab.setAttribute('aria-selected', 'true');
         selectedTab.classList.add('bg-green-100', 'dark:bg-sky-900', 'text-green-800', 'dark:text-gray-300');
         selectedTab.classList.remove('dark:hover:text-gray-300', 'dark:border', 'dark:border-gray-700');

@@ -1164,6 +1164,60 @@ app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, asyn
     }
 });
 
+// --- Rute API Laporan BPK & APIP ---
+app.get('/api/laporan-bpk-apip', isApiAuthenticated, async (req, res) => {
+    const usePagination = req.query.limit !== '0';
+    // Jika paginasi aktif, gunakan nilai dari query atau default ke 5. Jika tidak, limit adalah 0.
+    const limit = usePagination ? (parseInt(req.query.limit, 10) || 5) : -1; // Gunakan -1 untuk menandakan tanpa limit di SQLite
+    const page = parseInt(req.query.page) || 1;
+    const offset = usePagination ? (page - 1) * (parseInt(req.query.limit, 10) || 5) : 0;
+
+    try {
+        const lapBpkApipSql = `
+            SELECT
+                s.id,
+                pg_spt.nama_lengkap, 
+                pg_spt.jabatan, 
+                pg_spt.pangkat,
+                s.nomor_surat, s.tanggal_surat,
+                sppd.nomor_sppd,
+                s.tanggal_berangkat, s.tanggal_kembali, s.maksud_perjalanan,
+                a.mata_anggaran_nama
+            FROM spt s
+            JOIN spt_pegawai sp ON s.id = sp.spt_id
+            JOIN pegawai pg_spt ON sp.pegawai_id = pg_spt.id
+            LEFT JOIN anggaran a ON s.anggaran_id = a.id
+            LEFT JOIN sppd ON s.id = sppd.spt_id AND sp.pegawai_id = sppd.pegawai_id
+            ORDER BY s.tanggal_surat DESC, s.id DESC, sp.urutan ASC` + (usePagination ? ' LIMIT ? OFFSET ?' : '');
+        const params = usePagination ? [limit, offset] : [];
+        const lapBpkApip = await dbAll(lapBpkApipSql, params);
+
+        // Jika tidak menggunakan paginasi, kembalikan semua data dalam array.
+        if (!req.query.page && !req.query.limit) {
+            return res.json(lapBpkApip);
+        }
+        // Jika menggunakan paginasi, hitung total dan kembalikan objek paginasi.
+        // PERBAIKAN: Hitung total berdasarkan jumlah pegawai di SPT, bukan jumlah SPT
+        const totalResult = await dbGet("SELECT COUNT(*) as total FROM spt_pegawai", []);
+        const totalItems = totalResult.total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        res.json({
+            data: lapBpkApip,
+            pagination: {
+                page,
+                limit,
+                totalItems,
+                totalPages
+            }
+        });
+
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data laporan BPK & APIP:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // --- Rute API SPT (Surat Perintah Tugas) ---
 
 // GET: Mengambil semua data SPT untuk ditampilkan di register
