@@ -1166,11 +1166,11 @@ app.delete('/api/anggaran/:id', isApiAuthenticated, isApiAdminOrSuperAdmin, asyn
 
 // --- Rute API Laporan BPK & APIP ---
 app.get('/api/laporan-bpk-apip', isApiAuthenticated, async (req, res) => {
-    const usePagination = req.query.limit !== '0';
+    const usePagination = req.query.limit !== '0'; // PERBAIKAN KOMPREHENSIF: Tangani kasus limit=0 secara eksplisit untuk mengambil semua data.
     // Jika paginasi aktif, gunakan nilai dari query atau default ke 5. Jika tidak, limit adalah 0.
     const limit = usePagination ? (parseInt(req.query.limit, 10) || 5) : -1; // Gunakan -1 untuk menandakan tanpa limit di SQLite
-    const page = parseInt(req.query.page) || 1;
-    const offset = usePagination ? (page - 1) * (parseInt(req.query.limit, 10) || 5) : 0;
+    const page = parseInt(req.query.page) || 1; // Halaman default 1
+    const offset = usePagination ? (page - 1) * (parseInt(req.query.limit, 10) || 5) : 0; // Offset default 0
 
     try {
         const lapBpkApipSql = `

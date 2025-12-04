@@ -626,11 +626,15 @@
 
             let result;
             if (isEditMode) {
-                // --- PERBAIKAN: Mode Edit ---
-                // Panggil endpoint baru yang tidak bergantung pada laporan
-                const response = await fetch(`/api/spt/${selectedSptId}/expenditure-details`);
+                // --- PERBAIKAN FINAL: Mode Edit ---
+                // Selalu panggil endpoint `/api/laporan/by-spt/{id}` untuk mendapatkan data pengeluaran yang sudah diinput
+                // di laporan. Endpoint ini sudah dimodifikasi di backend untuk mengembalikan semua pelaksana dari SPT
+                // meskipun laporan belum ada, sehingga menjamin semua nama tampil.
+                const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);
                 result = await response.json();
-                if (!response.ok) throw new Error(result.message || 'Gagal menghitung rincian biaya untuk SPT ini.');
+                if (!response.ok && response.status !== 404) {
+                    throw new Error(result.message || 'Gagal mengambil data rincian untuk mode edit.');
+                }
             } else {
                 // --- Logika Lama: Mode Tambah Baru ---
                 const response = await fetch(`/api/laporan/by-spt/${selectedSptId}`);

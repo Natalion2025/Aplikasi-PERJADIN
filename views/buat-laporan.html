@@ -192,14 +192,17 @@
                         <div
                             class="pengeluaran-pegawai-item border border-slate-300 dark:border-slate-700 rounded-lg p-6">
                             <h4
-                                class="pegawai-name-title text-lg font-medium text-indigo-700 dark:text-indigo-400 mb-6">
+                                class="pegawai-name-title text-lg font-medium text-indigo-700 dark:text-indigo-400 mb-1">
                                 Rincian untuk [Nama Pegawai]</h4>
+                            <h6 class="italic text-slate-600 mb-4">Rincian Transport Diisi Untuk Masing-masing Ketika
+                                Pulang
+                                dan Pergi</h6>
                             <div class="grid grid-cols-1 lg:grid-cols-1 gap-x-8 gap-y-6">
                                 <!-- Kolom Transportasi -->
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transportasi</label>
-                                    <div class="transportasi-container mt-1 space-y-4">
+                                    <div class="transportasi-container space-y-4">
                                         <!-- Baris Transportasi akan ditambahkan oleh JS -->
                                     </div>
                                     <button type="button"
@@ -240,137 +243,163 @@
                                         Tambah Biaya Lain-lain</button>
                                 </div>
                             </div>
-                        </div>
                     </template>
+                </form>
 
-                    <!-- Template untuk Transportasi -->
-                    <template id="transportasi-template">
-                        <div class="transport-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <select name="jenis"
-                                class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                                <option>Bus</option>
-                                <option>Taksi</option>
-                                <option>Kereta Api</option>
-                                <option>Kapal</option>
-                                <option>Pesawat</option>
-                            </select>
-                            <input type="text" name="perusahaan" placeholder="Nama Maskapai/Perusahaan"
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                            <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
-                                    class="flex-grow block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
-                                <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
-                                        class="fas fa-minus-circle"></i></button>
-                            </div>
-                        </div>
-                    </template>
 
-                    <!-- Template untuk Akomodasi -->
-                    <template id="akomodasi-template">
-                        <div class="akomodasi-item grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                            <select name="jenis"
-                                class="md:col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                                <option>Hotel</option>
-                                <option>Ditanggung Panitia</option>
-                                <option>Rumah Warga (30%)</option>
-                            </select>
-                            <input type="text" name="nama" placeholder="Nama Hotel"
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                            <input type="text" name="harga_satuan" placeholder="Harga Satuan (Rp)"
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc currency-input">
-                            <input type="number" name="malam" placeholder="Qty"
-                                class="md:col-span-1 block w-full text-center px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc">
-                            <span class="text-gray-600 dark:text-gray-400 text-center md:col-span-1">malam</span>
-                            <input type="text" name="nominal" placeholder="Total (Rp)" readonly
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed">
-                            <button type="button"
-                                class="remove-item-btn text-red-500 hover:text-red-700 hidden justify-self-start"><i
+
+                <!-- Template untuk Transportasi -->
+                <template id="transportasi-template">
+                    <div class="transport-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                        <select name="jenis"
+                            class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <option>Bus</option>
+                            <option>Taksi</option>
+                            <option>Kereta Api</option>
+                            <option>Kapal</option>
+                            <option>Pesawat</option>
+                        </select>
+                        <input id="Maskapai" type="text" name="perusahaan" placeholder="Maskapai/Perusahaan"
+                            class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input id="Maskapai" type="text" name="perusahaan" placeholder="Kode Booking"
+                            class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input id="Maskapai" type="text" name="perusahaan" placeholder="Nomor Penerbangan"
+                            class="md:col-span-1 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input id="Maskapai" type="text" name="perusahaan" placeholder="Nomor Tiket"
+                            class=" block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="date" id="tanggal_laporan" name="tanggal_tiket" title="Tanggal Tiket"
+                            class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="text" id="terminal_keberangkatan" name="terminal_keberangkatan"
+                            placeholder="Terminal Berangkat" required
+                            class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="text" id="terminal_tujuan" name="terminal_tujuan" placeholder="Terminal Tujuan"
+                            required
+                            class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <div class="items-center flex gap-2 md:col-span-1">
+                            <input type="text" name="nominal" placeholder="Nominal (Rp)" required
+                                class="flex-grow block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                            <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
                                     class="fas fa-minus-circle"></i></button>
                         </div>
-                    </template>
-
-                    <!-- Template untuk Biaya Kontribusi -->
-                    <template id="kontribusi-template">
-                        <div class="kontribusi-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <select name="jenis" placeholder="Biaya Kontribusi"
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                                <option>Bimbingan Teknis</option>
-                                <option>Kursus</option>
-                                <option>Pelatihan/Diklat</option>
-                            </select>
-                            <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
-                                    class="flex-grow block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
-                                <span class="text-gray-600 dark:text-gray-400 text-center">/kegiatan</span>
-                                <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
-                                        class="fas fa-minus-circle"></i></button>
-                            </div>
-                        </div>
-                    </template>
-
-                    <!-- Template untuk Biaya Lain-lain -->
-                    <template id="lain-lain-template">
-                        <div class="lain-lain-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                            <input type="text" name="uraian" placeholder="Uraian Biaya"
-                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
-                            <div class="flex items-center gap-2 md:col-span-1">
-                                <input type="text" name="nominal" placeholder="Nominal (Rp)"
-                                    class="block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
-                                <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
-                                        class="fas fa-minus-circle"></i></button>
-                            </div>
-                        </div>
-                    </template>
-
-                    <!-- 4. Kesimpulan -->
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">4. Kesimpulan</h3>
-                        <textarea id="kesimpulan" name="kesimpulan" rows="4" placeholder="Kesimpulan dan rekomendasi..."
-                            class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
                     </div>
+                </template>
 
-                    <!-- 5. Lampiran -->
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">5. Lampiran (Bukti
-                            Perjalanan)</h3>
-                        <div id="file-upload-area"
-                            class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-gray-400/50 px-6 py-10">
-                            <div class="text-center">
-                                <i class="fas fa-photo-video mx-auto h-12 w-12 text-gray-300" aria-hidden="true"></i>
-                                <div class="mt-4 flex text-sm leading-6 text-gray-600 dark:text-gray-300">
-                                    <label for="lampiran-input"
-                                        class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500">
-                                        <span>Pilih file untuk diupload</span>
-                                        <input id="lampiran-input" name="lampiran" type="file" class="sr-only" multiple
-                                            accept="image/jpeg,image/png,application/pdf">
-                                    </label>
-                                    <p class="pl-1">atau seret dan lepas di sini</p>
-                                </div>
-                                <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">PNG, JPG, PDF hingga 10MB
-                                </p>
-                            </div>
-                        </div>
 
-                        <!-- Daftar Pratinjau File -->
-                        <div id="file-preview-list" class="mt-6 space-y-4">
-                            <!-- Pratinjau file akan muncul di sini -->
+
+                <!-- Template untuk Akomodasi -->
+                <template id="akomodasi-template">
+                    <div class="akomodasi-item grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <select name="jenis"
+                            class="md:col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <option>Hotel</option>
+                            <option>Ditanggung Panitia</option>
+                            <option>Rumah Warga (30%)</option>
+                        </select>
+                        <input type="text" name="nama" placeholder="Nama Hotel"
+                            class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="text" name="lokasi_hotel" placeholder="Lokasi Hotel"
+                            title="Kota dimana hotel berada"
+                            class="md:col-span-2 text-sm block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="date" name="tanggal_checkIn" placeholder="" title="Tanggal Check-In"
+                            class="md:col-span-2 text-sm block w-full px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="date" name="tanggal_checkOut" placeholder="" title="Tanggal Check-Out"
+                            class="md:col-span-2 text-sm block w-full px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <input type="text" name="harga_satuan" placeholder="Harga Satuan (Rp)"
+                            class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc currency-input">
+                        <input type="number" name="malam" placeholder="Qty"
+                            class="md:col-span-1 block w-full text-center px-1 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm akomodasi-calc">
+                        <span class="text-gray-600 dark:text-gray-400 text-center md:col-span-1">malam</span>
+                        <input type="text" name="nominal" placeholder="Total (Rp)" readonly
+                            class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 bg-slate-100 dark:bg-slate-700 dark:text-white rounded-md shadow-sm cursor-not-allowed">
+                        <button type="button"
+                            class="remove-item-btn text-red-500 hover:text-red-700 hidden justify-self-start"><i
+                                class="fas fa-minus-circle"></i></button>
+                    </div>
+                </template>
+
+                <!-- Template untuk Biaya Kontribusi -->
+                <template id="kontribusi-template">
+                    <div class="kontribusi-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                        <select name="jenis" placeholder="Biaya Kontribusi"
+                            class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <option>Bimbingan Teknis</option>
+                            <option>Kursus</option>
+                            <option>Pelatihan/Diklat</option>
+                        </select>
+                        <div class="flex items-center gap-2 md:col-span-1">
+                            <input type="text" name="nominal" placeholder="Nominal (Rp)"
+                                class="flex-grow block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                            <span class="text-gray-600 dark:text-gray-400 text-center">/kegiatan</span>
+                            <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                    class="fas fa-minus-circle"></i></button>
                         </div>
                     </div>
+                </template>
 
-
-                    <!-- Action Buttons -->
-                    <div
-                        class="mt-6 flex items-center justify-end gap-x-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                        <a href="/laporan"
-                            class="rounded-md bg-white dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50">Batal</a>
-                        <button type="submit"
-                            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                            Simpan Laporan
-                        </button>
+                <!-- Template untuk Biaya Lain-lain -->
+                <template id="lain-lain-template">
+                    <div class="lain-lain-item grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                        <input type="text" name="uraian" placeholder="Uraian Biaya"
+                            class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                        <div class="flex items-center gap-2 md:col-span-1">
+                            <input type="text" name="nominal" placeholder="Nominal (Rp)"
+                                class="block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                            <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                    class="fas fa-minus-circle"></i></button>
+                        </div>
                     </div>
+                </template>
+
+                <!-- 4. Kesimpulan -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">4. Kesimpulan</h3>
+                    <textarea id="kesimpulan" name="kesimpulan" rows="4" placeholder="Kesimpulan dan rekomendasi..."
+                        class="block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm"></textarea>
+                </div>
+
+                <!-- 5. Lampiran -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">5. Lampiran (Bukti
+                        Perjalanan)</h3>
+                    <div id="file-upload-area"
+                        class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 dark:border-gray-400/50 px-6 py-10">
+                        <div class="text-center">
+                            <i class="fas fa-photo-video mx-auto h-12 w-12 text-gray-300" aria-hidden="true"></i>
+                            <div class="mt-4 flex text-sm leading-6 text-gray-600 dark:text-gray-300">
+                                <label for="lampiran-input"
+                                    class="relative cursor-pointer rounded-md bg-white dark:bg-slate-800 font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500">
+                                    <span>Pilih file untuk diupload</span>
+                                    <input id="lampiran-input" name="lampiran" type="file" class="sr-only" multiple
+                                        accept="image/jpeg,image/png,application/pdf">
+                                </label>
+                                <p class="pl-1">atau seret dan lepas di sini</p>
+                            </div>
+                            <p class="text-xs leading-5 text-gray-600 dark:text-gray-400">PNG, JPG, PDF hingga 10MB
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Daftar Pratinjau File -->
+                    <div id="file-preview-list" class="mt-6 space-y-4">
+                        <!-- Pratinjau file akan muncul di sini -->
+                    </div>
+                </div>
+
+
+                <!-- Action Buttons -->
+                <div
+                    class="mt-6 flex items-center justify-end gap-x-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <a href="/laporan"
+                        class="rounded-md bg-white dark:bg-slate-600 dark:text-gray-200 dark:hover:bg-slate-500 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50">Batal</a>
+                    <button type="submit"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        Simpan Laporan
+                    </button>
+                </div>
                 </form>
             </div>
-        </main>
+    </div>
+    </main>
     </div>
 
     <script src="/js/main1.js"></script>

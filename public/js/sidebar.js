@@ -87,7 +87,7 @@ if (!window.App.sidebarInitialized) {
          * Menandai item menu yang aktif berdasarkan URL saat ini dan membuka submenu yang relevan.
          */
         const initializeActiveMenuItem = () => {
-            const currentPath = window.location.pathname;
+            const currentPath = window.location.pathname; // Dapatkan path saat ini dari URL
             // Mengambil semua link di dalam sidebar yang memiliki href
             const sidebarLinks = document.querySelectorAll('#sidebar a[href]');
 
@@ -99,12 +99,14 @@ if (!window.App.sidebarInitialized) {
 
                 // new URL() akan menyelesaikan URL relatif menjadi absolut, lalu kita ambil path-nya.
                 // Ini cara yang andal untuk mendapatkan path yang bersih.
-                const linkPath = new URL(link.href, window.location.origin).pathname;
+                const linkPath = new URL(link.href, window.location.origin).pathname; // Dapatkan path dari href link
 
                 // Mencocokkan path saat ini dengan href link.
-                // Menggunakan startsWith agar link '/dashboard' tetap aktif untuk path '/dashboard/details'
-                // Pengecualian untuk path root '/' yang harus cocok persis.
-                if ((linkPath !== '/' && currentPath.startsWith(linkPath)) || (currentPath === linkPath)) {
+                // PERBAIKAN: Menggunakan perbandingan kesamaan persis (===) untuk menghindari
+                // aktivasi ganda pada menu yang namanya mirip (misal: /laporan dan /laporan-bpk-apip).
+                // Pengecualian: link '/dashboard' akan tetap aktif jika path saat ini dimulai dengan '/dashboard/'
+                // untuk menangani halaman detail seperti /dashboard/stats.
+                if (linkPath === currentPath || (linkPath === '/dashboard' && currentPath.startsWith('/dashboard/'))) {
                     link.classList.add('active');
 
                     // Jika link aktif ada di dalam submenu, buka submenu tersebut.
