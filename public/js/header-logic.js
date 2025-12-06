@@ -42,8 +42,9 @@ function removeHighlights(element) { //Fungsi untuk menghapus highlight dari ele
 
 function updateSearchStats(searchTerm) { //Fungsi untuk memperbarui statistik pencarian
     const visibleItems = document.querySelectorAll('.item:not(.hidden)');
-    const totalItems = items.length;
-
+    // PERBAIKAN: Ambil total item langsung dari DOM di dalam fungsi ini
+    // untuk menghindari ReferenceError karena 'items' tidak terdefinisi di sini.
+    const totalItems = document.querySelectorAll('.item').length;
     // Hapus statistik sebelumnya
     const existingStats = document.querySelector('.search-stats');
     if (existingStats) {

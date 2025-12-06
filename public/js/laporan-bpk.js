@@ -33,6 +33,7 @@
 
     let currentPageLimit = 5;
     let currentPage = 1;
+    let currentTransportView = 'berangkat'; // Default view untuk transportasi
 
     // Elemen filter halaman
     const pageLimitSelect = document.getElementById('page-limit-select');
@@ -44,12 +45,15 @@
         return new Date(dateString).toLocaleDateString('id-ID', options);
     };
 
-    // Fungsi untuk format mata uang
+    // Fungsi untuk format mata uang (diperbaiki agar menangani null/undefined)
     const formatCurrency = (value) => {
-        if (!value) return '';
-        const number = parseFloat(String(value).replace(/[^0-9]/g, ''));
+        if (value === null || value === undefined) return 'Rp 0';
+        const number = parseFloat(String(value).replace(/[^0-9,-]+/g, '').replace(',', '.'));
         return isNaN(number) ? '' : new Intl.NumberFormat('id-ID').format(number);
     };
+
+
+    // FUNGSI UNTUK DAFTAR INFORMASI DASAR
 
     const renderBasicInfoList = (basicInfoList, role) => {
         // Guard clause: Jangan lakukan apa-apa jika elemen tabel tidak ada
@@ -73,7 +77,7 @@
 
 
             // Fungsi untuk memotong teks maks 30 karakter tanpa memotong kata
-            const truncateText = (text, maxLength = 30) => {
+            const truncateText = (text, maxLength = 25) => {
                 if (!text) return '-';
                 if (text.length <= maxLength) return text;
                 let truncated = text.substr(0, maxLength);
@@ -113,14 +117,264 @@
         });
     };
 
+    // FUNGSI UNTUK DAFTAR TRANSPORTASI
+
+    // Mengaktifkan Dropdown Submenu Transportasi
+    if (transportArrow && transportSubmenu) {
+        transportArrow.addEventListener('click', () => {
+            transportSubmenu.classList.toggle('hidden');
+            transportArrow.classList.toggle('rotate-180');
+
+        });
+        // Menutup submenu saat klik di luar
+        document.addEventListener('click', (event) => {
+            if (!transportArrow.contains(event.target) && !transportSubmenu.contains(event.target)) {
+                transportSubmenu.classList.add('hidden');
+                transportArrow.classList.remove('rotate-180');
+            }
+        });
+    }
+
+    // Merender Daftar Transportasi
+    const renderTransportList = (transportList, role) => {
+        // Guard clause: Jangan lakukan apa-apa jika elemen tabel tidak ada
+        if (!transportTableBody) {
+            console.warn('DIAGNOSTIK: Elemen tabel untuk transportasi tidak ditemukan.');
+            return;
+        }
+
+        // Kosongkan isi tabel sebelum merender ulang
+        transportTableBody.innerHTML = '';
+
+        // Render setiap item dalam daftar
+        if (!transportList || transportList.length === 0) {
+            transportTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Belum ada data Transportasi. Cek kembali fitur SPT dan Laporan.</td></tr>`;
+            return;
+        }
+
+        transportList.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item';
+
+            const truncateText = (text, maxLength = 25) => {
+                if (!text) return '-';
+                if (text.length <= maxLength) return text;
+                let truncated = text.substr(0, maxLength);
+                return truncated.substr(0, Math.min(truncated.length, truncated.lastIndexOf(" "))) + '...';
+            };
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
+                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.perusahaan || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.kode_boking || '-'}</div>
+                    <div class="text-sm text-gray-500">${item.nomor_penerbangan || ''}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_tiket || '-'}</div>
+                    <div class="text-sm text-gray-500">${formatDate(item.tanggal_tiket)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.terminal_berangkat || '-'}</div>
+                    <div class="text-sm text-gray-500">${item.terminal_tiba || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.nominal)}</div>
+                </td>
+            `;
+            transportTableBody.appendChild(row);
+        });
+    };
+
+    // FUNGSI UNTUK DAFTAR PENGINAPAN (YANG SEBELUMNYA HILANG)
+    const renderAccomodationList = (accomodationList) => {
+        if (!accomodationTableBody) return;
+        accomodationTableBody.innerHTML = '';
+
+        if (!accomodationList || accomodationList.length === 0) {
+            accomodationTableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Belum ada data Penginapan.</td></tr>`;
+            return;
+        }
+
+        accomodationList.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item';
+
+            const truncateText = (text, maxLength = 25) => {
+                if (!text) return '-';
+                if (text.length <= maxLength) return text;
+                return text.substr(0, maxLength) + '...';
+            };
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
+                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nama_hotel || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.lokasi_hotel || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${formatDate(item.tanggal_checkIn)}</div>
+                    <div class="text-sm text-gray-500">${formatDate(item.tanggal_checkOut)}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.malam || '0'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.harga_satuan)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total_harga)}</td>
+            `;
+            accomodationTableBody.appendChild(row);
+        });
+    };
+
+    // FUNGSI UNTUK DAFTAR UANG HARIAN
+    const renderMealList = (mealList) => {
+        if (!mealTableBody) return;
+        mealTableBody.innerHTML = '';
+
+        if (!mealList || mealList.length === 0) {
+            mealTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Belum ada data Uang Harian.</td></tr>`;
+            return;
+        }
+
+        mealList.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item';
+
+            const truncateText = (text, maxLength = 25) => {
+                if (!text) return '-';
+                if (text.length <= maxLength) return text;
+                return text.substr(0, maxLength) + '...';
+            };
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
+                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.biaya_representatif)}</td>
+            `;
+            mealTableBody.appendChild(row);
+        });
+    };
+
+    const loadMealList = async (page = 1) => {
+        if (!mealTableBody) return;
+        mealTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Menghitung & Memuat data...</td></tr>`;
+        currentPage = page;
+        const response = await fetch(`/api/laporan-bpk-apip/uang-harian?page=${page}&limit=${currentPageLimit}`);
+        const result = await response.json();
+        renderMealList(result.data);
+        renderPagination(mealPagination, result.pagination, loadMealList);
+    };
+
+    // FUNGSI UNTUK DAFTAR BIAYA LAIN-LAIN
+    const renderOtherCostList = (otherCostList) => {
+        if (!otherCostTableBody) return;
+        otherCostTableBody.innerHTML = '';
+
+        if (!otherCostList || otherCostList.length === 0) {
+            otherCostTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Belum ada data Biaya Lain-lain.</td></tr>`;
+            return;
+        }
+
+        otherCostList.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item';
+
+            const truncateText = (text, maxLength = 25) => {
+                if (!text) return '-';
+                if (text.length <= maxLength) return text;
+                return text.substr(0, maxLength) + '...';
+            };
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
+                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.uraian || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.keterangan || '-'}</td>
+            `;
+            otherCostTableBody.appendChild(row);
+        });
+    };
+
+    const loadOtherCostList = async (page = 1) => {
+        if (!otherCostTableBody) return;
+        otherCostTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        currentPage = page;
+        const response = await fetch(`/api/laporan-bpk-apip/lain-lain?page=${page}&limit=${currentPageLimit}`);
+        const result = await response.json();
+        renderOtherCostList(result.data);
+        renderPagination(otherCostPagination, result.pagination, loadOtherCostList);
+    };
+
+    const loadTransportList = async (arah = 'berangkat', page = 1) => {
+        if (!transportTableBody) return;
+        transportTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        if (transportPagination) transportPagination.innerHTML = '';
+        currentPage = page;
+        currentTransportView = arah;
+
+        try {
+            const response = await fetch(`/api/laporan-bpk-apip/transportasi?arah=${arah}&page=${page}&limit=${currentPageLimit}`);
+            if (!response.ok) throw new Error('Gagal memuat data transportasi.');
+            const result = await response.json();
+            renderTransportList(result.data);
+            renderPagination(transportPagination, result.pagination, (p) => loadTransportList(arah, p));
+        } catch (error) {
+            transportTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+        }
+    };
+
+    const loadAccomodationList = async (page = 1) => {
+        if (!accomodationTableBody) return;
+        accomodationTableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Memuat data...</td></tr>`;
+        if (accomodationPagination) accomodationPagination.innerHTML = '';
+        currentPage = page;
+
+        try {
+            const response = await fetch(`/api/laporan-bpk-apip/akomodasi?page=${page}&limit=${currentPageLimit}`);
+            if (!response.ok) throw new Error('Gagal memuat data penginapan.');
+            const result = await response.json();
+            renderAccomodationList(result.data);
+            renderPagination(accomodationPagination, result.pagination, loadAccomodationList);
+        } catch (error) {
+            accomodationTableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">${error.message}</td></tr>`;
+        }
+    };
+
     // Fungsi untuk merender paginasi
     const renderPagination = (container, pagination, loadFunction) => {
         if (!container) return;
         container.innerHTML = '';
 
-        const { page, totalPages, totalItems, currentPageLimit } = pagination;
-        // PERBAIKAN: Gunakan currentPageLimit dinamis
-        if (totalItems <= currentPageLimit) return; // Tidak perlu paginasi jika item lebih sedikit dari limit
+        const { page, totalPages, totalItems, limit } = pagination;
+        // PERBAIKAN: Gunakan `limit` dari objek pagination, bukan `currentPageLimit` dari scope global.
+        // Ini memperbaiki anomali di mana paginasi tetap muncul meskipun jumlah item kurang dari limit.
+        if (totalItems <= limit) return; // Tidak perlu paginasi jika item lebih sedikit dari limit
 
 
         // Untuk menampilkan informasi halaman dan tombol navigasi
@@ -235,11 +489,33 @@
     // Fungsi untuk mengatur tampilan panel dan tabel berdasarkan tab yang dipilih
     const setupTabs = () => {
         if (!basicInfoTab || !transportTab || !accomodationTab || !mealTab || !otherTab) return;
-        basicInfoTab.addEventListener('click', () => switchTab(basicInfoTab, basicInfopanel));
-        transportTab.addEventListener('click', () => switchTab(transportTab, transportPanel));
-        accomodationTab.addEventListener('click', () => switchTab(accomodationTab, accomodationPanel));
-        mealTab.addEventListener('click', () => switchTab(mealTab, mealPanel));
-        otherTab.addEventListener('click', () => switchTab(otherTab, otherCostPanel));
+        basicInfoTab.addEventListener('click', () => {
+            switchTab(basicInfoTab, basicInfopanel);
+            loadBasicInfoList(1);
+        });
+        transportTab.addEventListener('click', (e) => {
+            // Mencegah event listener document menutup submenu saat tab diklik
+            if (!transportArrow.contains(e.target)) {
+                switchTab(transportTab, transportPanel);
+                loadTransportList(currentTransportView, 1); // Muat view terakhir atau default
+            }
+        });
+        accomodationTab.addEventListener('click', () => {
+            switchTab(accomodationTab, accomodationPanel);
+            loadAccomodationList(1);
+        });
+        mealTab.addEventListener('click', () => {
+            switchTab(mealTab, mealPanel);
+            loadMealList(1);
+        });
+        otherTab.addEventListener('click', () => {
+            switchTab(otherTab, otherCostPanel);
+            loadOtherCostList(1);
+        });
+
+        // Event listener untuk submenu transportasi
+        departureButton.addEventListener('click', (e) => { e.preventDefault(); loadTransportList('berangkat', 1); });
+        arrivalButton.addEventListener('click', (e) => { e.preventDefault(); loadTransportList('kembali', 1); });
 
         // Inisialisasi tab default pada tempilan pertama kali
         switchTab(basicInfoTab, basicInfopanel);
@@ -250,8 +526,19 @@
         pageLimitSelect.addEventListener('change', (e) => {
             currentPageLimit = parseInt(e.target.value, 10);
             currentPage = 1;
-            // Panggil ulang fungsi untuk memuat data dengan limit baru
-            loadBasicInfoList();
+            // Panggil ulang fungsi load data untuk tab yang sedang aktif
+            if (basicInfopanel.offsetParent !== null) {
+                loadBasicInfoList(1);
+            } else if (transportPanel.offsetParent !== null) {
+                loadTransportList(currentTransportView, 1);
+            } else if (accomodationPanel.offsetParent !== null) {
+                loadAccomodationList(1);
+            } else if (mealPanel.offsetParent !== null) {
+                loadMealList(1);
+            } else if (otherCostPanel.offsetParent !== null) {
+                loadOtherCostList(1);
+            }
+            // Tambahkan else if untuk tab lain jika sudah diimplementasikan
         });
     }
 
@@ -273,6 +560,25 @@
         selectedTab.classList.add('bg-green-100', 'dark:bg-sky-900', 'text-green-800', 'dark:text-gray-300');
         selectedTab.classList.remove('dark:hover:text-gray-300', 'dark:border', 'dark:border-gray-700');
         selectedPanel.classList.remove('hidden');
+
+        // Muat data untuk tab yang baru diaktifkan jika tabelnya masih kosong
+        if (selectedPanel === transportPanel) {
+            if (transportTableBody.innerHTML.trim() === '') {
+                loadTransportList('berangkat', 1); // Default ke 'berangkat'
+            }
+        } else if (selectedPanel === accomodationPanel) {
+            if (accomodationTableBody.innerHTML.trim() === '') {
+                loadAccomodationList(1);
+            }
+        } else if (selectedPanel === mealPanel) {
+            if (mealTableBody.innerHTML.trim() === '') {
+                loadMealList(1);
+            }
+        } else if (selectedPanel === otherCostPanel) {
+            if (otherCostTableBody.innerHTML.trim() === '') {
+                loadOtherCostList(1);
+            }
+        }
     };
     // Inisialisasi setup tab saat halaman dimuat
     setupTabs();

@@ -1,3 +1,10 @@
+
+// Di bagian atas server.js, setelah require
+const parseCurrency = (value) => {
+    if (typeof value === 'number') return value;
+    return parseFloat(String(value || '').replace(/[^0-9,-]+/g, '').replace(',', '.')) || 0;
+};
+
 const express = require('express');
 const path = require('path');
 const util = require('util');
@@ -350,15 +357,26 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_perjadin (
     hasil_dicapai TEXT,
     transportasi_jenis TEXT,
     transportasi_perusahaan TEXT,
+    transportasi_kode_boking TEXT,
+    transportasi_nomor_penerbangan TEXT,
+    transportasi_nomor_tiket TEXT,
+    transportasi_tanggal_tiket DATE,
+    transportasi_terminal_berangkat TEXT,
+    transportasi_terminal_tiba TEXT,
     transportasi_nominal REAL, 
     akomodasi_jenis TEXT,
     akomodasi_nama TEXT,
+    akomodasi_lokasi_hotel TEXT,
+    akomodasi_tanggal_checkIn DATE,
+    akomodasi_tanggal_checkOut DATE,
     akomodasi_harga_satuan REAL,
     akomodasi_malam INTEGER,
     akomodasi_nominal REAL,
     kontribusi_jenis TEXT,
     kontribusi_nominal REAL,
     lain_lain_uraian TEXT,
+    lain_lain_tarif_satuan REAL,
+    lain_lain_jumlah_hari INTEGER,
     lain_lain_nominal REAL,
     kesimpulan TEXT,
     lampiran_path TEXT,
@@ -509,12 +527,46 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_transportasi (
     pegawai_id INTEGER NOT NULL,
     jenis TEXT,
     perusahaan TEXT,
+    kode_boking TEXT,
+    nomor_penerbangan TEXT,
+    nomor_tiket TEXT,
+    tanggal_tiket DATE,
+    terminal_berangkat TEXT,
+    terminal_tiba TEXT,
     nominal REAL,
+    arah_perjalanan TEXT,
     FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
     FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
 )`, (err) => {
     if (err) console.error("Error creating 'laporan_transportasi' table:", err.message);
 });
+
+// PERBAIKAN: Cek dan perbaiki struktur tabel 'laporan_transportasi' untuk setiap kolom yang mungkin hilang.
+// Logika sebelumnya hanya memeriksa kolom pertama ('kode_boking') dan mengabaikan sisanya.
+db.all("PRAGMA table_info(laporan_transportasi)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+
+    const checkAndAddColumn = (columnName, columnType) => {
+        if (!cols.some(col => col.name === columnName)) {
+            console.warn(`[DB MIGRATION] Kolom '${columnName}' tidak ditemukan. Menambahkan ke tabel 'laporan_transportasi'...`);
+            db.run(`ALTER TABLE laporan_transportasi ADD COLUMN ${columnName} ${columnType}`, (e) => {
+                if (e) console.error(`[DB MIGRATION FAILED] Gagal menambah '${columnName}':`, e.message);
+                else console.log(`[DB MIGRATION SUCCESS] Kolom '${columnName}' berhasil ditambahkan.`);
+            });
+        }
+    }
+
+    checkAndAddColumn('kode_boking', 'TEXT');
+    checkAndAddColumn('nomor_penerbangan', 'TEXT');
+    checkAndAddColumn('terminal_berangkat', 'TEXT');
+    checkAndAddColumn('terminal_tiba', 'TEXT');
+    checkAndAddColumn('nomor_tiket', 'TEXT');
+    checkAndAddColumn('tanggal_tiket', 'DATE');
+    checkAndAddColumn('arah_perjalanan', 'TEXT');
+});
+
+
+
 
 // Buat tabel baru untuk Akomodasi
 db.run(`CREATE TABLE IF NOT EXISTS laporan_akomodasi (
@@ -523,6 +575,9 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_akomodasi (
     pegawai_id INTEGER NOT NULL,
     jenis TEXT,
     nama TEXT,
+    lokasi_hotel TEXT,
+    tanggal_checkIn DATE,
+    tanggal_checkOut DATE,
     harga_satuan REAL,
     malam INTEGER,
     nominal REAL,
@@ -530,6 +585,19 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_akomodasi (
     FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
 )`, (err) => {
     if (err) console.error("Error creating 'laporan_akomodasi' table:", err.message);
+});
+
+// Cek dan perbaiki struktur tabel 'laporan_akomodasi' jika kolom 'lokasi_hotel' dan lainnya belum ada.
+db.all("PRAGMA table_info(laporan_akomodasi)", (err, cols) => {
+    if (err) return; // Tabel mungkin belum ada, biarkan kode di atas yang membuat.
+    const hasLokasiHotel = cols.some(col => col.name === 'lokasi_hotel', 'tanggal_checkIn', 'tanggal_checkOut');
+    if (!hasLokasiHotel) {
+        console.warn("[DB MIGRATION] Kolom 'kode_boking' dll tidak ditemukan. Menambahkan kolom ke tabel 'laporan_akomodasi'...");
+        // Menambahkan semua kolom yang mungkin hilang dari definisi tabel terbaru untuk kelengkapan
+        db.run("ALTER TABLE laporan_akomodasi ADD COLUMN lokasi_hotel TEXT", (e1) => { if (e1) console.error("[DB MIGRATION FAILED] Gagal menambah 'lokasi_hotel':", e1.message); });
+        db.run("ALTER TABLE laporan_akomodasi ADD COLUMN tanggal_checkIn DATE", (e2) => { if (e2) console.error("[DB MIGRATION FAILED] Gagal menambah 'tanggal_checkIn':", e2.message); });
+        db.run("ALTER TABLE laporan_akomodasi ADD COLUMN tanggal_checkOut DATE", (e3) => { if (e3) console.error("[DB MIGRATION FAILED] Gagal menambah 'tanggal_checkOut':", e3.message); else console.log("[DB MIGRATION SUCCESS] Kolom-kolom baru untuk 'laporan_akomodasi' berhasil ditambahkan."); });
+    }
 });
 
 // Buat tabel baru untuk Kontribusi
@@ -551,11 +619,48 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_lain_lain (
     laporan_id INTEGER NOT NULL,
     pegawai_id INTEGER NOT NULL,
     uraian TEXT,
+    tarif_satuan REAL,
+    jumlah_hari INTEGER,
     nominal REAL,
+    keterangan TEXT,
     FOREIGN KEY (laporan_id) REFERENCES laporan_perjadin(id) ON DELETE CASCADE,
     FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE
 )`, (err) => {
     if (err) console.error("Error creating 'laporan_lain_lain' table:", err.message);
+});
+
+// Cek dan perbaiki struktur tabel 'laporan_lain_lain' jika kolom 'tarif_satuan' dan lainnya belum ada.
+db.all("PRAGMA table_info(laporan_lain_lain)", (err, cols) => {
+    if (err) return;
+
+    // PERBAIKAN: Menggunakan helper function untuk memeriksa dan menambah kolom secara individual
+    // dan memperbaiki kesalahan penargetan tabel (sebelumnya 'laporan_akomodasi').
+    const checkAndAddColumn = (columnName, columnType) => {
+        if (!cols.some(col => col.name === columnName)) {
+            console.warn(`[DB MIGRATION] Kolom '${columnName}' tidak ditemukan. Menambahkan ke tabel 'laporan_lain_lain'...`);
+            db.run(`ALTER TABLE laporan_lain_lain ADD COLUMN ${columnName} ${columnType}`, (e) => {
+                if (e) console.error(`[DB MIGRATION FAILED] Gagal menambah '${columnName}':`, e.message);
+                else console.log(`[DB MIGRATION SUCCESS] Kolom '${columnName}' berhasil ditambahkan.`);
+            });
+        }
+    }
+
+    checkAndAddColumn('tarif_satuan', 'REAL');
+    checkAndAddColumn('jumlah_hari', 'INTEGER');
+    checkAndAddColumn('keterangan', 'TEXT');
+});
+
+// Cek dan perbaiki struktur tabel 'laporan_lain_lain' jika kolom 'keterangan' belum ada.
+db.all("PRAGMA table_info(laporan_lain_lain)", (err, cols) => {
+    if (err) return;
+    const hasKeterangan = cols.some(col => col.name === 'keterangan');
+    if (!hasKeterangan) {
+        console.warn("[DB MIGRATION] Kolom 'keterangan' tidak ditemukan. Menambahkan kolom ke tabel 'laporan_lain_lain'...");
+        db.run("ALTER TABLE laporan_lain_lain ADD COLUMN keterangan TEXT", (alterErr) => {
+            if (alterErr) console.error("[DB MIGRATION FAILED] Gagal menambahkan kolom 'keterangan':", alterErr.message);
+            else console.log("[DB MIGRATION SUCCESS] Kolom 'keterangan' berhasil ditambahkan.");
+        });
+    }
 });
 
 // Promisify fungsi database untuk digunakan dengan async/await
@@ -1218,6 +1323,248 @@ app.get('/api/laporan-bpk-apip', isApiAuthenticated, async (req, res) => {
     }
 });
 
+// API BARU: Mengambil data transportasi untuk laporan BPK & APIP
+app.get('/api/laporan-bpk-apip/transportasi', isApiAuthenticated, async (req, res) => {
+    const { arah = 'berangkat', page = 1, limit = 5 } = req.query;
+
+    const usePagination = limit !== '0';
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = usePagination ? (parseInt(limit, 10) || 5) : -1;
+    const offset = usePagination ? (pageNum - 1) * limitNum : 0;
+
+    try {
+        const countSql = `
+            SELECT COUNT(*) as total
+            FROM laporan_transportasi lt
+            WHERE lt.arah_perjalanan = ?
+        `;
+        const totalResult = await dbGet(countSql, [arah]);
+        const totalItems = totalResult.total;
+        const totalPages = usePagination ? Math.ceil(totalItems / limitNum) : 1;
+
+        const dataSql = `
+            SELECT
+                lt.id,
+                p.nama_lengkap,
+                p.jabatan,
+                s.nomor_surat,
+                lt.perusahaan,
+                lt.kode_boking,
+                lt.nomor_penerbangan,
+                lt.nomor_tiket,
+                lt.tanggal_tiket,
+                lt.terminal_berangkat,
+                lt.terminal_tiba,
+                lt.nominal
+            FROM laporan_transportasi lt
+            JOIN laporan_perjadin lp ON lt.laporan_id = lp.id
+            JOIN spt s ON lp.spt_id = s.id
+            JOIN pegawai p ON lt.pegawai_id = p.id
+            WHERE lt.arah_perjalanan = ?
+            ORDER BY lt.id DESC
+        ` + (usePagination ? ' LIMIT ? OFFSET ?' : '');
+
+        const params = usePagination ? [arah, limitNum, offset] : [arah];
+        const transportList = await dbAll(dataSql, params);
+
+        res.json({ data: transportList, pagination: { page: pageNum, limit: limitNum, totalItems, totalPages } });
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data transportasi BPK & APIP:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// API BARU: Mengambil data akomodasi untuk laporan BPK & APIP
+app.get('/api/laporan-bpk-apip/akomodasi', isApiAuthenticated, async (req, res) => {
+    const { page = 1, limit = 5 } = req.query;
+
+    const usePagination = limit !== '0';
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = usePagination ? (parseInt(limit, 10) || 5) : -1;
+    const offset = usePagination ? (pageNum - 1) * limitNum : 0;
+
+    try {
+        const countSql = `SELECT COUNT(*) as total FROM laporan_akomodasi`;
+        const totalResult = await dbGet(countSql, []);
+        const totalItems = totalResult.total;
+        const totalPages = usePagination ? Math.ceil(totalItems / limitNum) : 1;
+
+        const dataSql = `
+            SELECT
+                la.id,
+                p.nama_lengkap,
+                p.jabatan,
+                s.nomor_surat,
+                la.nama as nama_hotel,
+                la.lokasi_hotel,
+                la.tanggal_checkIn,
+                la.tanggal_checkOut,
+                la.malam,
+                la.harga_satuan,
+                la.nominal as total_harga
+            FROM laporan_akomodasi la
+            JOIN laporan_perjadin lp ON la.laporan_id = lp.id
+            JOIN spt s ON lp.spt_id = s.id
+            JOIN pegawai p ON la.pegawai_id = p.id
+            ORDER BY la.id DESC
+        ` + (usePagination ? ' LIMIT ? OFFSET ?' : '');
+
+        const params = usePagination ? [limitNum, offset] : [];
+        const accomodationList = await dbAll(dataSql, params);
+
+        res.json({ data: accomodationList, pagination: { page: pageNum, limit: limitNum, totalItems, totalPages } });
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data akomodasi BPK & APIP:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// API BARU: Mengambil data Uang Harian untuk laporan BPK & APIP
+app.get('/api/laporan-bpk-apip/uang-harian', isApiAuthenticated, async (req, res) => {
+    const { page = 1, limit = 5 } = req.query;
+
+    const usePagination = limit !== '0';
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = usePagination ? (parseInt(limit, 10) || 5) : -1;
+    const offset = usePagination ? (pageNum - 1) * limitNum : 0;
+
+    try {
+        // Karena data dihitung, kita ambil semua data pegawai dari SPT terlebih dahulu
+        const allPegawaiSql = `
+            SELECT
+                p.id as pegawai_id, p.nama_lengkap, p.jabatan, p.golongan,
+                s.id as spt_id, s.nomor_surat, s.lama_perjalanan, s.lokasi_tujuan, s.tempat_berangkat
+            FROM spt_pegawai sp
+            JOIN pegawai p ON sp.pegawai_id = p.id
+            JOIN spt s ON sp.spt_id = s.id
+            WHERE s.status = 'aktif'
+            ORDER BY s.tanggal_surat DESC, p.id
+        `;
+        const allItems = await dbAll(allPegawaiSql, []);
+
+        const locationsData = require('./public/data/locations.json');
+        const cariJenisLokasi = (lokasi) => {
+            const lokasiLower = lokasi.toLowerCase().trim();
+            for (const group of locationsData) {
+                if (group.group.toLowerCase().includes('kecamatan')) {
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) return { jenis: 'desa', nama: location, group: group.group };
+                    }
+                    if (group.group.toLowerCase().includes(lokasiLower) || lokasiLower.includes(group.group.toLowerCase().replace('kecamatan', '').trim())) return { jenis: 'kecamatan', nama: group.group };
+                }
+            }
+            for (const group of locationsData) {
+                if (!group.group.toLowerCase().includes('kecamatan')) {
+                    for (const location of group.locations) {
+                        if (location.toLowerCase().includes(lokasiLower) || lokasiLower.includes(location.toLowerCase())) return { jenis: 'kabupaten', nama: location, provinsi: group.group };
+                    }
+                    if (group.group.toLowerCase() === lokasiLower) return { jenis: 'provinsi', nama: group.group };
+                }
+            }
+            return { jenis: 'tidak_diketahui', nama: lokasi };
+        };
+
+        const cariStandarBiaya = async (tipeBiaya, lokasiQuery) => {
+            let query = tipeBiaya === 'A' ? `SELECT * FROM standar_biaya WHERE tipe_biaya = 'A' AND TRIM(UPPER(uraian)) LIKE TRIM(UPPER(?))` : `SELECT * FROM standar_biaya WHERE tipe_biaya = 'C' AND TRIM(UPPER(provinsi)) LIKE TRIM(UPPER(?))`;
+            let params = [`%${lokasiQuery.trim()}%`];
+            if (tipeBiaya === 'C' && (lokasiQuery.toLowerCase().includes('jakarta') || lokasiQuery.toLowerCase().includes('dki'))) {
+                params = ['%JAKARTA%'];
+            }
+            let result = await dbGet(query, params);
+            if (!result) {
+                result = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = ? LIMIT 1`, [tipeBiaya]);
+            }
+            return result;
+        };
+
+        const biayaRepresentasiEselonII = await dbGet(`SELECT * FROM standar_biaya WHERE tipe_biaya = 'D' AND (TRIM(UPPER(uraian)) = 'PEJABAT ESELON II' OR TRIM(UPPER(uraian)) LIKE '%ESELON II%')`);
+
+        const processedData = [];
+        for (const item of allItems) {
+            const infoLokasi = cariJenisLokasi(item.lokasi_tujuan || '');
+            const isDalamKota = ['desa', 'kecamatan'].includes(infoLokasi.jenis) || (infoLokasi.jenis === 'kabupaten' && (infoLokasi.nama.toLowerCase().includes((item.tempat_berangkat || '').toLowerCase())));
+
+            const standarBiayaHarian = await cariStandarBiaya(isDalamKota ? 'A' : 'C', isDalamKota ? infoLokasi.nama : infoLokasi.provinsi || infoLokasi.nama);
+
+            const tingkatBiaya = getTingkatBiaya(item);
+            const kolomGolongan = getKolomGolongan(tingkatBiaya);
+            const tarifSatuan = standarBiayaHarian ? (standarBiayaHarian[kolomGolongan] || standarBiayaHarian.besaran || 0) : 0;
+            const total = tarifSatuan * item.lama_perjalanan;
+
+            let biayaRepresentatif = 0;
+            if (item.jabatan && item.jabatan.toLowerCase().includes('kepala dinas') && biayaRepresentasiEselonII) {
+                const tarifRepresentatif = isDalamKota ? (biayaRepresentasiEselonII.biaya_kontribusi || 0) : (biayaRepresentasiEselonII.besaran || 0);
+                biayaRepresentatif = tarifRepresentatif * item.lama_perjalanan;
+            }
+
+            processedData.push({
+                ...item,
+                jumlah_hari: item.lama_perjalanan,
+                tarif_satuan: tarifSatuan,
+                total: total,
+                biaya_representatif: biayaRepresentatif
+            });
+        }
+
+        const totalItems = processedData.length;
+        const totalPages = usePagination ? Math.ceil(totalItems / limitNum) : 1;
+        const paginatedData = usePagination ? processedData.slice(offset, offset + limitNum) : processedData;
+
+        res.json({ data: paginatedData, pagination: { page: pageNum, limit: limitNum, totalItems, totalPages } });
+
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data Uang Harian BPK & APIP:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// API BARU: Mengambil data Biaya Lain-lain untuk laporan BPK & APIP
+app.get('/api/laporan-bpk-apip/lain-lain', isApiAuthenticated, async (req, res) => {
+    const { page = 1, limit = 5 } = req.query;
+
+    const usePagination = limit !== '0';
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = usePagination ? (parseInt(limit, 10) || 5) : -1;
+    const offset = usePagination ? (pageNum - 1) * limitNum : 0;
+
+    try {
+        const countSql = `SELECT COUNT(*) as total FROM laporan_lain_lain`;
+        const totalResult = await dbGet(countSql, []);
+        const totalItems = totalResult.total;
+        const totalPages = usePagination ? Math.ceil(totalItems / limitNum) : 1;
+
+        const dataSql = `
+            SELECT
+                ll.id,
+                p.nama_lengkap,
+                p.jabatan,
+                s.nomor_surat,
+                ll.uraian,
+                ll.jumlah_hari,
+                ll.tarif_satuan,
+                ll.nominal as total
+            FROM laporan_lain_lain ll
+            JOIN laporan_perjadin lp ON ll.laporan_id = lp.id
+            JOIN spt s ON lp.spt_id = s.id
+            JOIN pegawai p ON ll.pegawai_id = p.id
+            ORDER BY ll.id DESC
+        ` + (usePagination ? ' LIMIT ? OFFSET ?' : '');
+
+        const params = usePagination ? [limitNum, offset] : [];
+        const otherCostList = await dbAll(dataSql, params);
+
+        // Untuk kolom keterangan, kita akan tambahkan secara manual jika diperlukan
+        otherCostList.forEach(item => {
+            item.keterangan = '-'; // Placeholder, bisa diisi dari data lain jika ada
+        });
+
+        res.json({ data: otherCostList, pagination: { page: pageNum, limit: limitNum, totalItems, totalPages } });
+    } catch (err) {
+        console.error('[API ERROR] Gagal mengambil data Biaya Lain-lain BPK & APIP:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // --- Rute API SPT (Surat Perintah Tugas) ---
 
 // GET: Mengambil semua data SPT untuk ditampilkan di register
@@ -1248,9 +1595,6 @@ app.get('/api/spt', isApiAuthenticated, async (req, res) => {
             LEFT JOIN anggaran a ON s.anggaran_id = a.id
             LEFT JOIN pejabat pj ON s.pejabat_pemberi_tugas_id = pj.id
             LEFT JOIN pegawai pg_pejabat ON s.pejabat_pemberi_tugas_id = pg_pejabat.id
-            LEFT JOIN spt_pegawai sp ON s.id = sp.spt_id
-            LEFT JOIN pegawai pg_spt ON sp.pegawai_id = pg_spt.id
-            WHERE s.status != 'dibatalkan'
             GROUP BY s.id
             ORDER BY s.tanggal_surat DESC, s.id DESC
         ` + (usePagination ? ' LIMIT ? OFFSET ?' : ' LIMIT -1'); // Tambahkan LIMIT -1 jika tidak ada paginasi
@@ -3429,7 +3773,15 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
                 const pengeluaran = pegawai[pegawaiId];
                 if (pengeluaran.transportasi) {
                     for (const item of pengeluaran.transportasi) {
-                        await runQuery('INSERT INTO laporan_transportasi (laporan_id, pegawai_id, jenis, perusahaan, nominal) VALUES (?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.jenis, item.perusahaan, item.nominal]);
+                        await runQuery(`
+                            INSERT INTO laporan_transportasi
+                                (laporan_id, pegawai_id, jenis, perusahaan, kode_boking, nomor_penerbangan, nomor_tiket, tanggal_tiket, terminal_berangkat, terminal_tiba, nominal, arah_perjalanan)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `, [
+                            laporanId, pegawaiId, item.jenis, item.perusahaan, item.kode_boking,
+                            item.nomor_penerbangan, item.nomor_tiket, item.tanggal_tiket || null, item.terminal_berangkat,
+                            item.terminal_tiba, item.nominal, item.arah_perjalanan
+                        ]);
                     }
                 }
                 if (pengeluaran.akomodasi) {
@@ -3444,7 +3796,7 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
                 }
                 if (pengeluaran.lain_lain) {
                     for (const item of pengeluaran.lain_lain) {
-                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, nominal) VALUES (?, ?, ?, ?)', [laporanId, pegawaiId, item.uraian, item.nominal]);
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan]);
                     }
                 }
             }
@@ -3565,6 +3917,19 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
     try { // PERUBAHAN: Logika update ke tabel-tabel baru
         await runQuery('BEGIN TRANSACTION');
 
+        // --- PERBAIKAN: Tambahkan validasi di sisi server ---
+        // Cek apakah ada bukti pembayaran terkait SEBELUM melakukan perubahan.
+        const sptIdFromForm = data.spt_id || (await dbGet("SELECT spt_id FROM laporan_perjadin WHERE id = ?", [id]))?.spt_id;
+        if (sptIdFromForm) {
+            const paymentCheck = await dbGet("SELECT COUNT(*) as count FROM pembayaran WHERE spt_id = ?", [sptIdFromForm]);
+            if (paymentCheck && paymentCheck.count > 0) {
+                // Lemparkan error yang akan ditangkap oleh blok catch dan dikirim ke klien.
+                throw new Error("Aksi Diblokir: Laporan ini tidak dapat diubah karena sudah memiliki bukti bayar terkait. Hapus terlebih dahulu bukti bayar jika ingin mengedit laporan.");
+            }
+        }
+        // --- AKHIR PERBAIKAN ---
+
+
         // 1. Hapus file lama yang diminta untuk dihapus
         if (deletedFiles.length > 0) {
             const placeholders = deletedFiles.map(() => '?').join(',');
@@ -3622,22 +3987,30 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
                 const pengeluaran = pegawai[pegawaiId];
                 if (pengeluaran.transportasi) {
                     for (const item of pengeluaran.transportasi) {
-                        await runQuery('INSERT INTO laporan_transportasi (laporan_id, pegawai_id, jenis, perusahaan, nominal) VALUES (?, ?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.perusahaan, item.nominal]);
+                        await runQuery(`
+                            INSERT INTO laporan_transportasi
+                                (laporan_id, pegawai_id, jenis, perusahaan, kode_boking, nomor_penerbangan, nomor_tiket, tanggal_tiket, terminal_berangkat, terminal_tiba, nominal, arah_perjalanan)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `, [
+                            id, pegawaiId, item.jenis, item.perusahaan, item.kode_boking,
+                            item.nomor_penerbangan, item.nomor_tiket, item.tanggal_tiket || null, item.terminal_berangkat,
+                            item.terminal_tiba, item.nominal, item.arah_perjalanan
+                        ]);
                     }
                 }
                 if (pengeluaran.akomodasi) {
                     for (const item of pengeluaran.akomodasi) {
-                        await runQuery('INSERT INTO laporan_akomodasi (laporan_id, pegawai_id, jenis, nama, harga_satuan, malam, nominal) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.nama, item.harga_satuan, item.malam, item.nominal]);
+                        await runQuery('INSERT INTO laporan_akomodasi (laporan_id, pegawai_id, jenis, nama, lokasi_hotel, tanggal_checkIn, tanggal_checkOut, harga_satuan, malam, nominal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.nama, item.lokasi_hotel, item.tanggal_checkIn || null, item.tanggal_checkOut || null, parseCurrency(item.harga_satuan), item.malam, parseCurrency(item.nominal)]);
                     }
                 }
                 if (pengeluaran.kontribusi) {
                     for (const item of pengeluaran.kontribusi) {
-                        await runQuery('INSERT INTO laporan_kontribusi (laporan_id, pegawai_id, jenis, nominal) VALUES (?, ?, ?, ?)', [id, pegawaiId, item.jenis, item.nominal]);
+                        await runQuery('INSERT INTO laporan_kontribusi (laporan_id, pegawai_id, jenis, nominal) VALUES (?, ?, ?, ?)', [id, pegawaiId, item.jenis, parseCurrency(item.nominal)]);
                     }
                 }
                 if (pengeluaran.lain_lain) {
                     for (const item of pengeluaran.lain_lain) {
-                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, nominal) VALUES (?, ?, ?, ?)', [id, pegawaiId, item.uraian, item.nominal]);
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan]);
                     }
                 }
             }
@@ -4225,6 +4598,7 @@ app.get('/api/cetak/pengeluaran-riil/:id', isApiAuthenticated, async (req, res) 
 // =================================================================
 // API ENDPOINT UNTUK CETAK PEMBAYARAN
 // =================================================================
+
 
 const terbilang = require('angka-menjadi-terbilang');
 
