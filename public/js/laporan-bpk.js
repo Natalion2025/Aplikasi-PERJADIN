@@ -86,31 +86,32 @@
 
             // Isi baris dengan data
             row.innerHTML = `
-            <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${index + 1}.</div>
+            <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</div>
             </td>
-            <td class="px-3 py-4 whitespace-nowrap">
+            <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
-                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                    <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
             </td>
-            <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.pangkat || '-'}</div>         
+            <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.pangkat || '-'}</div>         
             </td>
-            <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>
+            <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>
                     <div class="text-sm text-gray-500">${formatDate(item.tanggal_surat)}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_sppd || '-'}</div>
+            <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.nomor_sppd || '-'}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${formatDate(item.tanggal_berangkat)} <br> ${formatDate(item.tanggal_kembali)}</div>
+            <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="Tanggal Mulai">${formatDate(item.tanggal_berangkat)}</div>
+                    <div class="text-sm text-gray-500" title="Tanggal Selesai">${formatDate(item.tanggal_kembali)}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${truncateText(item.maksud_perjalanan)}</div>
+            <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="${item.maksud_perjalanan}">${truncateText(item.maksud_perjalanan)}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${truncateText(item.mata_anggaran_nama || '-')}</div>
+            <td class="pr-4 pl-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="${item.mata_anggaran_nama}">${truncateText(item.mata_anggaran_nama || '-')}</div>
             </td>
             `;
             basicInfoTableBody.appendChild(row);
@@ -164,33 +165,33 @@
             };
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</div>
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-center text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
-                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                    <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.perusahaan || '-'}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.perusahaan || '-'}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.kode_boking || '-'}</div>
-                    <div class="text-sm text-gray-500">${item.nomor_penerbangan || ''}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="Kode Boking">${item.kode_boking || '-'}</div>
+                    <div class="text-sm text-gray-500" title="No. Penerbangan">${item.nomor_penerbangan || ''}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nomor_tiket || '-'}</div>
-                    <div class="text-sm text-gray-500">${formatDate(item.tanggal_tiket)}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="Nomor Tiket">${item.nomor_tiket || '-'}</div>
+                    <div class="text-sm text-gray-500" title="Tanggal Tiket">${formatDate(item.tanggal_tiket)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.terminal_berangkat || '-'}</div>
-                    <div class="text-sm text-gray-500">${item.terminal_tiba || '-'}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="Terminal Berangkat">${item.terminal_berangkat || '-'}</div>
+                    <div class="text-sm text-gray-500" title="Terminal Tiba">${item.terminal_tiba || '-'}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right">
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.nominal)}</div>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-right">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.nominal)}</div>
                 </td>
             `;
             transportTableBody.appendChild(row);
@@ -218,21 +219,21 @@
             };
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
-                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                    <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nama_hotel || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.lokasi_hotel || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-700 dark:text-gray-400">${formatDate(item.tanggal_checkIn)}</div>
-                    <div class="text-sm text-gray-500">${formatDate(item.tanggal_checkOut)}</div>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nama_hotel || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.lokasi_hotel || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400" title="Tanggal Check In">${formatDate(item.tanggal_checkIn)}</div>
+                    <div class="text-sm text-gray-500" title="Tanggal Check Out">${formatDate(item.tanggal_checkOut)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.malam || '0'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.harga_satuan)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total_harga)}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.malam || '0'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.harga_satuan)}</td>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.total_harga)}</td>
             `;
             accomodationTableBody.appendChild(row);
         });
@@ -259,16 +260,16 @@
             };
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
-                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                    <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.biaya_representatif)}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
+                <td class="pr-4 pl-3 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.biaya_representatif)}</td>
             `;
             mealTableBody.appendChild(row);
         });
@@ -305,17 +306,17 @@
             };
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${(currentPage - 1) * currentPageLimit + index + 1}.</td>
+                <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${item.nama_lengkap || '-'}</div>
-                    <div class="text-sm text-gray-500">${truncateText(item.jabatan || '-')}</div>
+                    <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.uraian || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.keterangan || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400" title="${item.uraian}">${truncateText(item.uraian || '-')}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">${item.jumlah_hari || '0'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.tarif_satuan)}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.total)}</td>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400" title="${item.keterangan}">${truncateText(item.keterangan || '-')}</td>
             `;
             otherCostTableBody.appendChild(row);
         });

@@ -10,6 +10,7 @@
     const lamaDanTanggalEl = document.getElementById('lama_dan_tanggal_perjalanan');
     const tempatDikunjungiEl = document.getElementById('tempat_dikunjungi');
     const kodeAnggaranDisplayEl = document.getElementById('kode_anggaran_display');
+    const pengeluaranPerPegawaiContainer = document.getElementById('pengeluaran-per-pegawai-container');
 
     // Elemen untuk upload file
     const fileUploadArea = document.getElementById('file-upload-area');
@@ -22,7 +23,6 @@
     const kontribusiTemplate = document.getElementById('kontribusi-template');
     const lainLainTemplate = document.getElementById('lain-lain-template');
     const pengeluaranPegawaiTemplate = document.getElementById('pengeluaran-pegawai-template');
-    const pengeluaranPerPegawaiContainer = document.getElementById('pengeluaran-per-pegawai-container');
 
     let newFiles = []; // Menyimpan file baru yang akan diupload
     let existingFiles = []; // Menyimpan file yang sudah ada (mode edit)
@@ -235,6 +235,7 @@
                 addTransportasiItem(pegawaiItem.querySelector('.transportasi-container'), pegawai.pegawai_id);
                 addAkomodasiItem(pegawaiItem.querySelector('.akomodasi-container'), pegawai.pegawai_id);
                 addKontribusiItem(pegawaiItem.querySelector('.kontribusi-container'), pegawai.pegawai_id);
+                // PERBAIKAN: Pastikan 'lain_lain' (yang sekarang mencakup sewa kendaraan) juga diinisialisasi.
                 addLainLainItem(pegawaiItem.querySelector('.lain-lain-container'), pegawai.pegawai_id);
 
 
@@ -338,6 +339,7 @@
                     // sebelum mengisi dengan data dari database.
                     pegawaiItem.querySelector('.transportasi-container').innerHTML = '';
                     pegawaiItem.querySelector('.akomodasi-container').innerHTML = '';
+                    // PERBAIKAN: Hapus kontainer yang sudah tidak relevan dan pastikan lain-lain dibersihkan.
                     pegawaiItem.querySelector('.kontribusi-container').innerHTML = '';
                     pegawaiItem.querySelector('.lain-lain-container').innerHTML = '';
 
@@ -513,7 +515,7 @@
         newItem.querySelector('[data-name="nomor_tiket"]').value = data.nomor_tiket || '';
         newItem.querySelector('[data-name="tanggal_tiket"]').value = formatDate(data.tanggal_tiket) || '';
         newItem.querySelector('[data-name="terminal_berangkat"]').value = data.terminal_berangkat || '';
-        newItem.querySelector('[data-name="terminal_tiba"]').value = data.terminal_tujuan || data.terminal_tiba || '';
+        newItem.querySelector('[data-name="terminal_tiba"]').value = data.terminal_tiba || '';
         newItem.querySelector('[data-name="nominal"]').value = formatCurrency(data.nominal);
 
         // Atur radio button untuk arah perjalanan
@@ -582,7 +584,19 @@
         const newItem = templateContent.querySelector('.lain-lain-item');
         const itemIndex = container.querySelectorAll('.lain-lain-item').length;
 
-        newItem.querySelector('[data-name="uraian"]').value = data.uraian || '';
+        // PERBAIKAN KOMPREHENSIF: Tangani kasus di mana `data.uraian` mungkin sebuah objek
+        // atau string JSON karena kesalahan penyimpanan di backend.
+        let uraianValue = data.uraian || '';
+        try {
+            const parsed = JSON.parse(uraianValue);
+            if (typeof parsed === 'object' && parsed !== null && parsed.hasOwnProperty('uraian')) {
+                uraianValue = parsed.uraian;
+            }
+        } catch (e) {
+            // Jika bukan JSON, biarkan apa adanya.
+        }
+
+        newItem.querySelector('[data-name="uraian"]').value = uraianValue;
         newItem.querySelector('[data-name="tarif_satuan"]').value = formatCurrency(data.tarif_satuan) || '';
         newItem.querySelector('[data-name="jumlah_hari"]').value = data.jumlah_hari || '';
         newItem.querySelector('[data-name="keterangan"]').value = data.keterangan || '';
@@ -597,8 +611,10 @@
         checkRemoveButtons(container.closest('.pengeluaran-pegawai-item'));
     }
 
+    // 
     const checkRemoveButtons = (pegawaiItem) => {
         if (!pegawaiItem) return;
+        // PERBAIKAN: Hapus '.sewaKendaraan-item' dari daftar
         const types = ['.transport-item', '.akomodasi-item', '.kontribusi-item', '.lain-lain-item'];
         types.forEach(selector => {
             const items = pegawaiItem.querySelectorAll(selector);
@@ -623,12 +639,45 @@
     const updateLainLainTotal = (itemElement) => {
         if (!itemElement) return;
         const tarifSatuanEl = itemElement.querySelector('[data-name*="tarif_satuan"]');
-        const jumlahHariEl = itemElement.querySelector('[data-name*="jumlah_hari"]');
-        const totalNominalEl = itemElement.querySelector('[data-name*="nominal"]');
+        const jumlahHariEl = itemElement.querySelector('[data-name="jumlah_hari"]');
+        const totalNominalEl = itemElement.querySelector('[data-name="nominal"]');
 
         const tarif = parseCurrency(tarifSatuanEl.value);
         const hari = parseInt(jumlahHariEl.value) || 0;
-        totalNominalEl.value = formatCurrency(tarif * hari);
+        if (totalNominalEl) totalNominalEl.value = formatCurrency(tarif * hari);
+    };
+
+    // --- FUNGSI UNTUK MENATA ULANG INDEKS FORM DINAMIS ---
+    const reindexAllDynamicItems = () => {
+        debugLog('Memulai reindexAllDynamicItems sebelum submit');
+        const allPegawaiItems = pengeluaranPerPegawaiContainer.querySelectorAll('.pengeluaran-pegawai-item');
+
+        allPegawaiItems.forEach(pegawaiItem => {
+            const pegawaiId = pegawaiItem.dataset.pegawaiId;
+            if (!pegawaiId) return;
+
+            const categories = [
+                { selector: '.transport-item', name: 'transportasi' },
+                { selector: '.akomodasi-item', name: 'akomodasi' },
+                { selector: '.kontribusi-item', name: 'kontribusi' },
+                { selector: '.lain-lain-item', name: 'lain_lain' },
+            ];
+
+            categories.forEach(category => {
+                const items = pegawaiItem.querySelectorAll(category.selector);
+                items.forEach((item, index) => {
+                    item.querySelectorAll('[data-name]').forEach(input => {
+                        const fieldName = input.dataset.name;
+                        // Khusus untuk radio button transportasi yang namanya sama
+                        if (input.type === 'radio' && fieldName === 'arah_perjalanan') {
+                            input.name = `pegawai[${pegawaiId}][${category.name}][${index}][arah_perjalanan]`;
+                        } else {
+                            input.name = `pegawai[${pegawaiId}][${category.name}][${index}][${fieldName}]`;
+                        }
+                    });
+                });
+            });
+        });
     };
 
     // Event listener untuk form submission
@@ -672,6 +721,9 @@
                 debugLog('VALIDASI GAGAL: Rincian pengeluaran kosong untuk:', missingDetailsFor);
                 throw new Error(`Validasi Gagal:\n\nHarap isi minimal satu rincian pengeluaran untuk penandatangan berikut:\n- ${missingDetailsFor.join('\n- ')}`);
             }
+
+            // 3. Panggil fungsi re-indexing sebelum membuat FormData
+            reindexAllDynamicItems();
 
             // 3. PERBAIKAN UTAMA: Aktifkan dropdown SPT sebentar agar nilainya terbaca oleh FormData.
             // Ini penting karena field disabled tidak terkirim di FormData

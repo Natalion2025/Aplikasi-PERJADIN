@@ -222,6 +222,7 @@
                                         + Tambah Akomodasi
                                     </button>
                                 </div>
+
                                 <!-- Kolom Biaya Kontribusi -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya
@@ -348,6 +349,29 @@
                                 <input type="text" data-name="nominal" placeholder="Nominal (Rp)"
                                     class="flex-grow block px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
                                 <span class="text-gray-600 dark:text-gray-400 text-center">/kegiatan</span>
+                                <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
+                                        class="fas fa-minus-circle"></i></button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Template untuk Sewa Kendaraan Dalam Kota -->
+                    <template id="sewaKendaraan-template">
+                        <div class="sewaKendaraan-item grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                            <input type="text" data-name="uraian_sewa" placeholder="Uraian Sewa"
+                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <input type="text" data-name="tarif_satuan_sewa" placeholder="Tarif Satuan (Rp)"
+                                class="md:col-span-2 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm sewaKendaraan-calc currency-input">
+                            <div class="gap-2 flex md:col-span-2 items-center">
+                                <input type="number" data-name="jumlah_hari" placeholder="Qty"
+                                    class="block text-center px-1 w-15 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm sewaKendaraan-calc">
+                                <span class="text-gray-600 dark:text-gray-400 text-sm">hari</span>
+                            </div>
+                            <input type="text" data-name="nominal" placeholder="Jumlah (Rp)" readonly
+                                class="md:col-span-2 block px-3 py-2 border cursor-not-allowed bg-slate-100 border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm currency-input">
+                            <input type="text" data-name="keterangan" placeholder="Keterangan"
+                                class="md:col-span-3 block w-full px-3 py-2 border border-slate-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm">
+                            <div class="flex items-center gap-2 md:col-span-1 justify-self-start">
                                 <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 hidden"><i
                                         class="fas fa-minus-circle"></i></button>
                             </div>

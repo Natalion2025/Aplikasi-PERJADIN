@@ -378,6 +378,7 @@ db.run(`CREATE TABLE IF NOT EXISTS laporan_perjadin (
     lain_lain_tarif_satuan REAL,
     lain_lain_jumlah_hari INTEGER,
     lain_lain_nominal REAL,
+    lain_lain_keterangan TEXT,
     kesimpulan TEXT,
     lampiran_path TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1542,7 +1543,8 @@ app.get('/api/laporan-bpk-apip/lain-lain', isApiAuthenticated, async (req, res) 
                 ll.uraian,
                 ll.jumlah_hari,
                 ll.tarif_satuan,
-                ll.nominal as total
+                ll.nominal as total,
+                ll.keterangan
             FROM laporan_lain_lain ll
             JOIN laporan_perjadin lp ON ll.laporan_id = lp.id
             JOIN spt s ON lp.spt_id = s.id
@@ -1553,15 +1555,159 @@ app.get('/api/laporan-bpk-apip/lain-lain', isApiAuthenticated, async (req, res) 
         const params = usePagination ? [limitNum, offset] : [];
         const otherCostList = await dbAll(dataSql, params);
 
-        // Untuk kolom keterangan, kita akan tambahkan secara manual jika diperlukan
-        otherCostList.forEach(item => {
-            item.keterangan = '-'; // Placeholder, bisa diisi dari data lain jika ada
-        });
-
         res.json({ data: otherCostList, pagination: { page: pageNum, limit: limitNum, totalItems, totalPages } });
     } catch (err) {
         console.error('[API ERROR] Gagal mengambil data Biaya Lain-lain BPK & APIP:', err);
         res.status(500).json({ message: err.message });
+    }
+});
+
+// API BARU: Membuat dan mengunduh template Excel untuk Laporan BPK & APIP
+app.get('/api/laporan-bpk-apip/template', isApiAuthenticated, async (req, res) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Rincian Belanja');
+
+        // --- 1. Header (Metadata) ---
+        const centerBold = { font: { bold: true }, alignment: { horizontal: 'center' } };
+        worksheet.getCell('A1').value = 'Lampiran Surat Nomor 01/LKPD/MLW/2/2025';
+        worksheet.getCell('A1').font = { bold: true };
+        worksheet.getCell('A2').value = 'Rekapitulasi Belanja Biaya Perjalanan Dinas TA 2024 (1 Januari sd. 31 Desember 2024)';
+        worksheet.getCell('A2').font = { bold: true };
+        worksheet.getCell('A4').value = 'Nama SKPD : …………………………………………………………………………………';
+        worksheet.getCell('A4').font = { bold: true };
+        worksheet.getCell('A5').value = 'Realisasi Belanja Perjalanan Dinas : ............................................................................';
+        worksheet.getCell('A5').font = { bold: true };
+
+        // --- 2. Struktur Kolom (Multi-Level Header) ---
+        const headerStyle = {
+            font: { bold: true },
+            alignment: { vertical: 'middle', horizontal: 'center', wrapText: true },
+            border: {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            }
+        };
+
+        // Fungsi helper untuk menerapkan style ke range
+        const applyStyleToRange = (startRow, startCol, endRow, endCol, style) => {
+            for (let r = startRow; r <= endRow; r++) {
+                for (let c = startCol; c <= endCol; c++) {
+                    worksheet.getCell(r, c).style = style;
+                }
+            }
+        };
+
+        // Header Sederhana (Gabung Baris 7-10)
+        const simpleHeaders = [
+            { col: 'A', text: 'No' }, { col: 'B', text: 'Nama' }, { col: 'C', text: 'Jabatan' },
+            { col: 'D', text: 'Pangkat Ruang/Golongan' }, { col: 'E', text: 'Nomor Surat Tugas' },
+            { col: 'F', text: 'No SPPD' }, { col: 'G', text: 'Tgl Mulai' }, { col: 'H', text: 'Tgl Selesai' },
+            { col: 'I', text: 'Nama Kegiatan' }, { col: 'J', text: 'Jenis Perjadin: Dalam / Luar Daerah' },
+            { col: 'AL', text: 'Uang Representatif' }, { col: 'AM', text: 'Sewa Kendaraan Dalam Kota' },
+            { col: 'AN', text: 'Biaya lain yang belum disebutkan (jika ada)' },
+            { col: 'AO', text: 'Keterangan Biaya lain yang belum disebutkan (jika ada)' },
+            { col: 'AP', text: 'Keterangan (Jika Diperlukan)' },
+            { col: 'AQ', text: 'Total yg di terima' }
+        ];
+        simpleHeaders.forEach(h => {
+            worksheet.mergeCells(`${h.col}7:${h.col}10`);
+            worksheet.getCell(`${h.col}7`).value = h.text;
+        });
+
+        // Header Pesawat Berangkat (K-R)
+        worksheet.mergeCells('K7:R7');
+        worksheet.getCell('K7').value = 'Perjalanan Dinas Pesawat (Berangkat)';
+        worksheet.mergeCells('K8:R8'); // Kosong
+        worksheet.mergeCells('K9:K10'); worksheet.getCell('K9').value = 'Maskapai';
+        worksheet.mergeCells('L9:L10'); worksheet.getCell('L9').value = 'Kode Booking';
+        worksheet.mergeCells('M9:M10'); worksheet.getCell('M9').value = 'Nomor Penerbangan';
+        worksheet.mergeCells('N9:N10'); worksheet.getCell('N9').value = 'Nomor Tiket';
+        worksheet.mergeCells('O9:O10'); worksheet.getCell('O9').value = 'Dari';
+        worksheet.mergeCells('P9:P10'); worksheet.getCell('P9').value = 'Tujuan';
+        worksheet.getCell('Q9').value = 'Tanggal Tiket Berangkat';
+        worksheet.getCell('Q10').value = ''; // Kosong
+        worksheet.mergeCells('R9:R10'); worksheet.getCell('R9').value = 'Harga';
+
+        // Header Pesawat Pulang (S-Z)
+        worksheet.mergeCells('S7:Z7');
+        worksheet.getCell('S7').value = 'Perjalanan Dinas Pesawat (Pulang)';
+        worksheet.mergeCells('S8:Z8'); // Kosong
+        worksheet.mergeCells('S9:S10'); worksheet.getCell('S9').value = 'Maskapai';
+        worksheet.mergeCells('T9:T10'); worksheet.getCell('T9').value = 'Kode Booking';
+        worksheet.mergeCells('U9:U10'); worksheet.getCell('U9').value = 'Nomor Penerbangan';
+        worksheet.mergeCells('V9:V10'); worksheet.getCell('V9').value = 'Nomor Tiket';
+        worksheet.mergeCells('W9:W10'); worksheet.getCell('W9').value = 'Dari';
+        worksheet.mergeCells('X9:X10'); worksheet.getCell('X9').value = 'Tujuan';
+        worksheet.getCell('Y9').value = 'Tanggal Tiket Pulang';
+        worksheet.getCell('Y10').value = ''; // Kosong
+        worksheet.mergeCells('Z9:Z10'); worksheet.getCell('Z9').value = 'Harga';
+
+        // Header Hotel (AA-AG)
+        worksheet.mergeCells('AA7:AG7');
+        worksheet.getCell('AA7').value = 'Hotel';
+        worksheet.getCell('AA8').value = 'Nama Hotel';
+        worksheet.getCell('AB8').value = 'Kota';
+        worksheet.getCell('AC8').value = 'Tanggal Check In';
+        worksheet.getCell('AD8').value = 'Tanggal Check Out';
+        worksheet.getCell('AE8').value = 'Jumlah Malam';
+        worksheet.getCell('AF8').value = 'Harga/Malam';
+        worksheet.getCell('AG8').value = 'Total Harga Kamar';
+        worksheet.mergeCells('AA9:AG10'); // Kosong
+
+        // Header Uang Harian (AH-AK)
+        worksheet.mergeCells('AH7:AK7');
+        worksheet.getCell('AH7').value = 'Uang Harian';
+        worksheet.getCell('AH8').value = 'Jumlah Hari Perjalanan Dinas';
+        worksheet.getCell('AI8').value = 'Tarif Uang Harian';
+        worksheet.getCell('AJ8').value = 'Total Uang Harian';
+        worksheet.mergeCells('AH9:AK10'); // Kosong
+
+        // Terapkan style ke semua header
+        applyStyleToRange(7, 1, 10, 43, headerStyle); // 43 adalah kolom AQ
+
+        // --- 3. Pemformatan Kolom ---
+        const currencyFormat = 'Rp #,##0;[Red]-Rp #,##0';
+        const currencyColumns = ['R', 'Z', 'AF', 'AG', 'AI', 'AJ', 'AL', 'AM', 'AN', 'AQ'];
+        currencyColumns.forEach(col => {
+            worksheet.getColumn(col).numFmt = currencyFormat;
+        });
+
+        // Atur lebar kolom (opsional, untuk tampilan lebih baik)
+        worksheet.getColumn('A').width = 5;
+        worksheet.getColumn('B').width = 25;
+        worksheet.getColumn('C').width = 30;
+        worksheet.getColumn('D').width = 20;
+        worksheet.getColumn('E').width = 25;
+        worksheet.getColumn('F').width = 25;
+        worksheet.getColumn('I').width = 35;
+        worksheet.getColumn('J').width = 15;
+        ['K', 'S'].forEach(c => worksheet.getColumn(c).width = 20); // Maskapai
+        ['O', 'P', 'W', 'X'].forEach(c => worksheet.getColumn(c).width = 15); // Dari/Tujuan
+        ['AA', 'AB'].forEach(c => worksheet.getColumn(c).width = 20); // Hotel
+        ['AN', 'AO', 'AP'].forEach(c => worksheet.getColumn(c).width = 30); // Keterangan
+
+        // Tambahkan border untuk 10 baris data dummy
+        const dataBorderStyle = {
+            border: {
+                top: { style: 'thin' }, left: { style: 'thin' },
+                bottom: { style: 'thin' }, right: { style: 'thin' }
+            }
+        };
+        applyStyleToRange(11, 1, 20, 43, dataBorderStyle);
+
+        // --- 4. Kirim File ke Client ---
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="Format Rincian Belanja Perjalanan Dinas DISKOMINFO.xlsx"');
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('[API ERROR] Gagal membuat template Excel BPK:', error);
+        res.status(500).json({ message: 'Gagal membuat template Excel.', error: error.message });
     }
 });
 
@@ -3796,7 +3942,7 @@ app.post('/api/laporan', isApiAuthenticated, laporanUpload.array('lampiran', 10)
                 }
                 if (pengeluaran.lain_lain) {
                     for (const item of pengeluaran.lain_lain) {
-                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan]);
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [laporanId, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan || '']);
                     }
                 }
             }
@@ -4010,7 +4156,7 @@ app.put('/api/laporan/:id', isApiAuthenticated, laporanUpload.array('lampiran', 
                 }
                 if (pengeluaran.lain_lain) {
                     for (const item of pengeluaran.lain_lain) {
-                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan]);
+                        await runQuery('INSERT INTO laporan_lain_lain (laporan_id, pegawai_id, uraian, tarif_satuan, jumlah_hari, nominal, keterangan) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, pegawaiId, item.uraian, parseCurrency(item.tarif_satuan), item.jumlah_hari, parseCurrency(item.nominal), item.keterangan || '']);
                     }
                 }
             }
