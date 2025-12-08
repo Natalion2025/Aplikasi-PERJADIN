@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Rekapitulasi Belanja Perjalanan Dinas</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 8pt;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 2px 4px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        th {
+            font-weight: bold;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .no-wrap {
+            white-space: nowrap;
+        }
+
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading" class="loading-spinner no-print"></div>
+
+    <div id="print-area" class="invisible">
+        <header class="mb-4">
+            <h1 id="judul-laporan" class="text-sm font-bold"></h1>
+            <p id="nama-skpd" class="text-sm font-bold">Nama SKPD : Dinas Komunikasi dan Informatika Kabupaten Melawi
+            </p>
+            <p id="realisasi" class="text-sm font-bold">Realisasi Belanja Perjalanan Dinas :
+                ............................................................................</p>
+        </header>
+
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">No</th>
+                    <th rowspan="2">Nama</th>
+                    <th rowspan="2">Jabatan</th>
+                    <th rowspan="2">Pangkat Ruang/<br>Golongan</th>
+                    <th rowspan="2">Nomor<br>Surat Tugas</th>
+                    <th rowspan="2">No SPPD</th>
+                    <th rowspan="2">Tgl Mulai</th>
+                    <th rowspan="2">Tgl Selesai</th>
+                    <th rowspan="2">Nama<br>Kegiatan</th>
+                    <th rowspan="2">Jenis Perjadin: Dalam / Luar Daerah</th>
+                    <th colspan="8">Perjalanan Dinas Pesawat (Berangkat)</th>
+                    <th colspan="8">Perjalanan Dinas Pesawat (Pulang)</th>
+                    <th colspan="7">Hotel</th>
+                    <th colspan="3">Uang Harian</th>
+                    <th rowspan="2">Uang Representatif</th>
+                    <th rowspan="2">Sewa Kendaraan Dalam Kota</th>
+                    <th rowspan="2">Biaya lain yang belum disebutkan (jika ada)</th>
+                    <th rowspan="2">Keterangan Biaya lain yang belum disebutkan (jika ada)</th>
+                    <th rowspan="2">Keterangan<br>(Jika Diperlukan)</th>
+                    <th rowspan="2">Total yg di terima</th>
+                </tr>
+                <tr>
+                    <!-- Pesawat Berangkat -->
+                    <th>Maskapai</th>
+                    <th>Kode<br>Booking</th>
+                    <th>Nomor<br>Penerbangan</th>
+                    <th>Nomor<br>Tiket</th>
+                    <th>Dari</th>
+                    <th>Tujuan</th>
+                    <th>Tanggal<br>Tiket<br>Berangkat</th>
+                    <th>Harga</th>
+                    <!-- Pesawat Pulang -->
+                    <th>Maskapai</th>
+                    <th>Kode<br>Booking</th>
+                    <th>Nomor<br>Penerbangan</th>
+                    <th>Nomor<br>Tiket</th>
+                    <th>Dari</th>
+                    <th>Tujuan</th>
+                    <th>Tanggal<br>Tiket<br>Pulang</th>
+                    <th>Harga</th>
+                    <!-- Hotel -->
+                    <th>Nama Hotel</th>
+                    <th>Kota</th>
+                    <th>Tanggal<br>Check In</th>
+                    <th>Tanggal<br>Check Out</th>
+                    <th>Jumlah Malam</th>
+                    <th>Harga/<br>Malam</th>
+                    <th>Total Harga Kamar</th>
+                    <!-- Uang Harian -->
+                    <th>Jumlah Hari Perjalanan Dinas</th>
+                    <th>Tarif<br>Uang<br>Harian</th>
+                    <th>Total<br>Uang Harian</th>
+                </tr>
+            </thead>
+            <tbody id="report-body">
+                <!-- Data akan diisi oleh JavaScript -->
+            </tbody>
+        </table>
+
+        <footer class="mt-8 flex justify-end">
+            <div class="w-1/3 text-center">
+                <p id="tanggal-ttd" class="mb-16"></p>
+                <p>Kepala Dinas Komunikasi dan<br>Informatika Kabupaten Melawi</p>
+                <br><br><br>
+                <p id="nama-ttd" class="font-bold underline"></p>
+                <p id="nip-ttd"></p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingEl = document.getElementById('loading');
+            const printAreaEl = document.getElementById('print-area');
+            const reportBody = document.getElementById('report-body');
+
+            const formatDate = (dateString) => {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
+            };
+
+            const formatCurrency = (number) => {
+                if (typeof number !== 'number' || number === 0) return '';
+                return new Intl.NumberFormat('id-ID').format(number);
+            };
+
+            try {
+                const response = await fetch('/api/cetak/laporan-bpk');
+                if (!response.ok) {
+                    throw new Error(`Gagal memuat data: ${response.statusText}`);
+                }
+                const { data, penandatangan } = await response.json();
+
+                // Set Judul
+                const currentYear = new Date().getFullYear();
+                document.getElementById('judul-laporan').textContent = `Rekapitulasi Belanja Biaya Perjalanan Dinas TA ${currentYear} (1 Januari sd. 31 Desember tahun ${currentYear})`;
+
+                let content = '';
+                data.forEach((item, index) => {
+                    content += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td class="text-left">${item.nama_lengkap || ''}</td>
+                            <td class="text-left">${item.jabatan || ''}</td>
+                            <td>${item.pangkat_golongan || ''}</td>
+                            <td>${item.nomor_surat || ''}</td>
+                            <td>${item.nomor_sppd || ''}</td>
+                            <td class="no-wrap">${formatDate(item.tanggal_berangkat)}</td>
+                            <td class="no-wrap">${formatDate(item.tanggal_kembali)}</td>
+                            <td class="text-left">${item.maksud_perjalanan || ''}</td>
+                            <td>${item.jenis_perjadin || ''}</td>
+                            
+                            <!-- Pesawat Berangkat -->
+                            <td>${item.transport_berangkat.perusahaan || ''}</td>
+                            <td>${item.transport_berangkat.kode_boking || ''}</td>
+                            <td>${item.transport_berangkat.nomor_penerbangan || ''}</td>
+                            <td>${item.transport_berangkat.nomor_tiket || ''}</td>
+                            <td>${item.transport_berangkat.terminal_berangkat || ''}</td>
+                            <td>${item.transport_berangkat.terminal_tiba || ''}</td>
+                            <td class="no-wrap">${formatDate(item.transport_berangkat.tanggal_tiket)}</td>
+                            <td class="text-right">${formatCurrency(item.transport_berangkat.nominal)}</td>
+
+                            <!-- Pesawat Pulang -->
+                            <td>${item.transport_pulang.perusahaan || ''}</td>
+                            <td>${item.transport_pulang.kode_boking || ''}</td>
+                            <td>${item.transport_pulang.nomor_penerbangan || ''}</td>
+                            <td>${item.transport_pulang.nomor_tiket || ''}</td>
+                            <td>${item.transport_pulang.terminal_berangkat || ''}</td>
+                            <td>${item.transport_pulang.terminal_tiba || ''}</td>
+                            <td class="no-wrap">${formatDate(item.transport_pulang.tanggal_tiket)}</td>
+                            <td class="text-right">${formatCurrency(item.transport_pulang.nominal)}</td>
+
+                            <!-- Hotel -->
+                            <td>${item.akomodasi.nama || ''}</td>
+                            <td>${item.akomodasi.lokasi_hotel || ''}</td>
+                            <td class="no-wrap">${formatDate(item.akomodasi.tanggal_checkIn)}</td>
+                            <td class="no-wrap">${formatDate(item.akomodasi.tanggal_checkOut)}</td>
+                            <td>${item.akomodasi.malam || ''}</td>
+                            <td class="text-right">${formatCurrency(item.akomodasi.harga_satuan)}</td>
+                            <td class="text-right">${formatCurrency(item.akomodasi.nominal)}</td>
+
+                            <!-- Uang Harian -->
+                            <td>${item.uang_harian.jumlah_hari || ''}</td>
+                            <td class="text-right">${formatCurrency(item.uang_harian.tarif_satuan)}</td>
+                            <td class="text-right">${formatCurrency(item.uang_harian.total)}</td>
+
+                            <!-- Biaya Lain -->
+                            <td class="text-right">${formatCurrency(item.uang_representatif)}</td>
+                            <td></td> <!-- Sewa Kendaraan -->
+                            <td class="text-right">${formatCurrency(item.biaya_lain.nominal)}</td>
+                            <td class="text-left">${item.biaya_lain.keterangan || ''}</td>
+                            <td class="text-left">${item.keterangan_spt || ''}</td>
+                            <td class="text-right font-bold">${formatCurrency(item.total_diterima)}</td>
+                        </tr>
+                    `;
+                });
+                reportBody.innerHTML = content;
+
+                // Set Tanda Tangan
+                const ttdDate = new Date();
+                document.getElementById('tanggal-ttd').textContent = `Nanga Pinoh, ${ttdDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+                document.getElementById('nama-ttd').textContent = penandatangan.nama_lengkap || '(Nama Kepala Dinas)';
+                document.getElementById('nip-ttd').textContent = `NIP. ${penandatangan.nip || '(NIP Kepala Dinas)'}`;
+
+                loadingEl.style.display = 'none';
+                printAreaEl.classList.remove('invisible');
+
+                window.print();
+
+            } catch (error) {
+                loadingEl.style.display = 'none';
+                document.body.innerHTML = `<div class="p-4 text-red-600">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+
+</html>
