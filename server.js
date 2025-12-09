@@ -1615,19 +1615,30 @@ app.get('/api/cetak/laporan-bpk', isApiAuthenticated, async (req, res) => {
 
         const results = [];
         for (const item of allItems) {
-            let transportBerangkat = {}, transportPulang = {}, akomodasi = {}, uangHarian = {}, lainLain = {};
+            // PERBAIKAN: Inisialisasi semua objek biaya dengan nilai default
+            // untuk mencegah error 'undefined' di client-side.
+            let transportBerangkat = { nominal: 0 };
+            let transportPulang = { nominal: 0 };
+            let akomodasi = { nominal: 0 };
+            let uangHarian = { jumlah_hari: 0, tarif_satuan: 0, total: 0 };
             let uangRepresentatif = 0;
             let totalDiterima = 0;
 
             if (item.laporan_id) {
-                transportBerangkat = await dbGet("SELECT * FROM laporan_transportasi WHERE laporan_id = ? AND pegawai_id = ? AND arah_perjalanan = 'berangkat'", [item.laporan_id, item.pegawai_id]) || {};
-                transportPulang = await dbGet("SELECT * FROM laporan_transportasi WHERE laporan_id = ? AND pegawai_id = ? AND arah_perjalanan = 'pulang'", [item.laporan_id, item.pegawai_id]) || {};
-                akomodasi = await dbGet("SELECT * FROM laporan_akomodasi WHERE laporan_id = ? AND pegawai_id = ?", [item.laporan_id, item.pegawai_id]) || {};
-                lainLain = await dbGet("SELECT * FROM laporan_lain_lain WHERE laporan_id = ? AND pegawai_id = ?", [item.laporan_id, item.pegawai_id]) || {};
+                // PERBAIKAN: Ambil semua data transportasi untuk pegawai ini, urutkan berdasarkan ID.
+                // Asumsi: Entri pertama adalah 'berangkat', entri kedua adalah 'pulang'.
+                const allTransport = await dbAll("SELECT * FROM laporan_transportasi WHERE laporan_id = ? AND pegawai_id = ? ORDER BY id ASC", [item.laporan_id, item.pegawai_id]) || [];
+                // PERBAIKAN: Pastikan objek selalu memiliki properti 'nominal'
+                transportBerangkat = allTransport[0] || { nominal: 0 };
+                transportPulang = allTransport[1] || { nominal: 0 }; // Ambil data kedua sebagai data pulang
+                akomodasi = await dbGet("SELECT * FROM laporan_akomodasi WHERE laporan_id = ? AND pegawai_id = ?", [item.laporan_id, item.pegawai_id]) || { nominal: 0 };
             }
 
             const { data: uangHarianData } = await fetch(`http://localhost:${PORT}/api/laporan-bpk-apip/uang-harian?limit=0`, { headers: { 'Cookie': req.headers.cookie } }).then(res => res.json());
             const uhDetail = uangHarianData.find(uh => uh.spt_id === item.spt_id && uh.pegawai_id === item.pegawai_id);
+
+            // PERBAIKAN: Pastikan uangHarian diisi hanya jika uhDetail ditemukan.
+            // Jika tidak, nilai default yang sudah diinisialisasi akan digunakan.
             if (uhDetail) {
                 uangHarian = {
                     jumlah_hari: uhDetail.jumlah_hari,
@@ -1637,7 +1648,35 @@ app.get('/api/cetak/laporan-bpk', isApiAuthenticated, async (req, res) => {
                 uangRepresentatif = uhDetail.biaya_representatif || 0;
             }
 
-            totalDiterima = (transportBerangkat.nominal || 0) + (transportPulang.nominal || 0) + (akomodasi.nominal || 0) + (uangHarian.total || 0) + uangRepresentatif + (lainLain.nominal || 0);
+            // PERBAIKAN: Logika pemisahan biaya dipindahkan ke luar blok if (item.laporan_id)
+            // untuk memastikan variabel selalu terdefinisi dengan benar.
+            const semuaBiayaLain = item.laporan_id ? await dbAll("SELECT * FROM laporan_lain_lain WHERE laporan_id = ? AND pegawai_id = ?", [item.laporan_id, item.pegawai_id]) : [];
+
+            const rentalKeywords = ['sewa', 'mobil', 'truck', 'angkutan', 'motor', 'sepeda', 'kapal', 'sampan', 'perahu'];
+            const rentalItems = semuaBiayaLain.filter(biaya =>
+                biaya.uraian && rentalKeywords.some(keyword => biaya.uraian.toLowerCase().includes(keyword))
+            );
+            const otherItems = semuaBiayaLain.filter(biaya =>
+                !biaya.uraian || !rentalKeywords.some(keyword => biaya.uraian.toLowerCase().includes(keyword))
+            );
+
+            const sewaKendaraanDalamKota = {
+                nominal: rentalItems.reduce((sum, i) => sum + (i.nominal || 0), 0)
+            };
+
+            // Gabungkan semua uraian dan keterangan untuk kolom keterangan
+            const allDescriptions = [
+                ...rentalItems.map(i => i.uraian),
+                ...otherItems.map(i => i.uraian)
+            ].filter(Boolean).join(', ');
+
+            const biayaLainSisa = {
+                uraian: otherItems.map(i => i.uraian).filter(Boolean).join(', '),
+                keterangan: allDescriptions, // Kolom keterangan sekarang berisi semua uraian
+                nominal: otherItems.reduce((sum, i) => sum + (i.nominal || 0), 0)
+            };
+
+            totalDiterima = (transportBerangkat.nominal || 0) + (transportPulang.nominal || 0) + (akomodasi.nominal || 0) + (uangHarian.total || 0) + uangRepresentatif + (sewaKendaraanDalamKota.nominal || 0) + (biayaLainSisa.nominal || 0);
 
             results.push({
                 ...item,
@@ -1647,7 +1686,8 @@ app.get('/api/cetak/laporan-bpk', isApiAuthenticated, async (req, res) => {
                 akomodasi: akomodasi,
                 uang_harian: uangHarian,
                 uang_representatif: uangRepresentatif,
-                biaya_lain: lainLain,
+                sewa_kendaraan_dalam_kota: sewaKendaraanDalamKota,
+                biaya_lain_sisa: biayaLainSisa,
                 total_diterima: totalDiterima
             });
         }

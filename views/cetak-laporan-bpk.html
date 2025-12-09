@@ -213,46 +213,46 @@
                             <td>${item.jenis_perjadin || ''}</td>
                             
                             <!-- Pesawat Berangkat -->
-                            <td>${item.transport_berangkat.perusahaan || ''}</td>
-                            <td>${item.transport_berangkat.kode_boking || ''}</td>
-                            <td>${item.transport_berangkat.nomor_penerbangan || ''}</td>
-                            <td>${item.transport_berangkat.nomor_tiket || ''}</td>
-                            <td>${item.transport_berangkat.terminal_berangkat || ''}</td>
-                            <td>${item.transport_berangkat.terminal_tiba || ''}</td>
-                            <td class="no-wrap">${formatDate(item.transport_berangkat.tanggal_tiket)}</td>
-                            <td class="text-right">${formatCurrency(item.transport_berangkat.nominal)}</td>
+                            <td>${item.transport_berangkat?.perusahaan || ''}</td>
+                            <td>${item.transport_berangkat?.kode_boking || ''}</td>
+                            <td>${item.transport_berangkat?.nomor_penerbangan || ''}</td>
+                            <td>${item.transport_berangkat?.nomor_tiket || ''}</td>
+                            <td>${item.transport_berangkat?.terminal_berangkat || ''}</td>
+                            <td>${item.transport_berangkat?.terminal_tiba || ''}</td>
+                            <td class="no-wrap">${formatDate(item.transport_berangkat?.tanggal_tiket)}</td>
+                            <td class="text-right">${formatCurrency(item.transport_berangkat?.nominal || 0)}</td>
 
                             <!-- Pesawat Pulang -->
-                            <td>${item.transport_pulang.perusahaan || ''}</td>
-                            <td>${item.transport_pulang.kode_boking || ''}</td>
-                            <td>${item.transport_pulang.nomor_penerbangan || ''}</td>
-                            <td>${item.transport_pulang.nomor_tiket || ''}</td>
-                            <td>${item.transport_pulang.terminal_berangkat || ''}</td>
-                            <td>${item.transport_pulang.terminal_tiba || ''}</td>
-                            <td class="no-wrap">${formatDate(item.transport_pulang.tanggal_tiket)}</td>
-                            <td class="text-right">${formatCurrency(item.transport_pulang.nominal)}</td>
+                            <td>${item.transport_pulang?.perusahaan || ''}</td>
+                            <td>${item.transport_pulang?.kode_boking || ''}</td>
+                            <td>${item.transport_pulang?.nomor_penerbangan || ''}</td>
+                            <td>${item.transport_pulang?.nomor_tiket || ''}</td>
+                            <td>${item.transport_pulang?.terminal_berangkat || ''}</td>
+                            <td>${item.transport_pulang?.terminal_tiba || ''}</td>
+                            <td class="no-wrap">${formatDate(item.transport_pulang?.tanggal_tiket)}</td>
+                            <td class="text-right">${formatCurrency(item.transport_pulang?.nominal || 0)}</td>
 
                             <!-- Hotel -->
-                            <td>${item.akomodasi.nama || ''}</td>
-                            <td>${item.akomodasi.lokasi_hotel || ''}</td>
-                            <td class="no-wrap">${formatDate(item.akomodasi.tanggal_checkIn)}</td>
-                            <td class="no-wrap">${formatDate(item.akomodasi.tanggal_checkOut)}</td>
-                            <td>${item.akomodasi.malam || ''}</td>
-                            <td class="text-right">${formatCurrency(item.akomodasi.harga_satuan)}</td>
-                            <td class="text-right">${formatCurrency(item.akomodasi.nominal)}</td>
+                            <td>${item.akomodasi?.nama || ''}</td>
+                            <td>${item.akomodasi?.lokasi_hotel || ''}</td>
+                            <td class="no-wrap">${formatDate(item.akomodasi?.tanggal_checkIn)}</td>
+                            <td class="no-wrap">${formatDate(item.akomodasi?.tanggal_checkOut)}</td>
+                            <td>${item.akomodasi?.malam || ''}</td>
+                            <td class="text-right">${formatCurrency(item.akomodasi?.harga_satuan || 0)}</td>
+                            <td class="text-right">${formatCurrency(item.akomodasi?.nominal || 0)}</td>
 
                             <!-- Uang Harian -->
-                            <td>${item.uang_harian.jumlah_hari || ''}</td>
-                            <td class="text-right">${formatCurrency(item.uang_harian.tarif_satuan)}</td>
-                            <td class="text-right">${formatCurrency(item.uang_harian.total)}</td>
+                            <td>${item.uang_harian?.jumlah_hari || ''}</td>
+                            <td class="text-right">${formatCurrency(item.uang_harian?.tarif_satuan || 0)}</td>
+                            <td class="text-right">${formatCurrency(item.uang_harian?.total || 0)}</td>
 
                             <!-- Biaya Lain -->
-                            <td class="text-right">${formatCurrency(item.uang_representatif)}</td>
-                            <td></td> <!-- Sewa Kendaraan -->
-                            <td class="text-right">${formatCurrency(item.biaya_lain.nominal)}</td>
-                            <td class="text-left">${item.biaya_lain.keterangan || ''}</td>
+                            <td class="text-right">${formatCurrency(item.uang_representatif || 0)}</td>
+                            <td class="text-right">${formatCurrency(item.sewa_kendaraan_dalam_kota?.nominal || 0)}</td> <!-- Sewa Kendaraan -->
+                            <td class="text-right">${formatCurrency(item.biaya_lain_sisa?.nominal || 0)}</td>
+                            <td class="text-left">${item.biaya_lain_sisa?.keterangan || ''}</td>
                             <td class="text-left">${item.keterangan_spt || ''}</td>
-                            <td class="text-right font-bold">${formatCurrency(item.total_diterima)}</td>
+                            <td class="text-right font-bold">${formatCurrency(item.total_diterima || 0)}</td>
                         </tr>
                     `;
                 });
