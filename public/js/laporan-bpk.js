@@ -94,7 +94,7 @@
                     <div class="text-sm text-gray-500" title="${item.jabatan}">${truncateText(item.jabatan || '-')}</div>
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
-                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.pangkat || '-'}</div>         
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${item.pangkat || '-'} (${item.golongan || '-'})</div>         
             </td>
             <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat || '-'}</div>

@@ -1290,6 +1290,7 @@ app.get('/api/laporan-bpk-apip', isApiAuthenticated, async (req, res) => {
                 pg_spt.nama_lengkap, 
                 pg_spt.jabatan, 
                 pg_spt.pangkat,
+                pg_spt.golongan,
                 s.nomor_surat, s.tanggal_surat,
                 sppd.nomor_sppd,
                 s.tanggal_berangkat, s.tanggal_kembali, s.maksud_perjalanan,
@@ -1661,18 +1662,14 @@ app.get('/api/cetak/laporan-bpk', isApiAuthenticated, async (req, res) => {
             );
 
             const sewaKendaraanDalamKota = {
-                nominal: rentalItems.reduce((sum, i) => sum + (i.nominal || 0), 0)
+                nominal: rentalItems.reduce((sum, i) => sum + (i.nominal || 0), 0),
+                uraian: rentalItems.map(i => i.uraian).filter(Boolean).join(', '),
+                keterangan: rentalItems.map(i => i.keterangan).filter(Boolean).join(', ')
             };
-
-            // Gabungkan semua uraian dan keterangan untuk kolom keterangan
-            const allDescriptions = [
-                ...rentalItems.map(i => i.uraian),
-                ...otherItems.map(i => i.uraian)
-            ].filter(Boolean).join(', ');
 
             const biayaLainSisa = {
                 uraian: otherItems.map(i => i.uraian).filter(Boolean).join(', '),
-                keterangan: allDescriptions, // Kolom keterangan sekarang berisi semua uraian
+                keterangan: otherItems.map(i => i.keterangan).filter(Boolean).join(', '),
                 nominal: otherItems.reduce((sum, i) => sum + (i.nominal || 0), 0)
             };
 

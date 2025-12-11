@@ -248,9 +248,17 @@
 
                             <!-- Biaya Lain -->
                             <td class="text-right">${formatCurrency(item.uang_representatif || 0)}</td>
-                            <td class="text-right">${formatCurrency(item.sewa_kendaraan_dalam_kota?.nominal || 0)}</td> <!-- Sewa Kendaraan -->
-                            <td class="text-right">${formatCurrency(item.biaya_lain_sisa?.nominal || 0)}</td>
-                            <td class="text-left">${item.biaya_lain_sisa?.keterangan || ''}</td>
+                            <td class="text-right">
+                                ${formatCurrency(item.sewa_kendaraan_dalam_kota?.nominal || 0)}
+                                ${(item.sewa_kendaraan_dalam_kota?.uraian || item.sewa_kendaraan_dalam_kota?.uraian_sewa) ? `<div class="text-left">${item.sewa_kendaraan_dalam_kota.uraian || item.sewa_kendaraan_dalam_kota.uraian_sewa}</div>` : ''}
+                                ${item.sewa_kendaraan_dalam_kota?.keterangan ? `<div class="text-left">${item.sewa_kendaraan_dalam_kota.keterangan}</div>` : ''}
+                            </td> <!-- Sewa Kendaraan -->
+                            <td class="text-right">
+                                ${formatCurrency(item.biaya_lain_sisa?.nominal || 0)}
+                                ${item.biaya_lain_sisa?.uraian ? `<div class="text-left">${item.biaya_lain_sisa.uraian}</div>` : ''}
+                                ${item.biaya_lain_sisa?.keterangan ? `<div class="text-left">${item.biaya_lain_sisa.keterangan}</div>` : ''}
+                            </td>
+                            <td class="text-left"></td>
                             <td class="text-left">${item.keterangan_spt || ''}</td>
                             <td class="text-right font-bold">${formatCurrency(item.total_diterima || 0)}</td>
                         </tr>

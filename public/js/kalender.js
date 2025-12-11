@@ -268,9 +268,10 @@
                 monthTooltip.classList.add('item');
                 monthTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) - 52}px`;
                 monthTooltip.style.zIndex = 10;
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama_lengkap).join(', ') : (event.pegawai?.nama_lengkap || '');
                 monthTooltip.title = pegawaiNames;
                 monthTooltip.style.width = `340px`;
+
 
                 // Hitung posisi dan lebar
                 const visibleStart = eventStart < viewStartDate ? viewStartDate : eventStart;
@@ -319,7 +320,7 @@
                 newTooltip.style.top = `${headerHeight + (index * rowSlotHeight) + (rowSlotHeight - tooltipHeight) + 4}px`;
                 newTooltip.style.width = `340px`;
                 newTooltip.style.zIndex = 10;
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama_lengkap).join(', ') : (event.pegawai?.nama_lengkap || '');
                 newTooltip.title = pegawaiNames;
 
                 let startColumnIndex = -1;
@@ -363,7 +364,7 @@
                 weekTooltip.style.width = `340px`;
                 weekTooltip.style.zIndex = 10;
                 // PERBAIKAN: Tampilkan nama lengkap di atribut title.
-                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama).join(', ') : (event.pegawai?.nama || '');
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama_lengkap).join(', ') : (event.pegawai?.nama_lengkap || '');
                 weekTooltip.title = pegawaiNames;
 
 
