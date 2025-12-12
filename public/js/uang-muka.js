@@ -124,12 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
         table.innerHTML = `
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr class="bg-blue-50 dark:bg-gray-600 dark:text-white">
-                    <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
+                    <th scope="col" class="pl-4 pr-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No.</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nomor SPT</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tanggal</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pelaksana</th>
                     <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-nowrap text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Biaya</th>
-                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Aksi</span></th>
+                    <th scope="col" class="relative pr-4 pl-3 py-3"><span class="sr-only">Aksi</span></th>
                 </tr>
             </thead>
             <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -141,12 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.className = 'item'
             row.innerHTML = `
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_panjar)}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.pelaksana_nama}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatCurrency(item.total_biaya)}</td>
-                <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.nomor_surat}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatDate(item.tanggal_panjar)}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${item.pelaksana_nama}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatCurrency(item.total_biaya)}</td>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${item.id}" class="print-btn text-blue-600 hover:text-blue-900 ml-4" title="Cetak Bukti"><i class="fas fa-print"></i></button>
                     <button data-id="${item.id}" class="edit-btn text-yellow-600 hover:text-yellow-900 ml-4" title="Edit"><i class="fas fa-edit"></i></button>
                     <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-900 ml-4" title="Hapus"><i class="fas fa-trash"></i></button>

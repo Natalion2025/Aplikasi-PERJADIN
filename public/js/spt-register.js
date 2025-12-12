@@ -120,24 +120,24 @@
 
             // Bangun isi baris tabel untuk daftar register SPT
             row.innerHTML = `
-                <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}.</div>
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${spt.nomor_surat}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 font-semibold dark:text-gray-400">${spt.nomor_surat}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_surat)}</div>
                 </td>
-                <td class="px-3 py-4">
-                    <div class="text-sm text-gray-900 break-words text-nowrap max-w-xs dark:text-gray-400" title="${spt.maksud_perjalanan}">${truncateText(spt.maksud_perjalanan)}</div>
+                <td class="px-3 py-3">
+                    <div class="text-sm text-gray-700 break-words text-nowrap max-w-xs dark:text-gray-400" title="${spt.maksud_perjalanan}">${truncateText(spt.maksud_perjalanan)}</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-800">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">
                     ${pegawaiListHtml}
                 </td>
-                <td class="px-1 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900 dark:text-gray-400">${spt.lokasi_tujuan}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${spt.lokasi_tujuan}</div>
                     <div class="text-sm text-gray-500">${formatDate(spt.tanggal_berangkat)}</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/spt/${spt.id}" target="_blank" class="text-indigo-600 hover:text-indigo-900" title="Cetak SPT">
                         <i class="fas fa-print"></i>
                     </a>
@@ -302,23 +302,23 @@
             row.className = 'item'
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${index + 1}.</div>
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-gray-400 text-center">${index + 1}.</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-400">${sppd.nomor_sppd}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-400">${sppd.nomor_sppd}</div>
                 </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${sppd.nomor_surat}</div>
+                <td class="px-3 py-3">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${sppd.nomor_surat}</div>
                 </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 dark:text-gray-400">${sppd.pegawai_nama}</div>
+                <td class="px-3 py-3">
+                    <div class="text-sm text-gray-700 dark:text-gray-400">${sppd.pegawai_nama}</div>
                     <div class="text-sm text-gray-500">NIP. ${sppd.pegawai_nip}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">
                     ${formatDate(sppd.tanggal_sppd)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/sppd-detail/${sppd.id}" target="_blank" class="text-green-600 hover:text-green-900" title="Cetak SPPD">
                         <i class="fas fa-print"></i>
                     </a>

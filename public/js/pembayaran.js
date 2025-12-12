@@ -714,24 +714,24 @@
             const row = document.createElement('tr');
             row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
-                <td class="pl-6 pr-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-white">${index + 1}.</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${p.nomor_surat}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm font-semibold text-gray-700 dark:text-white">${p.nomor_surat}</div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">${new Date(p.tanggal_surat).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${p.nomor_bukti}</div>
-                    <div class="text-sm font-semibold text-gray-500 dark:text-gray-300">${new Date(p.tanggal_bukti).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                <td class="px-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-gray-700 dark:text-white">${p.nomor_bukti}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-300">${new Date(p.tanggal_bukti).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                 </td>
-                <td class="px-3 py-4 w-2/5">
-                    <div class="text-sm font-medium text-gray-900 dark:text-white">${p.nama_penerima}</div>
+                <td class="px-3 py-3">
+                    <div class="text-sm text-gray-700 dark:text-white">${p.nama_penerima}</div>
                 </td>
-                <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-white">
                     ${formatCurrency(p.nominal_bayar)}
                 </td>
-                <td class="pl-3 pr-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-3 pr-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${p.id}" class="print-btn text-blue-600 hover:text-blue-900" title="Cetak Bukti">
                         <i class="fas fa-print"></i>
                     </button>
@@ -1032,11 +1032,11 @@
             const row = document.createElement('tr');
             row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.nama_pegawai}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.uraian}</td>
-                <td class="px-6 py-4 text-sm text-left text-gray-800 dark:text-gray-400">${formatCurrency(item.jumlah)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-4 pr-3 py-3 text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</td>
+                <td class="px-3 py-3 text-sm text-gray-800 dark:text-gray-400">${item.nama_pegawai}</td>
+                <td class="px-3 py-3 text-sm text-gray-800 dark:text-gray-400">${item.uraian}</td>
+                <td class="px-3 py-3 text-sm text-left text-gray-800 dark:text-gray-400">${formatCurrency(item.jumlah)}</td>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <button data-id="${item.id}" class="print-riil-btn text-blue-600 hover:text-blue-900" title="Cetak">
                         <i class="fas fa-print"></i>
                     </button>

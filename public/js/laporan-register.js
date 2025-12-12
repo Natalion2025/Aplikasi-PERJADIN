@@ -191,11 +191,11 @@
             const row = document.createElement('tr');
             row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${laporan.judul}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${laporan.nomor_surat}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(laporan.tanggal_laporan)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</td>
+                <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-400">${laporan.judul}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${laporan.nomor_surat}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-400">${formatDate(laporan.tanggal_laporan)}</td>
+                <td class="pr-4 pl-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/laporan/${laporan.id}" target="_blank" class="text-blue-600 hover:text-blue-900" title="Cetak Laporan"><i class="fas fa-print"></i></a>
                     <a href="/edit-laporan/${laporan.id}" class="text-indigo-600 hover:text-indigo-900 ml-4" title="Edit Laporan"><i class="fas fa-edit"></i></a>
                     <button data-id="${laporan.id}" class="delete-laporan-btn text-red-600 hover:text-red-900 ml-4" title="Hapus Laporan"><i class="fas fa-trash"></i></button>
@@ -236,12 +236,12 @@
             const row = document.createElement('tr');
             row.className = 'item'; // Tambahkan kelas 'item' untuk pencarian
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${index + 1}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_pembatalan)}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.pegawai_nama}</td>
-                <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-400">${item.alasan || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td class="pl-4 pe-3 py-3 whitespace-nowrap text-sm text-center text-gray-700 dark:text-gray-400">${index + 1}.</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${item.nomor_surat}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-800 dark:text-gray-400">${formatDate(item.tanggal_pembatalan)}</td>
+                <td class="px-3 py-3 text-sm text-gray-800 dark:text-gray-400">${item.pegawai_nama}</td>
+                <td class="px-3 py-3 text-sm text-gray-800 dark:text-gray-400">${item.alasan || '-'}</td>
+                <td class="px-3 py-3 whitespace-nowrap text-right text-sm font-medium">
                     <a href="/cetak/pembatalan/${item.id}" target="_blank" class="text-blue-600 hover:text-blue-900" title="Cetak Surat Pembatalan"><i class="fas fa-print"></i></a>
                     <button data-id="${item.id}" class="edit-pembatalan-btn text-indigo-600 hover:text-indigo-900 ml-4" title="Edit Pembatalan"><i class="fas fa-edit"></i></button>
                     <button data-id="${item.id}" data-nomor="${item.nomor_surat}" class="delete-pembatalan-btn text-red-600 hover:text-red-900 ml-4" title="Hapus Pembatalan"><i class="fas fa-trash"></i></button>
