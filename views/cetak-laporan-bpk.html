@@ -186,6 +186,28 @@
                 return new Intl.NumberFormat('id-ID').format(number);
             };
 
+            const formatPangkatGolongan = (item) => {
+                if (item.pangkat && item.golongan) {
+                    return `${item.pangkat} (${item.golongan})`;
+                }
+                if (item.pangkat_golongan) {
+                    const str = item.pangkat_golongan.trim();
+                    // Regex untuk memisahkan pangkat dan golongan (misal: "Pembina Tingkat I/IV/b")
+                    const match = str.match(/^(.*?)[\s\/]+([IVX]+\/[a-e])$/i);
+                    if (match) {
+                        return `${match[1]} (${match[2]})`;
+                    }
+                    const parts = str.split(' ');
+                    const lastPart = parts[parts.length - 1];
+                    // Asumsi golongan ada di kata terakhir dan mengandung '/' atau format romawi+huruf (misal III/a)
+                    if (parts.length > 1 && (lastPart.includes('/') || /^[IVX]+[a-e]$/i.test(lastPart))) {
+                        return `${parts.slice(0, -1).join(' ')} (${lastPart})`;
+                    }
+                    return str;
+                }
+                return '';
+            };
+
             try {
                 const response = await fetch('/api/cetak/laporan-bpk');
                 if (!response.ok) {
@@ -195,7 +217,8 @@
 
                 // Set Judul
                 const currentYear = new Date().getFullYear();
-                document.getElementById('judul-laporan').textContent = `Rekapitulasi Belanja Biaya Perjalanan Dinas TA ${currentYear} (1 Januari sd. 31 Desember tahun ${currentYear})`;
+                document.getElementById('judul-laporan').textContent = `Rekapitulasi Belanja Biaya Perjalanan Dinas TA ${currentYear}`;
+                document.getElementById('realisasi').textContent = `Realisasi Belanja Perjalanan Dinas : 1 Januari sd. 31 Desember tahun ${currentYear}`;
 
                 let content = '';
                 data.forEach((item, index) => {
@@ -204,7 +227,7 @@
                             <td>${index + 1}</td>
                             <td class="text-left">${item.nama_lengkap || ''}</td>
                             <td class="text-left">${item.jabatan || ''}</td>
-                            <td>${item.pangkat_golongan || ''}</td>
+                            <td>${formatPangkatGolongan(item)}</td>
                             <td>${item.nomor_surat || ''}</td>
                             <td>${item.nomor_sppd || ''}</td>
                             <td class="no-wrap">${formatDate(item.tanggal_berangkat)}</td>
