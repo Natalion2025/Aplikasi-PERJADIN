@@ -118,15 +118,16 @@
         });
     };
 
-    // FUNGSI UNTUK DAFTAR TRANSPORTASI
 
     // Mengaktifkan Dropdown Submenu Transportasi
     if (transportArrow && transportSubmenu) {
         transportArrow.addEventListener('click', () => {
             transportSubmenu.classList.toggle('hidden');
             transportArrow.classList.toggle('rotate-180');
+            switchTab(transportTab, transportPanel);
 
         });
+
         // Menutup submenu saat klik di luar
         document.addEventListener('click', (event) => {
             if (!transportArrow.contains(event.target) && !transportSubmenu.contains(event.target)) {
@@ -367,7 +368,7 @@
         }
     };
 
-    // Fungsi untuk merender paginasi
+    // Fungsi untuk merender paginasi (untuk semua tab)
     const renderPagination = (container, pagination, loadFunction) => {
         if (!container) return;
         container.innerHTML = '';
@@ -380,7 +381,7 @@
 
         // Untuk menampilkan informasi halaman dan tombol navigasi
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+        wrapper.className = 'flex items-center justify-between fixed bottom-[-0.35rem] bg-[#f5f9fc] left-[17rem] right-0 dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">

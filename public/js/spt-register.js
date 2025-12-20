@@ -170,12 +170,13 @@
 
         // Untuk menampilkan informasi halaman dan tombol navigasi
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+        wrapper.className = 'flex items-center justify-between fixed bottom-[-0.35rem] left-[17rem] right-0 bg-[#f5f9fc] dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">
             Halaman <span class="font-medium">${page}</span> dari <span class="font-medium">${totalPages}</span>
         </p>`;
+
 
         const navButtons = document.createElement('div');
         navButtons.className = 'flex-1 flex justify-end';

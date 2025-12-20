@@ -340,7 +340,7 @@
 
         // Untuk menampilkan informasi halaman dan tombol navigasi
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+        wrapper.className = 'flex items-center justify-between fixed bottom-[-0.35rem] bg-[#f5f9fc] left-[17rem] right-0 dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">
@@ -451,35 +451,35 @@
                 </div>`;
 
             const actionButtons = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
-                ? `<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                ? `<td class="pl-3 pr-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                        <button data-id="${anggaran.id}" class="edit-btn text-yellow-600 hover:text-yellow-800" title="Edit Anggaran"><i class="fas fa-edit"></i></button>
                        <button data-id="${anggaran.id}" class="delete-btn text-red-600 hover:text-red-800 ml-4" title="Hapus Anggaran"><i class="fas fa-trash"></i></button>
                    </td>`
                 : ''; // Jangan render kolom sama sekali jika bukan admin
 
             row.innerHTML = `
-                <td class="pr-3 pl-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
+                <td class="pl-4 pr-3 py-3 whitespace-nowrap">
+                    <div class="text-sm text-center font-semibold text-gray-900 dark:text-white">${index + 1}.</div>
                 </td>
-                <td class="px-3 py-4">
+                <td class="px-3 py-3">
                     <div class="text-sm text-nowrap font-semibold text-gray-900 dark:text-white">${anggaran.program || '-'}</div>
                     <div class="text-sm text-nowrap text-gray-500 dark:text-white">${anggaran.kegiatan || '-'}</div>
                     ${progressBarHtml}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-3 py-3 whitespace-nowrap">
                     <div class="text-sm text-gray-900 dark:text-white">${anggaran.mata_anggaran_kode}</div>
                     <div class="text-sm text-gray-500 dark:text-white">${anggaran.mata_anggaran_nama}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     Rp ${formatCurrency(anggaran.nilai_anggaran)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     Rp ${formatCurrency(anggaran.realisasi)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${anggaran.sisa < 0 ? 'text-red-500' : 'text-green-600'}">
+                <td class="px-3 py-3 whitespace-nowrap text-sm font-medium ${anggaran.sisa < 0 ? 'text-red-500' : 'text-green-600'}">
                     Rp ${formatCurrency(anggaran.sisa)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     ${anggaran.pptk_nama || '-'}
                 </td>
                 ${actionButtons}

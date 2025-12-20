@@ -70,7 +70,7 @@
         if (totalPages <= 1) return; // Jangan render pagination jika hanya ada 1 halaman.
 
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 px-4 py-3 sm:px-6';
+        wrapper.className = 'flex items-center justify-between fixed left-[17rem] bottom-[-0.35rem] bg-[#f5f9fc] right-0 dark:bg-slate-800 px-4 py-3 sm:px-6';
 
         const pageInfo = document.createElement('div');
         pageInfo.innerHTML = `<p class="text-sm text-navy-500 dark:text-gray-400">

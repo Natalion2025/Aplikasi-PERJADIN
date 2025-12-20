@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </tr>
             </table>
 
-            <div class="flex mr-[38px] justify-end leading-tight mt-4 space-x-4">
+            <div class="flex mr-[52px] justify-end leading-tight mt-4 space-x-4">
                 Dikeluarkan di<br>
                 Pada tanggal<br>
                 <span>
