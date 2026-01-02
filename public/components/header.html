@@ -21,8 +21,15 @@
 
     <!-- ID Pengguna -->
     <div class="relative flex space-x-4">
-        <img id="notifications" href="#" class="w-5 h-5" title="Notifikasi" src="../assets/circle_notifications.png"
-            alt="Notifications">
+        <!-- Wrapper Notifikasi dengan Badge -->
+        <div class="relative flex items-center cursor-pointer">
+            <img id="notifications" class="w-6 h-6" title="Notifikasi" src="../assets/circle_notifications.png"
+                alt="Notifications">
+            <span id="notification-badge"
+                class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.7 rounded-full border-2 border-white shadow-sm">
+                0
+            </span>
+        </div>
         <button id="user-menu-button" class="flex items-center cursor-pointer space-x-3 focus:outline-none">
             <div class="text-right hidden md:block">
                 <div id="user-name" class="font-semibold text-sm text-mainNavy">Memuat...</div>

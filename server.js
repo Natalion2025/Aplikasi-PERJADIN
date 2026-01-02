@@ -1701,6 +1701,44 @@ app.get('/api/cetak/laporan-bpk', isApiAuthenticated, async (req, res) => {
 
 // --- Rute API SPT (Surat Perintah Tugas) ---
 
+// [BARU] GET: Menghitung jumlah SPT aktif/belum lapor untuk notifikasi
+app.get('/api/spt/active-count', isApiAuthenticated, async (req, res) => {
+    try {
+        // PERBAIKAN: Gunakan NIP untuk menghubungkan User (Login) dengan Pegawai (Data SPT)
+        // ID di tabel 'users' seringkali berbeda dengan ID di tabel 'pegawai'.
+        const userNip = req.session.user?.nip;
+
+        if (!userNip) {
+            // Jika user tidak punya NIP (misal admin murni), anggap tidak ada tugas
+            return res.json({ count: 0 });
+        }
+
+        // Cari ID pegawai berdasarkan NIP user yang login
+        const pegawai = await dbGet('SELECT id FROM pegawai WHERE nip = ?', [userNip]);
+        if (!pegawai) {
+            return res.json({ count: 0 });
+        }
+
+        const query = `
+            SELECT COUNT(DISTINCT s.id) as count
+            FROM spt s
+            JOIN spt_pegawai sp ON s.id = sp.spt_id
+            LEFT JOIN laporan_perjadin lp ON s.id = lp.spt_id
+            WHERE
+                sp.pegawai_id = ?
+                AND lp.id IS NULL
+                AND s.status != 'dibatalkan'
+        `;
+
+        const result = await dbGet(query, [pegawai.id]);
+        res.json({ count: result.count || 0 });
+
+    } catch (error) {
+        console.error('[API NOTIF ERROR] Gagal mengambil hitungan SPT aktif:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan server saat mengambil notifikasi.' });
+    }
+});
+
 // GET: Mengambil semua data SPT untuk ditampilkan di register
 app.get('/api/spt', isApiAuthenticated, async (req, res) => {
     // PERBAIKAN KOMPREHENSIF: Tangani kasus limit=0 secara eksplisit untuk mengambil semua data.

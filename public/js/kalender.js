@@ -549,14 +549,19 @@
         });
 
         sideEventsList.innerHTML = '';
+
         if (eventsOnDate.length === 0) {
             sideEventsList.innerHTML = '<p class="text-white/50 text-left">Tidak ada acara untuk tanggal ini.</p>';
         } else {
             eventsOnDate.forEach(event => {
+                const pegawaiNames = Array.isArray(event.pegawai) ? event.pegawai.map(p => p.nama_lengkap).join('<br> ') : (event.pegawai?.nama_lengkap || '');
                 const eventHtml = `
                     <div class="event-item p-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors">
-                        <p class="font-semibold text-sm text-white">${event.maksud_perjalanan}</p>
-                        <p class="text-xs text-white/70">${event.nomor_surat}</p>
+                        <p class="font-semibold text-xs text-white">Dalam Rangka ${event.maksud_perjalanan}.</p>
+                        <p class="text-xs text-white/70">No. ST: ${event.nomor_surat}.</p>
+                        <p class="text-xs text-white/70 mb-1">Tgl. PERJADIN: ${event.tanggal_berangkat} s.d. ${event.tanggal_kembali}.</p>
+                        <p class="text-xs text-white/70 border mb-1 border-white/20 border-dashed"></p>
+                        <p class="text-xs text-white/70">Pelaksana: ${pegawaiNames || 'Tidak diketahui'}.</p>
                     </div>
                 `;
                 sideEventsList.innerHTML += eventHtml;
