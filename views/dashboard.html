@@ -29,9 +29,12 @@
             left: 0;
         }
 
-        /* Saat sidebar terlihat, geser konten utama di semua ukuran layar */
-        .sidebar.visible+.main-content {
-            margin-left: 280px;
+        /* Saat sidebar terlihat, geser konten utama HANYA di layar desktop */
+        @media (min-width: 768px) {
+            .sidebar.visible+.main-content {
+                margin-left: 280px;
+            }
+
         }
 
         /* public/css/style.css atau file CSS utama lainnya */
